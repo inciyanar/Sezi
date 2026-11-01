@@ -16,6 +16,8 @@ export const ease = {
 export const duration = { press: 140, release: 200, fade: 150, enter: 260, sheetIn: 320, sheetOut: 200 } as const;
 
 export const pressScale = 0.96;
+/** Geniş karo (eylem karosu): aynı oranda küçülme orada fazla belirgin. */
+export const pressScaleLarge = 0.97;
 
 /** Sıralı giriş: 6. öğeden sonra gecikme artmaz. */
 export const stagger = { step: 50, maxItems: 6 } as const;

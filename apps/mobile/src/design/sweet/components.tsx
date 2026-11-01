@@ -5,6 +5,7 @@ import { Modal, Pressable, StyleSheet, Text, View, type PressableProps, type Sty
 import Animated, {
   FadeIn,
   FadeInDown,
+  LinearTransition,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -22,7 +23,7 @@ import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useSweetTheme } from '@/hooks/use-sweet-theme';
 import { useT, type Lang, type Translate } from '@/lib/i18n';
 
-import { duration, ease, pressScale, selectSpring, stagger } from './motion';
+import { duration, ease, pressScale, pressScaleLarge, selectSpring, stagger } from './motion';
 
 /** Yalnız yüzen öğeler için (sekme çubuğu, pilot kartı): çok hafif, dağınık gölge. Yüksek kontrastta 2 dp çerçeve. */
 export function sweetShadow(t: SweetTheme): ViewStyle {
@@ -43,10 +44,17 @@ export function a11yLabel(work: WorkRow, lang: Lang, tr: Translate) {
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-type SoftPressableProps = Omit<PressableProps, 'style'> & { style?: StyleProp<ViewStyle> };
+type SoftPressableProps = Omit<PressableProps, 'style'> & {
+  style?: StyleProp<ViewStyle>;
+  /**
+   * `scaleLarge`: geniş karo (eylem karosu) daha az küçülür. `opacity`: ekran genişliğindeki fotoğraf gibi büyük
+   * yüzeyler için; küçülme orada fazla durur.
+   */
+  feedback?: 'scale' | 'scaleLarge' | 'opacity';
+};
 
-/** Basınca hafifçe küçülen yüzey (0.96, ease-out). Reduce motion: yalnız opacity. */
-export function SoftPressable({ style, onPressIn, onPressOut, ...rest }: SoftPressableProps) {
+/** Basınca hafifçe küçülen yüzey (0.96, geniş karoda 0.97, ease-out); büyük yüzeyde hafif soluklaşma. Reduce motion: yalnız opacity. */
+export function SoftPressable({ style, onPressIn, onPressOut, feedback = 'scale', ...rest }: SoftPressableProps) {
   const reduced = useReducedMotion();
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
@@ -56,11 +64,13 @@ export function SoftPressable({ style, onPressIn, onPressOut, ...rest }: SoftPre
       {...rest}
       onPressIn={(e) => {
         if (reduced) opacity.set(0.8);
-        else scale.set(withTiming(pressScale, { duration: duration.press, easing: ease.out }));
+        else if (feedback === 'opacity') opacity.set(withTiming(0.9, { duration: duration.press, easing: ease.out }));
+        else scale.set(withTiming(feedback === 'scaleLarge' ? pressScaleLarge : pressScale, { duration: duration.press, easing: ease.out }));
         onPressIn?.(e);
       }}
       onPressOut={(e) => {
         if (reduced) opacity.set(1);
+        else if (feedback === 'opacity') opacity.set(withTiming(1, { duration: duration.release, easing: ease.out }));
         else scale.set(withTiming(1, { duration: duration.release, easing: ease.out }));
         onPressOut?.(e);
       }}
@@ -153,8 +163,11 @@ export function TypeTile({
   );
 }
 
-/** Sıralı yumuşak giriş (8 dp yukarı + opacity). Reduce motion: yalnız opacity. */
-export function FadeInItem({ index, children, style }: { index: number; children: ReactNode; style?: StyleProp<ViewStyle> }) {
+/**
+ * Sıralı yumuşak giriş (8 dp yukarı + opacity). Reduce motion: yalnız opacity. `layout` açıksa üstüne öğe eklenince
+ * yeni yerine kayar (seyrek anlar için; hareket azaltmada anında).
+ */
+export function FadeInItem({ index, children, style, layout = false }: { index: number; children: ReactNode; style?: StyleProp<ViewStyle>; layout?: boolean }) {
   const reduced = useReducedMotion();
   const entering = reduced
     ? FadeIn.duration(duration.fade)
@@ -163,10 +176,27 @@ export function FadeInItem({ index, children, style }: { index: number; children
         .easing(ease.out)
         .withInitialValues({ opacity: 0, transform: [{ translateY: 8 }] });
   return (
-    <Animated.View entering={entering} style={style}>
+    <Animated.View entering={entering} layout={layout && !reduced ? LinearTransition.duration(duration.enter).easing(ease.out) : undefined} style={style}>
       {children}
     </Animated.View>
   );
+}
+
+/**
+ * Nadir başarı anı (ör. ziyaret onayı): öğe 0.9 boyuttan hafif sekmeyle yerine oturur (`selectSpring`). Yalnız
+ * `play` doğruyken mount'ta oynar; sayfa açılışında görünen öğe durağandır. Reduce motion: yalnız opacity.
+ */
+export function PopIn({ play, children, style }: { play: boolean; children: ReactNode; style?: StyleProp<ViewStyle> }) {
+  const reduced = useReducedMotion();
+  const scale = useSharedValue(play && !reduced ? 0.9 : 1);
+  const opacity = useSharedValue(play ? 0 : 1);
+  useEffect(() => {
+    if (!play) return;
+    opacity.set(withTiming(1, { duration: duration.fade, easing: ease.out }));
+    if (!reduced) scale.set(withSpring(1, selectSpring));
+  }, [play, reduced, opacity, scale]);
+  const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }], opacity: opacity.get() }));
+  return <Animated.View style={[style, animated]}>{children}</Animated.View>;
 }
 
 /** Yükleniyor iskeleti: nefes alan gri blok. */

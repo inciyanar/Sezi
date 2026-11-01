@@ -1,11 +1,10 @@
 import { excerpt } from '@sezi/shared';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { Button } from '@/components/ui';
 import { ChevronIcon } from '@/design/icons';
-import { duration } from '@/design/sweet/motion';
+import { FadeInItem } from '@/design/sweet/components';
 import { space, type } from '@/design/type';
 import { useSweetTheme } from '@/hooks/use-sweet-theme';
 import { useT } from '@/lib/i18n';
@@ -21,8 +20,8 @@ const paragraphs = (text: string) => text.split(/\n\s*\n/).map((p) => p.trim()).
 
 /**
  * Uzun metin: önce kısa hâli, "Devamını oku" ile tamamı (okuma süresiyle). Paragraflar arası boşluklu.
- * Açılan kısım yalnız saydamlıkla gelir (kayma yok, reduce motion'da da aynı). "Kısalt" kapatır ve
- * `onCollapse` ile sayfayı bölümün başına döndürür (uzun metnin sonunda kalınmasın).
+ * Açılan paragraflar sitedeki diğer girişler gibi 8 dp yukarı kayarak ve sırayla gelir (`FadeInItem`; reduce motion'da
+ * yalnız saydamlık). "Kısalt" kapatır ve `onCollapse` ile sayfayı bölümün başına döndürür (uzun metnin sonunda kalınmasın).
  */
 export function ReadMore({ text, onCollapse }: { text: string; onCollapse?: () => void }) {
   const t = useSweetTheme();
@@ -40,9 +39,9 @@ export function ReadMore({ text, onCollapse }: { text: string; onCollapse?: () =
             {p}
           </Text>
         ) : (
-          <Animated.Text key={i} entering={FadeIn.duration(duration.fade)} style={[type.body, { color: t.text }]}>
-            {p}
-          </Animated.Text>
+          <FadeInItem key={i} index={i - 1}>
+            <Text style={[type.body, { color: t.text }]}>{p}</Text>
+          </FadeInItem>
         ),
       )}
       {long ? (

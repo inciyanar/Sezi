@@ -2,12 +2,13 @@ import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Animated, { useAnimatedReaction, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, type SharedValue } from 'react-native-reanimated';
+import Animated, { useAnimatedReaction, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ChevronIcon } from '@/design/icons';
 import { SoftPressable, sweetShadow } from '@/design/sweet/components';
+import { duration, ease } from '@/design/sweet/motion';
 import { space, type } from '@/design/type';
 import { useSweetTheme } from '@/hooks/use-sweet-theme';
 import { useT } from '@/lib/i18n';
@@ -35,33 +36,51 @@ export function FloatingHeader({ title, scrollY, coverHeight, onBack = () => rou
   const insets = useSafeAreaInsets();
   const opacity = useSharedValue(0);
   const [pastCover, setPastCover] = useState(false);
+  // Durum çubuğu simgeleri çubuk yarı görünür olduğunda döner: fotoğraf üstünde koyu, çubuk üstünde açık simge kalmaz.
+  const [barShown, setBarShown] = useState(false);
+  // Kapak geçilince çubuk ve yüzen geri düğmesi 150 ms'de yer değiştirir (göz kırpması gibi anlık değil).
+  // Yalnız opacity değiştiği için hareket azaltmada da aynen kalır.
   useAnimatedReaction(
     () => coverHeight.get() > 0 && scrollY.get() >= coverHeight.get(),
     (visible, previous) => {
       if (visible === previous) return;
-      opacity.set(visible ? 1 : 0);
+      opacity.set(withTiming(visible ? 1 : 0, { duration: duration.fade, easing: ease.out }));
       scheduleOnRN(setPastCover, visible);
     },
   );
-  const animated = useAnimatedStyle(() => ({ opacity: opacity.get() }));
+  useAnimatedReaction(
+    () => opacity.get() > 0.5,
+    (shown, previous) => {
+      if (shown !== previous) scheduleOnRN(setBarShown, shown);
+    },
+  );
+  const barStyle = useAnimatedStyle(() => ({ opacity: opacity.get() }));
+  const floatingStyle = useAnimatedStyle(() => ({ opacity: 1 - opacity.get() }));
   return (
     <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
-      {lightOnCover ? <StatusBar style={pastCover ? 'auto' : 'light'} /> : null}
-      <Animated.View pointerEvents={pastCover ? 'auto' : 'none'} style={[s.bar, { minHeight: insets.top + 64, paddingTop: insets.top + space.sm, backgroundColor: t.surface, borderBottomColor: t.border, borderBottomWidth: t.outlined ? 2 : StyleSheet.hairlineWidth }, animated]}>
-        {pastCover ? (
-          <>
-            <Text style={[type.itemTitle, { color: t.text }]} numberOfLines={1}>{title}</Text>
-            <SoftPressable onPress={onBack} accessibilityRole="button" accessibilityLabel={tr('work.back')} style={[s.barBack, { top: insets.top + space.sm, backgroundColor: t.surface }]}>
-              <View style={{ transform: [{ rotate: '180deg' }] }}><ChevronIcon color={t.text} size={22} /></View>
-            </SoftPressable>
-          </>
-        ) : null}
+      {lightOnCover ? <StatusBar style={barShown ? 'auto' : 'light'} /> : null}
+      {/* İkisi de hep kurulu kalır ki geçiş sürebilsin; görünmeyen dokunulmaz ve ekran okuyucudan gizlenir. */}
+      <Animated.View
+        pointerEvents={pastCover ? 'auto' : 'none'}
+        accessibilityElementsHidden={!pastCover}
+        importantForAccessibility={pastCover ? 'auto' : 'no-hide-descendants'}
+        style={[s.bar, { minHeight: insets.top + 64, paddingTop: insets.top + space.sm, backgroundColor: t.surface, borderBottomColor: t.border, borderBottomWidth: t.outlined ? 2 : StyleSheet.hairlineWidth }, barStyle]}
+      >
+        <Text style={[type.itemTitle, { color: t.text }]} numberOfLines={1}>{title}</Text>
+        <SoftPressable onPress={onBack} accessibilityRole="button" accessibilityLabel={tr('work.back')} style={[s.barBack, { top: insets.top + space.sm, backgroundColor: t.surface }]}>
+          <View style={{ transform: [{ rotate: '180deg' }] }}><ChevronIcon color={t.text} size={22} /></View>
+        </SoftPressable>
       </Animated.View>
-      {!pastCover ? (
+      <Animated.View
+        pointerEvents={pastCover ? 'none' : 'box-none'}
+        accessibilityElementsHidden={pastCover}
+        importantForAccessibility={pastCover ? 'no-hide-descendants' : 'auto'}
+        style={[StyleSheet.absoluteFill, floatingStyle]}
+      >
         <SoftPressable onPress={onBack} accessibilityRole="button" accessibilityLabel={tr('work.back')} style={[s.back, { top: insets.top + space.sm, backgroundColor: t.surface }, sweetShadow(t)]}>
           <View style={{ transform: [{ rotate: '180deg' }] }}><ChevronIcon color={t.text} size={22} /></View>
         </SoftPressable>
-      ) : null}
+      </Animated.View>
     </View>
   );
 }

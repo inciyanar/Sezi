@@ -2,30 +2,30 @@ import { coverOf, hasLocation, inventorySource, isAttributed, loc, splitReadAlon
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import Animated from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, FadeOut, FadeOutDown, LinearTransition, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AccessibilityInfo, Linking, Pressable, ScrollView, Share, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { AccessibilityInfo, Linking, ScrollView, Share, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FloatingHeader, useFloatingHeaderScroll } from '@/components/floating-header';
 import { SeziLoader } from '@/components/sezi-loader';
-import { PhotoScrim, photoOverlayInk } from '@/components/photo-card';
 import { SeziMap, WorkPin } from '@/components/map';
 import { PhotoViewer } from '@/components/photo-viewer';
-import { formatPhotoCredit, PhotoSourceThumbTag } from '@/components/photo-source';
+import { formatPhotoCredit } from '@/components/photo-source';
 import { ReadAlongText } from '@/components/read-along-text';
 import { ReadMore } from '@/components/read-more';
-import { Badge, Button, Card, Chip, EmptyState, ListRow, Note } from '@/components/ui';
+import { Badge, Button, Card, EmptyState, ListRow, Note, Segmented } from '@/components/ui';
 import { WorkFacts } from '@/components/work-facts';
 import { WorkVisit } from '@/components/work-visit';
-import { ExternalIcon, PinIcon, PlayIcon, StopIcon, TurnIcon } from '@/design/icons';
-import { FadeInItem, outline, SoftPressable, sweetShadow } from '@/design/sweet/components';
+import { CameraIcon, ExternalIcon, PinIcon, PlayIcon, StopIcon, TurnIcon } from '@/design/icons';
+import { FadeInItem, IconBubble, outline, PopIn, SoftPressable, sweetShadow } from '@/design/sweet/components';
+import { duration, ease } from '@/design/sweet/motion';
 import { radius, space, type } from '@/design/type';
 import { WorkGlyphInline } from '@/design/work-glyph';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useSweetTheme } from '@/hooks/use-sweet-theme';
 import { useT } from '@/lib/i18n';
-import { hasRouteTo, planRoute } from '@/lib/nav';
+import { hasRouteTo, planRoute, walkingSpeed } from '@/lib/nav';
 import { useProfile } from '@/lib/profile';
 import { useSettings } from '@/lib/settings';
 import { useAccount } from '@/lib/account';
@@ -70,12 +70,14 @@ export default function WorkDetail() {
 
 /** Eşli okunabilen bölümler. */
 type ReadKey = 'summary' | 'history' | 'architecture';
-/** Bölümler arası hızlı geçiş hedefleri (sayfadaki sırayla). */
-type SectionKey = ReadKey | 'facts' | 'visit' | 'photos' | 'community' | 'location' | 'sources';
+/** Yer kartının sekmeleri. */
+type WorkTab = 'about' | 'visit' | 'record';
 
 /**
- * Eser sayfası: fotoğraf ve ad, iki eylem (dinle, yol tarifi), bölümlere hızlı geçiş, sonra kısa özet, bilgi kartı,
- * gitmeden önce, uzun metinler (her biri ayrı dinlenir; okunan cümle vurgulanır), konum ve kaynaklar.
+ * Eser sayfası (yer kartı): yazısız tam kapak fotoğrafı, üstüne binen kartta ad, tür ve yer, kayıtta olan kısa
+ * bakış (yapım, dönem, yürüme, gezme), eşit eylem karoları (yol tarifi, dinle, buradayım), sonra üç sekme:
+ * Hakkında (özet ve eşli okunan metinler), Ziyaret (harita, gitmeden önce, ziyaretçi fotoğrafları), Künye (bilgi
+ * kartı, sergiler, kaynaklar). Uzun sayfa yerine sekme; her eylem bir kez.
  */
 function Detail({ work, t, s }: { work: WorkRow; t: SweetTheme; s: ReturnType<typeof makeStyles> }) {
   /** Genel anlatım (ad, yer, tarihçe; varsa insan kaydı). Bölümler ayrıca eşli okunur. */
@@ -99,12 +101,23 @@ function Detail({ work, t, s }: { work: WorkRow; t: SweetTheme; s: ReturnType<ty
   const communityUrls = usePhotoUrls(communityPaths);
   const [checking, setChecking] = useState(false);
   const [checkinNote, setCheckinNote] = useState<string | null>(null);
+  // Onay bu oturumda verildiyse rozet bir kez canlanır; sayfa sonradan açılınca durağan durur.
+  const [justVisited, setJustVisited] = useState(false);
+  // Onay anında rozet eklenir ve Buradayım karosu kalkar; kısa bir süre kartın parçaları yeni yerine kayar.
+  const [settling, setSettling] = useState(false);
+  useEffect(() => {
+    if (!settling) return;
+    const id = setTimeout(() => setSettling(false), duration.enter * 2);
+    return () => clearTimeout(id);
+  }, [settling]);
   const checkHere = async () => {
     setChecking(true);
     setCheckinNote(null);
     try {
       const result = await checkInHere(work);
       if (result.ok) {
+        setJustVisited(true);
+        setSettling(true);
         record(work.slug, 'checkin', null);
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         AccessibilityInfo.announceForAccessibility(tr('checkin.done'));
@@ -185,66 +198,156 @@ function Detail({ work, t, s }: { work: WorkRow; t: SweetTheme; s: ReturnType<ty
   };
   const citation = inv ? `${name}. ${inv.title}${ref ? `, ${ref}` : ''}. Vakıf Katılım${inv.year ? `, ${inv.year}` : ''}.${inv.url ? ` ${inv.url}` : ''}` : null;
 
-  // Bölüm konumları gövdeye göre ölçülür; "Kısalt", hızlı geçiş ve eşli okuma sayfayı buna göre kaydırır.
+  // Bölüm konumları gövdeye göre ölçülür; "Kısalt" ve eşli okuma sayfayı buna göre kaydırır.
   const scrollRef = useRef<ScrollView>(null);
   const bodyRef = useRef<View>(null);
   const bodyY = useRef(0);
-  // Ölçüm ve başlık düğümleri yalnız olaylarda okunur; render sırasında okunmasın diye ref değil sabit Map.
-  const [sectionY] = useState(() => new Map<SectionKey, number>());
-  const [headers] = useState(() => new Map<SectionKey, Text>());
+  // Ölçümler yalnız olaylarda okunur; render sırasında okunmasın diye ref değil sabit Map.
+  const [sectionY] = useState(() => new Map<ReadKey, number>());
   const scrollToBodyY = (y: number) => scrollRef.current?.scrollTo({ y: Math.max(0, bodyY.current + y - insets.top - 72), animated: !reduced });
-  const backTo = (key: SectionKey) => scrollToBodyY(sectionY.get(key) ?? 0);
-  const goTo = (key: SectionKey) => {
-    follow.current = false;
-    backTo(key);
-    // Ekran okuyucu odağı bölüm başlığına taşınır (kaydırma tek başına odağı değiştirmez).
-    const node = headers.get(key);
-    if (node) setTimeout(() => AccessibilityInfo.sendAccessibilityEvent(node, 'focus'), reduced ? 0 : 350);
-  };
+  // Bölüm konumu sekme gövdesine göre ölçülür; sekmenin kart içindeki yeri ayrıca eklenir.
+  const tabY = useRef(0);
+  const backTo = (key: ReadKey) => scrollToBodyY(tabY.current + (sectionY.get(key) ?? 0));
   const revealParagraph = (node: View) => {
     if (follow.current && bodyRef.current) node.measureLayout(bodyRef.current, (_x, y) => scrollToBodyY(y - space.lg));
   };
-  const place_ = (key: SectionKey) => (y: number) => {
+  const place_ = (key: ReadKey) => (y: number) => {
     sectionY.set(key, y);
   };
-  const headerRef = (key: SectionKey) => (node: Text | null) => {
-    if (node) headers.set(key, node);
-    else headers.delete(key);
-  };
-
-  const sections: { key: SectionKey; label: string }[] = [
-    summary ? { key: 'summary' as const, label: tr('work.summary') } : null,
-    { key: 'facts' as const, label: tr('work.facts') },
-    { key: 'visit' as const, label: tr('work.visit') },
-    work.photos.length > 1 ? { key: 'photos' as const, label: tr('work.photos') } : null,
-    community.data?.length ? { key: 'community' as const, label: tr('work.community') } : null,
-    { key: 'history' as const, label: tr('work.history') },
-    architecture ? { key: 'architecture' as const, label: tr('work.architecture') } : null,
-    { key: 'location' as const, label: tr('design.location') },
-    { key: 'sources' as const, label: tr('work.sources') },
-  ].filter((x) => x !== null);
+  const readLabels: Record<string, string> = { summary: tr('work.summary'), history: tr('work.history'), architecture: tr('work.architecture') };
 
   /** Eşli okunan metin; okunmuyorken uzun metin kısa hâliyle (ReadMore). */
-  const readBody = (key: ReadKey, text: string, short = false) =>
+  const readBody = (key: ReadKey, text: string) =>
     reader.active === key ? (
       <ReadAlongText paragraphs={readable[key]} current={reader.index} t={t} onParagraph={revealParagraph} />
-    ) : short ? (
-      <Text style={[type.body, { color: t.text }]}>{text}</Text>
     ) : (
       <ReadMore text={text} onCollapse={() => backTo(key)} />
     );
+  /** Uzun metnin başlığındaki tek dinle düğmesi (yuvarlak, 48 dp); okunurken durdurur. */
   const listen = (key: ReadKey) =>
     canHear ? (
-      <Button
-        compact
-        variant="outline"
-        style={{ alignSelf: 'flex-start' }}
-        label={reader.active === key ? tr('work.stop') : tr('work.listenSection')}
-        hint={reader.active === key ? undefined : tr('work.listenSectionHint')}
+      <IconBubble
+        label={reader.active === key ? tr('work.stop') : `${tr('work.listenSection')}. ${tr('work.listenSectionHint')}`}
         onPress={() => toggleRead(key)}
         icon={(c) => (reader.active === key ? <StopIcon color={c} /> : <PlayIcon color={c} />)}
       />
-    ) : null;
+    ) : undefined;
+  const directions = hasRouteTo(work.slug);
+  const canCheckIn = !has(work.slug) && hasLocation(work);
+  const communityPhotos = community.data ?? [];
+  const addPhoto = () => router.push({ pathname: '/photos/new', params: { work: work.slug } });
+  const [tab, setTab] = useState<WorkTab>('about');
+
+  // Kısa bakış: kayıtta olan ilk üç bilgi (yapım, dönem, pilot alanda yürüme, gezme süresi). Uydurma yok.
+  const walkMin = route && profile ? Math.max(1, Math.round(route.route.lengthM / walkingSpeed(profile) / 60)) : null;
+  const glance = [
+    work.built_year ? { key: 'built', label: tr('work.fact.built'), value: String(work.built_year) } : null,
+    period ? { key: 'period', label: tr('work.fact.period'), value: period } : null,
+    walkMin ? { key: 'walk', label: tr('work.glance.walk'), value: tr('work.minutes', { n: walkMin }) } : null,
+    work.visit_minutes ? { key: 'visit', label: tr('work.glance.visit'), value: tr('work.minutes', { n: work.visit_minutes }) } : null,
+  ]
+    .filter((x) => x !== null)
+    .slice(0, 3);
+  // Tek bilgi şerit olmaz (yarım kalmış görünür); o bilgi Ziyaret ya da Künye sekmesinde zaten var.
+  const showGlance = glance.length >= 2;
+
+  /** Hakkında: kısa özet öne, uzun metinler başlığındaki tek düğmeyle dinlenir; kitap atfı bir kez. */
+  const about = (
+    <View style={s.tabBody} onLayout={(e) => (tabY.current = e.nativeEvent.layout.y)}>
+      {summary ? (
+        <View style={{ gap: space.sm }}>
+          <Text style={[type.lead, { color: t.text }]}>{summary}</Text>
+          <Text style={[type.meta, { color: t.textMuted }]}>{tr('work.summarySource')}</Text>
+        </View>
+      ) : null}
+      <Section title={tr('work.history')} t={t} onLayout={place_('history')} action={history ? listen('history') : undefined}>
+        {history ? readBody('history', history) : <Text style={[type.body, { color: t.textMuted }]}>{ref ? tr('work.historyRef', { ref }) : tr('work.historyInBook')}</Text>}
+      </Section>
+      {architecture ? (
+        <Section title={tr('work.architecture')} t={t} onLayout={place_('architecture')} action={listen('architecture')}>
+          {readBody('architecture', architecture)}
+        </Section>
+      ) : null}
+      {(history || architecture) && inv ? (
+        // Kitap başlığı cildi zaten içerir ("… — Cilt 1"); burada yalnız sayfa eklenir.
+        <Text style={[type.meta, { color: t.textMuted }]}>{tr('work.textSource', { book: [inv.title, inv.page ? tr('inv.refPage', { page: inv.page }) : null].filter(Boolean).join(', ') })}</Text>
+      ) : null}
+    </View>
+  );
+
+  /** Ziyaret: harita ve adres önce, sonra gitmeden önce bilinenler ve ziyaretçi fotoğrafları. */
+  const visit = (
+    <View style={s.tabBody}>
+      <View style={{ gap: space.md }}>
+        {hasLocation(work) ? (
+          <SeziMap
+            style={[s.map, outline(t)]}
+            interactive={false}
+            initial={[[work.lng, work.lat]]}
+            initialZoom={work.location_precision === 'exact' ? 16.5 : 15}
+            accessibilityLabel={address ?? loc(work.name, 'tr')}>
+            <WorkPin location={[work.lng, work.lat]} approximate={work.location_precision !== 'exact'} typeSlug={work.type_slug} />
+          </SeziMap>
+        ) : null}
+        {address ? <Text style={[type.body, { color: t.text }]}>{address}</Text> : null}
+        {!hasLocation(work) ? <Text style={[type.body, { color: t.textMuted }]}>{tr('inv.unlocated')}</Text> : null}
+        {hasLocation(work) && work.location_precision !== 'exact' ? <Text style={[type.meta, { color: t.textMuted }]}>{tr('work.mapApprox')}</Text> : null}
+      </View>
+      <Section title={tr('work.visit')} t={t}>
+        <WorkVisit work={work} route={route} profile={profile} t={t} />
+      </Section>
+      {communityPhotos.length || user ? (
+        <Section title={tr('work.community')} t={t} action={user ? <Button compact variant="ghost" label={tr('photos.add')} onPress={addPhoto} /> : undefined}>
+          {communityPhotos.length ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm, paddingHorizontal: space.xl }} style={{ marginHorizontal: -space.xl }}>
+              {communityPhotos.map((photo) => (
+                <View key={photo.id} style={{ width: 132, gap: space.xs }}>
+                  <Image source={{ uri: communityUrls.data?.[photo.thumb_path] }} style={[s.thumb, outline(t)]} contentFit="cover" accessible accessibilityLabel={photo.alt_text} />
+                  <Text style={[type.meta, { color: t.textMuted }]}>{tr('photos.credit', { name: photo.credit_name ?? '' })}</Text>
+                </View>
+              ))}
+            </ScrollView>
+          ) : (
+            <Text style={[type.body, { color: t.textMuted }]}>{tr('work.communityEmpty')}</Text>
+          )}
+        </Section>
+      ) : null}
+    </View>
+  );
+
+  /** Künye: bilgi kartı (envanter kitabı burada açılır), sergiler, diğer kaynaklar ve atıf. */
+  const record_ = (
+    <View style={s.tabBody}>
+      <WorkFacts work={work} t={t} />
+      {work.exhibitions.length ? (
+        <Section title={tr('work.exhibitions')} t={t}>
+          <Card padded={false}>
+            {work.exhibitions.map((e, i) => (
+              <ListRow key={e.slug} first={i === 0} title={loc(e.title, lang)} subtitle={loc(e.venue, lang)} onPress={() => router.push('/exhibitions')} />
+            ))}
+          </Card>
+        </Section>
+      ) : null}
+      {otherSources.length || citation ? (
+        <Section title={tr('work.sources')} t={t}>
+          <Card padded={false}>
+            {otherSources.map((src, i) => (
+              <ListRow
+                key={src.id}
+                first={i === 0}
+                title={src.title}
+                subtitle={[src.publisher, src.year].filter(Boolean).join(' · ')}
+                hint={src.url ? tr('work.sourceHint') : undefined}
+                onPress={src.url ? () => void Linking.openURL(src.url!) : undefined}
+                trailing={src.url ? <ExternalIcon color={t.primaryText} /> : null}
+              />
+            ))}
+            {citation ? <ListRow first={otherSources.length === 0} title={tr('inv.cite')} subtitle={tr('work.citeHint')} onPress={() => void Share.share({ message: citation })} /> : null}
+          </Card>
+        </Section>
+      ) : null}
+    </View>
+  );
 
   return (
     <View style={s.screen}>
@@ -257,234 +360,115 @@ function Detail({ work, t, s }: { work: WorkRow; t: SweetTheme; s: ReturnType<ty
           follow.current = false;
         }}
         onScroll={header.onScroll}>
-        {/* Kapak: fotoğraf varsa tam genişlik, ad fotoğrafın üstünde; yoksa tür simgeli yumuşak alan. */}
-        {cover ? (
-          <View style={{ position: 'relative' }} onLayout={(e) => header.coverHeight.set(e.nativeEvent.layout.height)}>
-            <Pressable onPress={() => setViewer(0)} accessibilityRole="imagebutton" accessibilityLabel={`${loc(cover.alt, lang)}. ${tr('work.openPhotos')}`}>
+        {/* Kapak: yazısız tam fotoğraf (ad aşağıdaki kartta), atıf ve fotoğraf sayısı üstünde; dokununca tüm fotoğraflar
+            açılır. Fotoğraf yoksa tür tonunda glif. Üst çubuk, kartın üst kenarı çubuğun altına değdiği an belirir. */}
+        <View onLayout={(e) => header.coverHeight.set(Math.max(1, e.nativeEvent.layout.height - radius.xl - insets.top - 64))}>
+          {cover ? (
+            <SoftPressable
+              feedback="opacity"
+              onPress={() => setViewer(0)}
+              accessibilityRole="imagebutton"
+              accessibilityLabel={[loc(cover.alt, lang), work.photos.length > 1 ? tr('work.photoCount', { n: work.photos.length }) : null, tr('work.openPhotos')].filter(Boolean).join('. ')}>
               <Image source={{ uri: photoUrl(cover, 'full') }} placeholder={{ uri: photoUrl(cover, 'thumb') }} placeholderContentFit="cover" style={[s.heroImg, { height: heroHeight }]} contentFit="cover" transition={150} accessible={false} />
-              <PhotoScrim height="60%" />
-              <View style={[s.heroText, t.outlined && { backgroundColor: t.background, padding: space.md }]} pointerEvents="none">
-                <Text style={[type.meta, s.onPhotoDim]}>{kind}</Text>
-                <Text style={[type.editorial, s.onPhoto]} accessibilityRole="header">{name}</Text>
-                <Text style={[type.meta, s.onPhotoDim]}>{place}</Text>
-              </View>
-            </Pressable>
-          </View>
-        ) : (
-          <View onLayout={(e) => header.coverHeight.set(e.nativeEvent.layout.height)} style={[s.plainHero, { paddingTop: insets.top + 64, backgroundColor: tone.fill }, t.outlined && { borderBottomWidth: 2, borderBottomColor: t.border }]}>
-            <WorkGlyphInline slug={work.type_slug} color={tone.ink} size={96} />
-            <Text style={[type.meta, { color: tone.ink }]}>{kind}</Text>
-            <Text style={[type.editorial, { color: tone.ink }]} accessibilityRole="header">{name}</Text>
-            <Text style={[type.meta, { color: tone.ink }]}>{place}</Text>
-          </View>
-        )}
-        {coverCredit ? (
-          <Text style={[type.meta, s.coverCredit, { color: t.text }]}>{coverCredit}</Text>
-        ) : null}
-        <View ref={bodyRef} style={s.body} onLayout={(e) => (bodyY.current = e.nativeEvent.layout.y)}>
-          {work.unesco || has(work.slug) ? (
-            <FadeInItem index={0} style={s.badges}>
-              {work.unesco ? <Badge label={tr('work.unesco')} tone="accent" /> : null}
-              {has(work.slug) ? <Badge label={tr('work.visited')} tone="primary" /> : null}
-            </FadeInItem>
-          ) : null}
-          {checkinNote ? <Note text={checkinNote} /> : null}
-          {user && !community.data?.length ? (
-            <Button variant="outline" label={tr('photos.add')} onPress={() => router.push({ pathname: '/photos/new', params: { work: work.slug } })} />
-          ) : null}
-
-          <FadeInItem index={1} style={s.actionGroup}>
-            {hasRouteTo(work.slug) ? (
-              <Button label={tr('work.directions')} icon={(c) => <TurnIcon turn="slight_right" color={c} />} onPress={() => router.push({ pathname: '/navigate', params: { dest: work.slug } })} />
-            ) : canHear ? (
-              <Button label={speaking ? tr('work.stop') : tr('work.listen')} onPress={toggleSpeech} icon={(c) => speaking ? <StopIcon color={c} /> : <PlayIcon color={c} />} />
-            ) : !has(work.slug) ? (
-              <Button variant="primary" label={tr('checkin.here')} disabled={checking} icon={(c) => <PinIcon color={c} />} onPress={() => void checkHere()} />
-            ) : null}
-            <View style={s.secondaryActions}>
-              {hasRouteTo(work.slug) && canHear ? (
-                <Button style={{ flex: 1 }} variant="secondary" label={speaking ? tr('work.stop') : tr('work.listen')} onPress={toggleSpeech} icon={(c) => speaking ? <StopIcon color={c} /> : <PlayIcon color={c} />} />
+              {coverCredit ? (
+                <View style={[s.photoCredit, { backgroundColor: t.surface }, outline(t)]} pointerEvents="none">
+                  <Text style={[type.bubble, { color: t.text }]} numberOfLines={1}>{coverCredit}</Text>
+                </View>
               ) : null}
-              {!has(work.slug) && (hasRouteTo(work.slug) || canHear) ? (
-                <Button style={{ flex: 1 }} variant="secondary" label={tr('checkin.here')} disabled={checking} icon={(c) => <PinIcon color={c} />} onPress={() => void checkHere()} />
+              {work.photos.length > 1 ? (
+                <View style={[s.photoCount, { backgroundColor: t.surface }, outline(t)]} pointerEvents="none">
+                  <CameraIcon color={t.text} size={16} />
+                  <Text style={[type.bubble, { color: t.text }]}>{work.photos.length}</Text>
+                </View>
               ) : null}
+            </SoftPressable>
+          ) : (
+            <View style={[s.plainHero, { height: Math.min(heroHeight, 360), paddingTop: insets.top, backgroundColor: tone.fill }]} accessible={false}>
+              <WorkGlyphInline slug={work.type_slug} color={tone.ink} size={112} />
             </View>
+          )}
+        </View>
+
+        {/* Yer kartı: kapağın üstüne biner; ad, tür ve yer, kısa bakış, eylemler, sonra sekmeler. */}
+        <View ref={bodyRef} style={[s.sheet, { backgroundColor: t.background }, t.outlined && { borderTopWidth: 2, borderColor: t.border }]} onLayout={(e) => (bodyY.current = e.nativeEvent.layout.y)}>
+          <FadeInItem index={0} style={{ gap: space.sm }}>
+            <Text style={[type.editorial, { color: t.text }]} accessibilityRole="header">{name}</Text>
+            <Text style={[type.meta, { color: t.textMuted }]}>{[kind, place].filter(Boolean).join(' · ')}</Text>
+            {work.unesco || has(work.slug) ? (
+              <View style={s.badges}>
+                {work.unesco ? <Badge label={tr('work.unesco')} tone="accent" /> : null}
+                {has(work.slug) ? (
+                  <PopIn play={justVisited}>
+                    <Badge label={tr('work.visited')} tone="primary" />
+                  </PopIn>
+                ) : null}
+              </View>
+            ) : null}
           </FadeInItem>
 
-          {/* Bölümlere hızlı geçiş: dokununca bölüme kayar, ekran okuyucu odağı bölüm başlığına geçer. */}
-          <FadeInItem index={2} style={s.sectionJumps}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} accessibilityLabel={tr('work.sections')} contentContainerStyle={{ gap: space.sm, paddingHorizontal: space.xl }} style={{ marginHorizontal: -space.xl }}>
-              {sections.map((x) => (
-                <View key={x.key} accessibilityHint={tr('work.sectionGo', { section: x.label })}>
-                  <Chip label={x.label} selected={false} onPress={() => goTo(x.key)} />
+          {showGlance ? (
+            <FadeInItem index={1} layout={settling} style={s.glance}>
+              {glance.map((g) => (
+                <View key={g.key} style={{ flex: 1, gap: 2 }} accessible accessibilityLabel={`${g.label}: ${g.value}`}>
+                  <Text style={[type.meta, { color: t.textMuted }]}>{g.label}</Text>
+                  <Text style={[type.itemTitle, { color: t.text }]} numberOfLines={2}>{g.value}</Text>
                 </View>
               ))}
-            </ScrollView>
-          </FadeInItem>
-
-          {summary ? (
-            <FadeInItem index={3}>
-              <Section title={tr('work.summary')} t={t} onLayout={place_('summary')} headerRef={headerRef('summary')}>
-                <Card style={{ gap: space.md }}>
-                  {readBody('summary', summary, true)}
-                  <Text style={[type.meta, { color: t.textMuted }]}>{tr('work.summarySource')}</Text>
-                </Card>
-                {listen('summary')}
-              </Section>
             </FadeInItem>
           ) : null}
 
-          <FadeInItem index={4}>
-            <Section title={tr('work.facts')} t={t} onLayout={place_('facts')} headerRef={headerRef('facts')}>
-              <WorkFacts work={work} t={t} />
-            </Section>
+          {/* Eylemler eşit karolar: yol tarifi (pilot alanda), dinle (işiten profilde), buradayım (ziyaret edilmemişse). */}
+          {directions || canHear || canCheckIn ? (
+            <FadeInItem index={2} layout={settling} style={s.actions}>
+              {directions ? (
+                <ActionTile t={t} primary label={tr('work.action.directions')} icon={(c) => <TurnIcon turn="slight_right" color={c} />} onPress={() => router.push({ pathname: '/navigate', params: { dest: work.slug } })} />
+              ) : null}
+              {canHear ? (
+                <ActionTile t={t} primary={!directions} label={speaking ? tr('work.stop') : tr('work.listen')} icon={(c) => (speaking ? <StopIcon color={c} /> : <PlayIcon color={c} />)} onPress={toggleSpeech} />
+              ) : null}
+              {canCheckIn ? (
+                <ActionTile t={t} busy={checking} label={checking ? tr('checkin.checking') : tr('checkin.here')} hint={tr('checkin.hint')} icon={(c) => <PinIcon color={c} />} onPress={checking ? undefined : () => void checkHere()} />
+              ) : null}
+            </FadeInItem>
+          ) : null}
+          {checkinNote ? (
+            <FadeInItem index={0}>
+              <Note text={checkinNote} />
+            </FadeInItem>
+          ) : null}
+
+          {/* Sekmeler ve içerik açılışta başlık ve eylemlerden sonra gelir; kap sabit kalır, sekme değişince giriş tekrar oynamaz. */}
+          <FadeInItem index={3} layout={settling}>
+            <Segmented
+              label={tr('work.tabs')}
+              value={tab}
+              onChange={setTab}
+              options={[
+                { value: 'about', label: tr('work.tab.about') },
+                { value: 'visit', label: tr('work.tab.visit') },
+                { value: 'record', label: tr('work.tab.record') },
+              ]}
+            />
           </FadeInItem>
-
-          <FadeInItem index={5}>
-            <Section title={tr('work.visit')} t={t} onLayout={place_('visit')} headerRef={headerRef('visit')}>
-              <WorkVisit work={work} route={route} profile={profile} t={t} />
-            </Section>
+          <FadeInItem index={4} layout={settling}>
+            {tab === 'about' ? about : tab === 'visit' ? visit : record_}
           </FadeInItem>
-
-          {work.photos.length > 1 ? (
-            <Section title={tr('work.photos')} t={t} onLayout={place_('photos')} headerRef={headerRef('photos')}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm, paddingHorizontal: space.xl }} style={{ marginHorizontal: -space.xl }}>
-                {work.photos.map((p, i) => (
-                  <SoftPressable key={p.id} onPress={() => setViewer(i)} accessibilityRole="imagebutton" accessibilityLabel={loc(p.alt, lang)}>
-                    <Image source={{ uri: photoUrl(p, 'thumb') }} style={[s.thumb, outline(t)]} contentFit="cover" accessible={false} />
-                    <PhotoSourceThumbTag photo={p} />
-                  </SoftPressable>
-                ))}
-              </ScrollView>
-            </Section>
-          ) : null}
-
-          {community.data?.length ? (
-            <Section
-              title={tr('work.community')}
-              t={t}
-              onLayout={place_('community')}
-              headerRef={headerRef('community')}
-              action={
-                user ? (
-                  <Button
-                    variant="outline"
-                    label={tr('photos.add')}
-                    onPress={() => router.push({ pathname: '/photos/new', params: { work: work.slug } })}
-                  />
-                ) : undefined
-              }>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: space.sm, paddingHorizontal: space.xl }}
-                style={{ marginHorizontal: -space.xl }}>
-                {community.data.map((photo) => (
-                  <View key={photo.id} style={{ width: 132, gap: space.xs }}>
-                    <Image
-                      source={{ uri: communityUrls.data?.[photo.thumb_path] }}
-                      style={[s.thumb, outline(t)]}
-                      contentFit="cover"
-                      accessible
-                      accessibilityLabel={photo.alt_text}
-                    />
-                    <Text style={[type.meta, { color: t.textMuted }]}>
-                      {tr('photos.credit', { name: photo.credit_name ?? '' })}
-                    </Text>
-                  </View>
-                ))}
-              </ScrollView>
-            </Section>
-          ) : null}
-
-          <Section title={tr('work.history')} t={t} onLayout={place_('history')} headerRef={headerRef('history')}>
-            {history ? (
-              <>
-                {listen('history')}
-                {readBody('history', history)}
-              </>
-            ) : (
-              <Text style={[type.body, { color: t.textMuted }]}>{ref ? tr('work.historyRef', { ref }) : tr('work.historyInBook')}</Text>
-            )}
-          </Section>
-
-          {architecture ? (
-            <Section title={tr('work.architecture')} t={t} onLayout={place_('architecture')} headerRef={headerRef('architecture')}>
-              {listen('architecture')}
-              {readBody('architecture', architecture)}
-            </Section>
-          ) : null}
-
-          {/* Kitaptan alınan metnin atfı, metin bölümlerinin ardından bir kez gösterilir. */}
-          {(history || architecture) && inv ? (
-            // Kitap başlığı cildi zaten içerir ("… — Cilt 1"); burada yalnız sayfa eklenir.
-            <Text style={[type.meta, { color: t.textMuted }]}>{tr('work.textSource', { book: [inv.title, inv.page ? tr('inv.refPage', { page: inv.page }) : null].filter(Boolean).join(', ') })}</Text>
-          ) : null}
- 
-
-          <Section title={tr('design.location')} t={t} onLayout={place_('location')} headerRef={headerRef('location')}>
-            {address ? <Text style={[type.body, { color: t.text }]}>{address}</Text> : null}
-            {hasLocation(work) ? (
-              <SeziMap
-                style={[s.map, outline(t)]}
-                interactive={false}
-                initial={[[work.lng, work.lat]]}
-                initialZoom={work.location_precision === 'exact' ? 16.5 : 15}
-                accessibilityLabel={address ?? loc(work.name, 'tr')}>
-                <WorkPin location={[work.lng, work.lat]} approximate={work.location_precision !== 'exact'} typeSlug={work.type_slug} />
-              </SeziMap>
-            ) : (
-              <Text style={[type.body, { color: t.textMuted }]}>{tr('inv.unlocated')}</Text>
-            )}
-            {hasLocation(work) && work.location_precision !== 'exact' ? <Text style={[type.meta, { color: t.textMuted }]}>{tr('work.mapApprox')}</Text> : null}
-          </Section>
-
-          {work.exhibitions.length ? (
-            <Section title={tr('work.exhibitions')} t={t}>
-              <Card padded={false}>
-                {work.exhibitions.map((e, i) => (
-                  <ListRow key={e.slug} first={i === 0} title={loc(e.title, lang)} subtitle={loc(e.venue, lang)} onPress={() => router.push('/exhibitions')} />
-                ))}
-              </Card>
-            </Section>
-          ) : null}
-
-          <Section title={tr('work.sources')} t={t} onLayout={place_('sources')} headerRef={headerRef('sources')}>
-            {inv ? (
-              <View style={{ gap: space.xs }}>
-                <Text style={[type.itemTitle, { color: t.text }]}>{inv.title}</Text>
-                <Text style={[type.meta, { color: t.textMuted }]}>{[ref, 'Vakıf Katılım', inv.year ? String(inv.year) : null].filter(Boolean).join(' · ')}</Text>
-                <View style={s.links}>
-                  {inv.url ? <Button compact variant="ghost" label={tr('inv.openBook')} hint={tr('inv.openBookHint')} icon={(c) => <ExternalIcon color={c} />} onPress={() => Linking.openURL(inv.url!)} /> : null}
-                  {citation ? <Button compact variant="ghost" label={tr('inv.cite')} onPress={() => Share.share({ message: citation })} /> : null}
-                </View>
-              </View>
-            ) : null}
-            {otherSources.map((src) => (
-              <ListRow
-                key={src.id}
-                first
-                title={src.title}
-                subtitle={[src.publisher, src.year].filter(Boolean).join(' · ')}
-                hint={src.url ? tr('work.sourceHint') : undefined}
-                onPress={src.url ? () => Linking.openURL(src.url!) : undefined}
-                trailing={src.url ? <ExternalIcon color={t.primaryText} /> : null}
-              />
-            ))}
-            {!inv && otherSources.length === 0 ? <Text style={[type.body, { color: t.textMuted }]}>{tr('work.noSources')}</Text> : null}
-          </Section>
         </View>
       </Animated.ScrollView>
       <FloatingHeader title={name} scrollY={header.scrollY} coverHeight={header.coverHeight} lightOnCover={!!cover} />
 
-      {/* Eşli okuma sürerken durdurma her zaman erişilebilir (okunan metin uzun, liste düğmesi ekrandan çıkar). */}
+      {/* Eşli okuma sürerken durdurma her zaman erişilebilir. Çubuk alttan gelir, aynı kenardan gider; reduce motion: yalnız saydamlık. */}
       {reader.active ? (
-        <View style={[s.readingBar, { bottom: insets.bottom + space.lg, backgroundColor: t.surface }, sweetShadow(t)]} accessibilityLiveRegion="polite">
+        <Animated.View
+          entering={reduced ? FadeIn.duration(duration.fade) : FadeInDown.duration(duration.enter).easing(ease.out).withInitialValues({ opacity: 0, transform: [{ translateY: 96 }] })}
+          exiting={reduced ? FadeOut.duration(duration.fade) : FadeOutDown.duration(duration.sheetOut).easing(ease.out)}
+          style={[s.readingBar, { bottom: insets.bottom + space.lg, backgroundColor: t.surface }, sweetShadow(t)]}
+          accessibilityLiveRegion="polite">
           <Text style={[type.itemTitle, { color: t.text, flex: 1 }]} numberOfLines={2}>
-            {tr('work.readingSection', { section: sections.find((x) => x.key === reader.active)?.label ?? '' })}
+            {tr('work.readingSection', { section: readLabels[reader.active] ?? '' })}
           </Text>
           <Button compact label={tr('work.stop')} onPress={reader.stop} icon={(c) => <StopIcon color={c} />} />
-        </View>
+        </Animated.View>
       ) : null}
 
       {work.photos.length ? <PhotoViewer key={viewer ?? -1} photos={work.photos} start={viewer} onClose={() => setViewer(null)} /> : null}
@@ -492,49 +476,107 @@ function Detail({ work, t, s }: { work: WorkRow; t: SweetTheme; s: ReturnType<ty
   );
 }
 
+/** Bölüm: başlık ve varsa sağında tek eylem (dinle ya da fotoğraf ekle). */
 function Section({
   title,
   t,
   children,
   onLayout,
-  headerRef,
   action,
 }: {
   title: string;
   t: SweetTheme;
   children: ReactNode;
   onLayout?: (y: number) => void;
-  headerRef?: (node: Text | null) => void;
   action?: ReactNode;
 }) {
   return (
     <View style={{ gap: space.md }} onLayout={onLayout ? (e) => onLayout(e.nativeEvent.layout.y) : undefined}>
-      <Text ref={headerRef} style={[type.heading, { color: t.text }]} accessibilityRole="header">
-        {title}
-      </Text>
-      {action}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 48 }}>
+        <Text style={[type.heading, { color: t.text, flex: 1 }]} accessibilityRole="header">
+          {title}
+        </Text>
+        {action}
+      </View>
       {children}
     </View>
   );
 }
+
+/**
+ * Eylem karosu: simge üstte, kısa etiket altta; karolar satırı eşit böler (en az 76 dp yükseklik). Ana eylem
+ * firuze dolgu, diğerleri gri; fark dolgu zıtlığıyla da okunur, yalnız renkle değil. Karo kalkınca soluklaşır, kalanlar
+ * genişleyerek yerini doldurur; `busy` iken simge yavaşça nefes alır (iskeletle aynı tarif). Reduce motion: anında.
+ */
+function ActionTile({
+  t,
+  label,
+  hint,
+  icon,
+  onPress,
+  primary = false,
+  busy = false,
+}: {
+  t: SweetTheme;
+  label: string;
+  hint?: string;
+  icon: (color: string) => ReactNode;
+  onPress?: () => void;
+  primary?: boolean;
+  busy?: boolean;
+}) {
+  const reduced = useReducedMotion();
+  const fg = primary ? t.primary.ink : t.text;
+  const iconOpacity = useSharedValue(1);
+  useEffect(() => {
+    iconOpacity.set(busy && !reduced ? withRepeat(withTiming(0.45, { duration: 900, easing: ease.inOut }), -1, true) : withTiming(1, { duration: duration.fade, easing: ease.out }));
+  }, [busy, reduced, iconOpacity]);
+  const iconStyle = useAnimatedStyle(() => ({ opacity: iconOpacity.get() }));
+  return (
+    <Animated.View
+      style={tileStyle.slot}
+      layout={reduced ? undefined : LinearTransition.duration(duration.enter).easing(ease.out)}
+      exiting={reduced ? undefined : FadeOut.duration(duration.fade)}>
+      <SoftPressable
+        feedback="scaleLarge"
+        onPress={onPress}
+        disabled={!onPress}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityHint={hint}
+        accessibilityState={{ disabled: !onPress, busy }}
+        style={[tileStyle.tile, { backgroundColor: primary ? t.primary.fill : t.soft }, outline(t)]}>
+        <Animated.View style={iconStyle}>{icon(fg)}</Animated.View>
+        <Text style={[type.button, { fontSize: 15, color: fg, textAlign: 'center' }]} numberOfLines={2}>
+          {label}
+        </Text>
+      </SoftPressable>
+    </Animated.View>
+  );
+}
+
+const tileStyle = StyleSheet.create({
+  slot: { flex: 1 },
+  tile: { flex: 1, minHeight: 76, alignItems: 'center', justifyContent: 'center', gap: space.xs, paddingHorizontal: space.sm, paddingVertical: space.md, borderRadius: radius.lg, borderCurve: 'continuous' },
+});
 
 const makeStyles = (t: SweetTheme) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: t.background },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl, backgroundColor: t.background },
     heroImg: { width: '100%' },
-    heroText: { position: 'absolute', left: space.xl, right: space.xl, bottom: space.xl, gap: 2 },
-    onPhoto: { color: t.outlined ? t.text : photoOverlayInk(t) },
-    onPhotoDim: { color: t.outlined ? t.text : photoOverlayInk(t) },
-    plainHero: { paddingHorizontal: space.xl, paddingBottom: space.xxl, gap: space.sm, minHeight: 320, justifyContent: 'center' },
-    coverCredit: { paddingHorizontal: space.xl, paddingTop: space.sm },
-    body: { paddingHorizontal: space.xl, paddingTop: space.lg, gap: space.xxl },
-    badges: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-    actionGroup: { gap: space.sm },
-    secondaryActions: { flexDirection: 'row', gap: space.sm },
-    sectionJumps: { marginTop: space.xs },
+    // Kartın bindiği şeridin üstünde kalır.
+    photoCount: { position: 'absolute', right: space.xl, bottom: radius.xl + space.md, flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingHorizontal: space.md, minHeight: 32, borderRadius: radius.pill, borderCurve: 'continuous' },
+    // Fotoğraf atfı fotoğrafın üstünde, metni kadar geniş; sayı rozetine yer bırakır.
+    photoCredit: { position: 'absolute', left: space.xl, maxWidth: '68%', bottom: radius.xl + space.md, justifyContent: 'center', paddingHorizontal: space.md, minHeight: 32, borderRadius: radius.pill, borderCurve: 'continuous' },
+    plainHero: { alignItems: 'center', justifyContent: 'center' },
+    // Yer kartı: kapağın son 28 dp'sine biner, üst köşeleri yuvarlak.
+    sheet: { marginTop: -radius.xl, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, borderCurve: 'continuous', paddingHorizontal: space.xl, paddingTop: space.xl, gap: space.xl },
+    badges: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.xs },
+    glance: { flexDirection: 'row', gap: space.lg },
+    actions: { flexDirection: 'row', gap: space.sm },
+    tabBody: { gap: space.xxl, paddingTop: space.sm },
     readingBar: { position: 'absolute', left: space.lg, right: space.lg, flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.sm, paddingLeft: space.lg, paddingRight: space.sm, borderRadius: radius.xl, borderCurve: 'continuous' },
     thumb: { width: 132, height: 132, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: t.soft },
     map: { height: 180, borderRadius: radius.lg, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: t.soft },
-    links: { flexDirection: 'row', flexWrap: 'wrap', marginLeft: -space.lg },
   });
