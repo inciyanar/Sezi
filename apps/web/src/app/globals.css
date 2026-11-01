@@ -217,3 +217,8 @@ html[data-text="xl"] {
     transform: translateY(0);
   }
 }
+
+/* Kenar dalları (SideVines) içerik sütununun (70rem) dışındaki boşluğa sığar, içeriğin altına girmez. */
+.side-vines {
+  --vine-w: max(0px, calc((100vw - 70rem) / 2 - 0.5rem));
+}

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { Explore } from "@/components/explore/explore";
 import { PageContainer } from "@/components/page";
+import { SideVines } from "@/components/side-vines";
 import { getCities, getWorkIndex } from "@/lib/data";
 import { toExploreItem } from "@/lib/explore";
 import { isLang, t } from "@/lib/i18n";
@@ -22,6 +23,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
 
   return (
     <PageContainer className="grid gap-6 pt-6 sm:pt-10">
+      <SideVines />
       <Explore title={t(lang, "home.title")} items={items} cityOrder={cityOrder} map={buildTurkeyMap(items, cityOrder)} />
     </PageContainer>
   );
