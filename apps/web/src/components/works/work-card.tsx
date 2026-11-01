@@ -48,7 +48,8 @@ export function WorkCard({ work, lang, priority = false }: { work: ExploreItem; 
   const alt = cover ? loc(cover.alt, lang) || name : "";
 
   return (
-    <div className="group relative isolate block aspect-[4/5] overflow-hidden rounded-xl bg-muted contrast:outline-2 contrast:outline-border">
+    // Basınca kart çok hafif küçülür (0.98, 160 ms); fotoğraf kaynağı düğmesine basmak kartı oynatmaz.
+    <div className="group relative isolate block aspect-[4/5] overflow-hidden rounded-xl bg-muted transition-[scale] duration-[160ms] ease-[cubic-bezier(0.23,1,0.32,1)] has-[>a:active]:scale-[0.98] contrast:outline-2 contrast:outline-border">
       <Link
         href={href(lang, `/eser/${work.slug}`)}
         aria-label={name}

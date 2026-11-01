@@ -52,8 +52,15 @@ export function ReadMore({
   return (
     <div className="grid gap-3">
       <div id={contentId} className="grid gap-3 text-lg leading-[1.6] text-foreground">
+        {/* Açılınca eklenen paragraflar 8 px aşağıdan soluklaşarak gelir (200 ms, @starting-style); ilk paragraf
+            yerinde kalır. Kısaltırken hareket yok: sayfa zaten başlığa döner. */}
         {shown.map((paragraph, index) => (
-          <p key={index}>{paragraph}</p>
+          <p
+            key={index}
+            className={index > 0 ? "transition-[opacity,translate] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] starting:translate-y-2 starting:opacity-0" : undefined}
+          >
+            {paragraph}
+          </p>
         ))}
       </div>
       {long ? (

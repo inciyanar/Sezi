@@ -1,7 +1,7 @@
 "use client";
 
 import { loc, type WorkPhoto } from "@sezi/shared";
-import { ChevronLeftIcon, ChevronRightIcon, ExpandIcon, LandmarkIcon } from "lucide-react";
+import { CameraIcon, ChevronLeftIcon, ChevronRightIcon, LandmarkIcon } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 
@@ -21,7 +21,8 @@ import { toneClass } from "@/lib/tone";
 import { cn } from "@/lib/utils";
 
 /**
- * Eser fotoğraf galerisi: büyütülebilir kapak fotoğrafı, görünür atıf ve küçük fotoğraf seçici.
+ * Eser kapağı (yer kartı düzeni): tam genişlik kapak fotoğrafı; atıf ve fotoğraf sayısı fotoğrafın üstünde, aşağıdaki
+ * kartın bindiği şeridin üstünde. Fotoğrafa dokununca hepsi büyük pencerede gezilir. Fotoğraf yoksa tür tonunda glif.
  */
 export function PhotoGallery({
   photos,
@@ -34,20 +35,19 @@ export function PhotoGallery({
 }) {
   const { t, lang } = useT();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
 
   if (photos.length === 0) {
     return (
       <div
         aria-hidden
-        className={cn("grid h-52 w-full place-items-center overflow-hidden rounded-lg sm:h-60", toneClass(typeSlug))}
+        className={cn("grid h-60 w-full place-items-center overflow-hidden rounded-2xl pb-10 sm:h-72", toneClass(typeSlug))}
       >
-        <LandmarkIcon className="size-20" strokeWidth={1.5} />
+        <LandmarkIcon className="size-24" strokeWidth={1.5} />
       </div>
     );
   }
 
-  const currentPhoto = photos[selectedPhotoIndex] ?? photos[0];
+  const currentPhoto = photos[0];
   if (!currentPhoto) return null;
   const currentAlt = loc(currentPhoto.alt, lang) || workName;
 
@@ -60,84 +60,61 @@ export function PhotoGallery({
   const activeCreditLine = activePhoto ? photoCreditLine(activePhoto, t) : null;
 
   return (
-    <div role="group" aria-label={t("works.detail.photosTitle")} className="grid gap-2">
-      <figure className="grid gap-2">
+    <div role="group" aria-label={t("works.detail.photosTitle")}>
+      <figure className="relative">
         <Lens src={photoUrl(currentPhoto, "full")}>
-          <div className="group relative aspect-[4/3] max-h-[560px] w-full overflow-hidden rounded-lg border bg-muted md:aspect-[16/9]">
+          <div className="relative aspect-[4/3] max-h-[600px] w-full overflow-hidden rounded-2xl bg-muted md:aspect-[16/9]">
             <button
               type="button"
-              onClick={() => setActiveIndex(selectedPhotoIndex)}
-              aria-label={t("works.detail.openPhoto", { alt: currentAlt })}
-              className="absolute inset-0 size-full text-left outline-none focus-visible:ring-3 focus-visible:ring-ring"
+              onClick={() => setActiveIndex(0)}
+              aria-label={[
+                t("works.detail.openPhoto", { alt: currentAlt }),
+                photos.length > 1 ? t("works.detail.photoCount", { n: photos.length }) : null,
+              ]
+                .filter(Boolean)
+                .join(". ")}
+              className="absolute inset-0 size-full text-left outline-none focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-inset"
             >
               <Image
                 src={photoUrl(currentPhoto, "full")}
                 alt={currentAlt}
                 fill
-                priority={selectedPhotoIndex === 0}
-                fetchPriority={selectedPhotoIndex === 0 ? "high" : "auto"}
-                quality={selectedPhotoIndex === 0 ? 50 : 75}
+                priority
+                fetchPriority="high"
+                quality={50}
                 sizes="(min-width: 1280px) 1152px, calc(100vw - 2rem)"
                 className="object-cover"
               />
-              <span
-                aria-hidden
-                className="absolute bottom-3 right-3 inline-flex size-12 items-center justify-center rounded-lg border bg-card text-foreground"
-              >
-                <ExpandIcon className="size-5" />
-              </span>
             </button>
           </div>
         </Lens>
-        {currentCreditLine ? (
-          <figcaption className="text-sm leading-relaxed text-muted-foreground">
-            {t("works.detail.photoCreditLine", { credit: currentCreditLine })}
-            {currentPhoto.source_url ? (
-              <>
-                {" · "}
+        {/* Atıf ve sayı, kartın bindiği 40 px'lik şeridin üstünde durur. */}
+        <div className="pointer-events-none absolute inset-x-3 bottom-[3.25rem] flex items-end justify-between gap-3 sm:inset-x-5 sm:bottom-[3.75rem]">
+          {currentCreditLine ? (
+            <figcaption className="pointer-events-auto inline-flex min-h-8 min-w-0 max-w-[80%] items-center gap-x-2 rounded-full bg-card px-3 py-1 text-sm text-foreground contrast:outline-2 contrast:outline-border">
+              <span className="min-w-0 truncate">{t("works.detail.photoCreditLine", { credit: currentCreditLine })}</span>
+              {currentPhoto.source_url ? (
                 <a
                   href={currentPhoto.source_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex min-h-12 items-center font-medium text-link underline"
+                  className="relative shrink-0 font-semibold text-link underline before:absolute before:-inset-3 before:content-['']"
                 >
                   {t("works.detail.openSourceUrl")}
                 </a>
-              </>
-            ) : null}
-          </figcaption>
-        ) : null}
-      </figure>
-
-      {/* Birden çok fotoğraf varsa küçük küçük seçici şerit */}
-      {photos.length > 1 ? (
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          {photos.map((p, idx) => {
-            const isSelected = idx === selectedPhotoIndex;
-            return (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => setSelectedPhotoIndex(idx)}
-                aria-current={isSelected ? "true" : undefined}
-                aria-label={loc(p.alt, lang) || `${workName} — ${idx + 1}`}
-                className={`relative h-14 w-20 shrink-0 overflow-hidden rounded-lg border ${
-                  isSelected ? "ring-2 ring-primary ring-offset-2" : "opacity-75 hover:opacity-100"
-                }`}
-              >
-                <Image
-                  src={photoUrl(p, "thumb")}
-                  alt=""
-                  fill
-                  sizes="80px"
-                  className="object-cover"
-                />
-                
-              </button>
-            );
-          })}
+              ) : null}
+            </figcaption>
+          ) : (
+            <span />
+          )}
+          {photos.length > 1 ? (
+            <span aria-hidden className="inline-flex min-h-8 items-center gap-1.5 rounded-full bg-card px-3 text-sm font-semibold text-foreground contrast:outline-2 contrast:outline-border">
+              <CameraIcon className="size-4" />
+              <span className="num">{photos.length}</span>
+            </span>
+          ) : null}
         </div>
-      ) : null}
+      </figure>
 
       <Dialog
         open={activeIndex !== null}
