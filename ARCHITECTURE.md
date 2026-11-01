@@ -56,8 +56,10 @@ data/ (Python) ─ PDF/Wikidata/Nominatim/OSM ─► supabase/seed_*.sql, assets
 - `media.work_id` boş olabilir: eşleşmeyen arşiv fotoğrafı taslak olarak "fotoğraf kutusu"nda bekler.
 
 **Topluluk ve yapay zekâ**
+- Sor adayları `shared/search.ts › searchAskWorks` ile seçilir: açık eser adı, keşif sorusunda şehir/tür ve yayımlanmış anlatım kapsamı. İstemci aday gönderemediğinde Edge Function aynı kodla `verified` kataloğu okur. Kimlik/selam/teşekkür `askConversationReply` ile cihazda veya sunucuda `conversation` yanıtıdır; tarihî bilgi taşımaz, LLM ve kaynak gerektirmez. Eser yanıtları kaynaklı `rag`, bilgi yoksa `insufficient` olarak kalır.
 - `a11y_reports`: pending → approved / rejected
-- `doc_chunks`: RAG için embedding'ler; henüz boş.
+- `doc_chunks`: Sezi'ye Sor için doğrulanmış eser metni parçaları. Eser yayına girince ya da metni değişince tetikleyici `facts` / `summary` / `history` / `architecture` parçalarını (en çok 1.800 karakter) yeniler. Eser sayfasındaki herkese açık adres, konum kesinliği, ziyaret, erişilebilirlik, fotoğraf, sergi ve kaynak alanları ayrıca `app` bölümünde **Sezi uygulama kaydı** kaynağıyla tutulur; böylece kitap sayfasına yanlış atıf yapılmaz. Eser, medya, sergi ya da kaynak bağı değişince bu parça aynı işlemde yenilenir. Arama PostgreSQL dil duyarlı tam metin diziniyle yapılır; DeepSeek embedding sunmadığı için ikinci bir embedding sağlayıcısına ve vektör maliyetine ihtiyaç yoktur.
+- `ask_usage`: ham cihaz/IP saklamadan HMAC özetiyle Edge Function çağrı kotası (saatte 20, günde 60; kayıtlar iki gün tutulur). Anonim ve girişli istemci tabloyu okuyamaz/yazamaz; yalnız service role'ın invoker RPC'si atomik kota ayırır.
 
 **Eşleştirme masası** (veri hattının önerileri; yalnız admin okur/yazar, uygulama okumaz)
 - `location_candidates`: eser başına konum adayları (`wikidata` / `osm` / `nominatim` / `override` / `current`), puan, gerekçe (`reasons`: ad benzerliği, tür, ilçe, uyuşan kaynaklar), `vetoed` (tür ya da ilçe çelişkisi), `status` (pending / accepted / rejected). Üretici `data/location_candidates.py`. Admin kabul edince eserin `location`, `location_precision` (yapı düzeyi → exact) ve `external_ids` alanları yazılır; `seed_inventory.sql` kabul edilmiş konumu ezmez.
@@ -156,7 +158,7 @@ data/ (Python) ─ PDF/Wikidata/Nominatim/OSM ─► supabase/seed_*.sql, assets
 | `onboarding` | Algısal profil: görme, hareket, işitme, duyular, dil | cihaz |
 | `(tabs)/index` Keşfet | İl seçici, kümelenmiş harita, tür ve ilçe filtresi, liste | `works_view` |
 | `(tabs)/tours`, `tour/[id]` | Pilot alan turları (admin › Turlar); durak sırası grafikten hesaplanır | `tours_view` (önbellekli) + gömülü grafik |
-| `(tabs)/ask` | Sezi'ye Sor: **yerel anahtar kelime eşleştirme** (LLM yok) | `works_view` |
+| `(tabs)/ask` | Sezi'ye Sor: yerel aday eser + doğrulanmış kitap metni ve yayımlanmış Sezi uygulama kaydı parçalarıyla DeepSeek RAG; cümle sonu kaynak numarası, kaynak/iş kartı; servis yoksa yerel kayıt aramasına düşer | `works_view`, `doc_chunks`, `ask` Edge Function |
 | `(tabs)/profile` | Profil; pasaport ve başarım kartları; Topluluk (Fotoğraflarım, Arkadaşlar + gelen istek sayısı, Gizlilik); ayarlar, bildirimler, sergiler, hakkında | cihaz, `visits`, `contributions`, `friendships` |
 | `passport`, `achievements` | Keşif özeti (damga, tür, yürünen km, il ilerlemesi) ve damga listesi; kazanılan / sıradaki başarımlar | `visits` (cihaz + hesap), `works_view`, `tours_view` |
 | `photos/index`, `photos/new`, `photos/[id]` | Kişisel fotoğraf arşivi: esere bağlı yükleme (kamera/galeri), alt metin, görünürlük, arşiv önerisi; durum rozetleri; düzenleme, silme | `user_photos`, `user-photos` |
@@ -173,7 +175,6 @@ data/ (Python) ─ PDF/Wikidata/Nominatim/OSM ─► supabase/seed_*.sql, assets
 | `settings`, `about`, `lab` | Ayarlar, proje ve envanter bilgisi, cihaz testleri (ses, pusula, haptik) | – |
 
 **Mock ya da eksik kalanlar**
-- Ask'te LLM yok.
 - Galeri yer tutucu.
 - Tarihçe metni yok (kitap sayfasına yönlendiriyor).
 - Eser listesi için çevrimdışı önbellek yok; yalnızca rota internetsiz çalışıyor.
@@ -189,6 +190,6 @@ data/ (Python) ─ PDF/Wikidata/Nominatim/OSM ─► supabase/seed_*.sql, assets
 | Metinler `{tr, en}` jsonb | Tek satırda iki dil; yeni dil eklemek şema değişikliği gerektirmez |
 | Kitaplardan yalnızca olgular | Telif; metin ve foto resmî paylaşımla gelecek |
 | Konum kesinliği ayrı alan | Yaklaşık eşleşmeler gerçek konum gibi gösterilmemeli |
-| LLM: sade özet önerisi için Gemini; RAG için kararsız | Özet tek eser, admin onaylı ve önbellekli (taslakta saklanır); Sezi'ye Sor için `LLMProvider` arayüzüyle bağımsız kalınacak, karar ROADMAP'te açık |
+| LLM: sade özet için Gemini, Sezi'ye Sor için DeepSeek | RAG sağlayıcıdan bağımsız `LLMProvider` arayüzünde. DeepSeek `deepseek-flash` yalnız bulunan bağlamdan JSON cevap üretir; anahtar Edge Function secret'ıdır. Konum, hesap ve ham cihaz/IP gönderilmez. Modelin döndürdüğü kaynak kimlikleri sunucuda doğrulanır; geçerli kaynak yoksa cevap reddedilir. Geçici 429/5xx, ağ veya bozuk JSON yanıtı bir kez kontrollü tekrarlanır; kalıcı 4xx tekrarlanmaz. |
 | Türkçe seslendirme Chirp 3 HD, önbellekli; İngilizce cihaz sesi | Cihazdaki Türkçe ses zayıf. Aynı metin bir kez üretilir (Storage + cihaz), günlük 30k karakter sınırı aylık ücretsiz 1M içinde kalır; ayrı sunucu gerekmez |
 | Kendi i18n katmanı (i18next değil) | Tipli anahtarlar; eksik EN çevirisi derleme hatası verir |

@@ -3,8 +3,8 @@ import type { WorkRow } from "./works";
 export type SearchableWork = Pick<WorkRow, "name" | "type_name" | "type_slug" | "district" | "city_name">;
 
 /**
- * Kayıt araması: LLM (RAG) gelene kadar yerel eşleştirmeyle yanıt verir.
- * Yalnızca doğrulanmış eserlerin adı, türü, ilçesi ve ili aranır; metin üretilmez.
+ * Kayıt araması: Sezi'ye Sor için RAG adaylarını cihazda daraltır; servis yoksa yerel sonuçları gösterir.
+ * Yalnızca doğrulanmış eserlerin adı, türü, ilçesi ve ili aranır; burada metin üretilmez.
  */
 export function normalize(s: string): string {
   return s
@@ -12,7 +12,8 @@ export function normalize(s: string): string {
     .replace(/[ıİ]/g, "i")
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9\s]/g, " ");
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\bulu\s*cami(i)?\b/g, "ulu cami$1");
 }
 
 // Soru kelimesi → tür eşlemesi (kökler; ekli halleri de yakalar).
@@ -54,6 +55,9 @@ const TYPE_HINTS: [string, string[]][] = [
 ];
 
 const STOP = new Set([
+  "hakkinda", "biraz", "bilgi", "ver", "verir", "verebilir", "misin", "musun",
+  "anlat", "anlatir", "anlatabilir", "biliyorsun", "lutfen", "peki",
+  "kim", "yaptirdi", "yaptirmis", "tarihi", "tarihini", "tarihcesi", "mimarisi", "mimarisini",
   "hangi",
   "hangileri",
   "nerede",
@@ -84,7 +88,8 @@ const tokens = (...parts: (string | null | undefined)[]) => normalize(parts.filt
  * hiçbir eserde geçmeyen kelime ("hangi", "da") yok sayılır. Sıra: adın ilk kelimesi, ad, tür, yer eşleşmesi.
  */
 export function searchWorks<W extends SearchableWork>(query: string, works: W[]): W[] {
-  const words = normalize(query)
+  // Kesmeden sonraki ek bağımsız ad değildir: Ulucami’yi → Ulucami (yi → Yıldırım olmasın).
+  const words = normalize(query.replace(/['’ʼ][\p{L}]+/gu, ""))
     .split(/\s+/)
     .filter((w) => w.length > 0 && !STOP.has(w));
   if (words.length === 0) return [];
@@ -137,4 +142,32 @@ export function searchWorks<W extends SearchableWork>(query: string, works: W[])
     .filter((x) => x.score > 0)
     .sort((a, b) => b.score - a.score)
     .map((x) => x.work);
+}
+
+type AskSearchableWork = SearchableWork & {
+  slug: string;
+  summary?: { tr?: string; en?: string } | null;
+  history?: { tr?: string; en?: string } | null;
+};
+
+/** Genel liste aramasından farklı olarak sohbetin keşif niyetini ve yayımlanmış anlatım kapsamını kullanır. */
+export function searchAskWorks<W extends AskSearchableWork>(query: string, works: W[]): W[] {
+  const q = normalize(query.replace(/['’ʼ][\p{L}]+/gu, ''));
+  const words = q.split(/\s+/);
+  const cities = [...new Set(works.flatMap(w => [w.city_name.tr, w.city_name.en]).filter((city): city is string => !!city))]
+    .filter(city => (` ${q} `).includes(` ${normalize(city)} `));
+  const pool = cities.length ? works.filter(w => cities.some(city => [w.city_name.tr, w.city_name.en].includes(city))) : works;
+  // Açık eser adı varsa genel öneriden önce o eseri koru.
+  const named = pool.filter(w => [w.name.tr, w.name.en].some(name => name && (` ${q} `).includes(` ${normalize(name)} `)));
+  if (named.length) return named;
+  const exploring = /(nereler|nereye|nereyi|gide|geze|gezil|gore|goru|oner|kesfet|guzel|visit|explor|recommend|what.*see|where.*go|best|beautiful)/.test(q);
+  if (exploring && cities.length) {
+    const typeWords = words.filter(word => !word.startsWith('hangi') && TYPE_HINTS.some(([stem]) => word.startsWith(stem) && (stem.length >= 3 || word === stem)));
+    const selected = typeWords.length ? searchWorks(typeWords.join(' '), pool) : pool;
+    return [...selected].sort((a, b) => {
+      const coverage = (w: W) => Number(!!(w.summary?.tr || w.summary?.en)) * 2 + Number(!!(w.history?.tr || w.history?.en));
+      return coverage(b) - coverage(a) || a.slug.localeCompare(b.slug);
+    });
+  }
+  return searchWorks(query, works);
 }
