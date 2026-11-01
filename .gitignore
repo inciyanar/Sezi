@@ -13,11 +13,14 @@ __pycache__/
 data/raw/
 data/out/
 
-# Yarışma dokümanları ve moodboard: yalnızca yerel referans
-docs/
+# Yarışma belgeleri, moodboard, araştırma notları: yalnızca yerel
+docs/yerel/
 
-# impeccable skill çıktısı: projede kullanılmıyor
+# Geliştirme araçlarının yerel dosyaları (yapay zekâ asistanı notları, editör ayarları)
+AGENTS.md
+CLAUDE.md
+HANDOFF.md
+.claude/
 .impeccable/
-
-# design-taste-frontend inceleme çıktıları (ekran görüntüleri, raporlar): yalnızca yerel
 .taste-skill/
+scratchpad/

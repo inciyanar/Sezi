@@ -3,7 +3,7 @@
 @import "shadcn/tailwind.css";
 
 /*
- * Sezi yönetim paneli: mobil uygulamayla aynı "Çini 2" token'ları (packages/shared/src/sweet-theme.ts, DESIGN.md).
+ * Sezi yönetim paneli: mobil uygulamayla aynı "Çini 2" token'ları (packages/shared/src/sweet-theme.ts, docs/TASARIM.md).
  * Kırık beyaz zemin, beyaz yüzey, pastel firuze kimlik rengi (dolgu üstünde koyu firuze yazı), gölgesiz kartlar.
  * Panel yalnız açık temadır.
  */

@@ -17,7 +17,7 @@ import urllib.request
 CENTER_QID = "Q178643"  # Süleymaniye Camii
 RADIUS_KM = "0.4"
 COMPLEX_SLUG = "suleymaniye"
-USER_AGENT = "SeziHackathon/0.1 (edizkeskin@gmail.com)"
+USER_AGENT = "SeziHackathon/0.1 (https://github.com/kokkodhackathon/Sezi)"
 
 # Wikidata tür etiketi (en) → work_types.slug. Listede olmayan türler (dükkan, otel, sarnıç...) alınmaz.
 TYPE_MAP = {

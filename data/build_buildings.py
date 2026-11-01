@@ -30,7 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from build_nav_graph import AREAS, haversine, read_env  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-UA = "Sezi/0.1 (KOK&KOD hackathon; edizkeskin@gmail.com)"
+UA = "Sezi/0.1 (KOK&KOD hackathon; https://github.com/kokkodhackathon/Sezi)"
 MIRRORS = [
     "https://overpass-api.de/api/interpreter",
     "https://overpass.private.coffee/api/interpreter",

@@ -1,6 +1,6 @@
 # Mimari
 
-Durum: 13 Ekim 2026. Bu belge **bugün çalışan** sistemi anlatır. Hedefler ve yapılacaklar [ROADMAP.md](ROADMAP.md) dosyasında.
+Sistem bileşenleri ve veri akışının açıklaması. Hedefler ve öncelikler için [Yol haritası](ROADMAP.md) belgesine bakın.
 
 ## Bileşenler
 
@@ -19,12 +19,12 @@ data/ (Python) ─ PDF/Wikidata/Nominatim/OSM ─► supabase/seed_*.sql, assets
 
 | Paket | Görev | Durum |
 |---|---|---|
-| `apps/mobile` | Kullanıcı uygulaması | Tüm final ekranları var, bir kısmı mock (aşağıda) |
-| `apps/admin` | İçerik girişi, onay, moderasyon, kullanıcı yönetimi | shadcn/ui + Tailwind v4 (Çini 2 token'ları). Pano (veri kapsamı, bekleyen işler), eserler, yeni eser, eser metinleri, fotoğraf kutusu, konum eşleştirme, noktalar, rota testi, bildirimler, ziyaretçi fotoğrafları, kullanıcılar, iller (apps/admin/README.md). 1280 px altında menü çekmeceye geçer |
-| `apps/web` | Halka açık web sitesi (`sezi.info`) | Next.js 16 App Router, `/tr` ve `/en`. Eser sayfaları sunucuda üretilir, 10 dk'da bir yenilenir (ISR, SEO, JSON-LD). Keşfet (arama + filtre + harita), eser / il / külliye, sergiler, hakkında; pilot alanda rota planlama (önizleme, talimat listesi, profil karşılaştırması), turlar, hesapsız erişilebilirlik bildirimi; isteğe bağlı hesap (mobille aynı). Saf mantık `@sezi/shared`'den; harita kütüphanesi yalnız `src/components/map` |
-| `packages/shared` | zod şemaları, geo, rota ve yönlendirme motoru, tema token'ları | Testli (19 test) |
-| `supabase` | Migration'lar, seed'ler | 3 migration uygulandı; güvenlik uyarısı yok |
-| `data` | Ham veri → model dönüşümü | Envanter pipeline'ı ve nav grafiği üretici |
+| `apps/mobile` | Kullanıcı uygulaması | Keşif, eser, tur, rota, rehberlik, profil ve hesap akışları |
+| `apps/admin` | İçerik girişi, onay, moderasyon, kullanıcı yönetimi | Pano, eserler, eser metinleri, fotoğraf kutusu, konum eşleştirme, noktalar, rota testi, bildirimler, ziyaretçi fotoğrafları, kullanıcılar ve iller (`apps/admin/README.md`) |
+| `apps/web` | Halka açık web sitesi (`sezi.info`) | Next.js App Router; Türkçe ve İngilizce sayfalar, keşif, eser/il/külliye, sergiler, rota, turlar ve isteğe bağlı hesap |
+| `packages/shared` | Uygulamalar arasında ortak mantık | Şemalar, coğrafya, rota ve yönlendirme motoru, tema token'ları |
+| `supabase` | Veri ve sunucu işlevleri | Migration'lar, seed'ler ve Edge Functions |
+| `data` | Ham veri → model dönüşümü | Envanter pipeline'ı ve navigasyon grafiği üreticileri |
 
 ## Veri modeli (Postgres, `public`)
 
@@ -103,15 +103,6 @@ data/ (Python) ─ PDF/Wikidata/Nominatim/OSM ─► supabase/seed_*.sql, assets
 - Admin (`app_metadata.role = 'admin'`) her şeyi yazar.
 - Giriş yapmış kullanıcı kendi bildirimini ve kendi `accounts` satırını görür; sosyal tablolarda görünürlük yukarıda ("Sosyal").
 
-**Veri durumu (13 Ekim)**
-
-| İl | Kayıt | Konumlu | Kesin konum |
-|---|---|---|---|
-| Bursa | 341 | 129 | 71 |
-| Konya | 271 | 73 | 28 |
-| Hatay | 74 | 29 | 16 |
-
-- İstanbul'daki eski pilotun 85 kaydı `archived` durumunda.
 
 ## Rota ve rehberlik
 

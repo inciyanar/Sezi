@@ -37,7 +37,7 @@ IN = ROOT / "data/out/inventory_geo.json"
 OVERRIDES = ROOT / "data/geo_overrides.json"
 RAW = ROOT / "data/raw"
 OUT = ROOT / "supabase/seed_location_candidates.sql"
-UA = "sezi-hackathon/1.0 (edizkeskin@gmail.com)"
+UA = "sezi-hackathon/1.0 (https://github.com/kokkodhackathon/Sezi)"
 OVERPASS = "https://overpass-api.de/api/interpreter"
 SPARQL = "https://query.wikidata.org/sparql"
 

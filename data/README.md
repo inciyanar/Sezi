@@ -1,20 +1,22 @@
-# Veri pipeline'ı
+# Veri hattı
 
-Ham kaynakları Sezi'nin veri modeline (`packages/shared/src/schemas.ts`, `supabase/migrations`) dönüştürür.
+Ham kaynakları Sezi'nin veri modeline (`packages/shared/src/schemas.ts`, `supabase/migrations`) dönüştüren Python betikleri.
 
-Ham dosyalar `data/raw/` altında, ara çıktılar `data/out/` altında durur; ikisi de git'e girmez. Script'ler izole modda çalışır: `python -I`.
+- Ham dosyalar `data/raw/`, ara çıktılar `data/out/` altında durur; ikisi de depoya girmez.
+- Betikler izole modda çalışır: `python -I data/<betik>.py`. Python 3.11+ gerekir; PDF işleyen betikler için ayrıca poppler (`pdftotext`).
+- Komutlardaki `<proje-ref>`, verinin yükleneceği Supabase projesinin kimliğidir.
 
-Telif ve veri politikası için bkz. [ENVANTER.md](../ENVANTER.md) §5. Kısaca: kitaplardan yalnızca olgular alınır, metin ve fotoğraf alınmaz.
+Telif ve veri politikası: [docs/ENVANTER.md](../docs/ENVANTER.md) §5. Kısaca: kitaplardan eser adı, il, ilçe, tür, cilt ve sayfa gibi olgular doğrudan alınır. Kitap metinleri yalnızca taslak olarak üretilir, depoya girmez ve yayımlanmadan önce elle kitapla karşılaştırılır. Fotoğraflar kitaplardan değil, organizasyonun paylaştığı fotoğraf arşivinden ve Wikimedia Commons'tan gelir.
 
 ## 1. Vakıf eserleri envanteri (Hatay, Konya, Bursa)
 
-**Girdi:** Kitap PDF'leri `data/raw/books/` klasörüne konur. URL'ler ENVANTER.md'de; sunucu HEAD isteğine 404 döner, GET ile iner.
+**Girdi:** Kitap PDF'leri `data/raw/books/` klasörüne konur. İndirme adresleri [docs/ENVANTER.md](../docs/ENVANTER.md)'dedir; sunucu HEAD isteğine 404 döner, GET ile iner.
 
 ```bash
 python -I data/inventory_toc.py       # içindekiler → data/out/inventory_toc.json
 python -I data/inventory_geocode.py   # konum → data/out/inventory_geo.json (~50 dk, Nominatim önbellekli)
 python -I data/inventory_import.py    # → supabase/seed_inventory.sql
-npx supabase@latest db query --linked --project-ref jejsvycpzulpleftkssj -f supabase/seed_inventory.sql
+npx supabase@latest db query --linked --project-ref <proje-ref> -f supabase/seed_inventory.sql
 ```
 
 **`inventory_toc.py`**
@@ -51,7 +53,7 @@ npx supabase@latest db query --linked --project-ref jejsvycpzulpleftkssj -f supa
 ```bash
 python -I data/location_candidates.py            # → supabase/seed_location_candidates.sql (ham yanıtlar data/raw/lc_*.json'dan; ilk çalıştırma ~10 dk)
 python -I data/location_candidates.py --refresh  # önbelleği yok sayıp Overpass/Wikidata'dan yeniden çeker
-npx supabase@latest db query --linked --project-ref jejsvycpzulpleftkssj -f supabase/seed_location_candidates.sql
+npx supabase@latest db query --linked --project-ref <proje-ref> -f supabase/seed_location_candidates.sql
 ```
 
 Her eser için birden çok kaynaktan konum **adayı** üretilir; karar admin panelindedir. Önbellek varken ağa gidilmez, çıktı her çalıştırmada aynıdır.
@@ -67,7 +69,7 @@ Her eser için birden çok kaynaktan konum **adayı** üretilir; karar admin pan
 ```bash
 python -I data/inventory_texts.py   # → supabase/seed_text_drafts_01…08.sql + seed_text_drafts_cleanup.sql (PDF ayrıştırması data/raw/texts_cache/'e önbelleğe alınır; ilk çalıştırma ~4 dk)
 python -I data/text_drafts_diff.py  # uygulamadan önce: uzaktaki taslaklarla fark → data/out/text_drafts_diff.md
-for f in supabase/seed_text_drafts_0*.sql supabase/seed_text_drafts_cleanup.sql; do npx supabase@latest db query --linked --project-ref jejsvycpzulpleftkssj -f $f; done
+for f in supabase/seed_text_drafts_0*.sql supabase/seed_text_drafts_cleanup.sql; do npx supabase@latest db query --linked --project-ref <proje-ref> -f $f; done
 ```
 
 Envanter kitaplarının (`data/raw/books/`) eser metinleri `text_drafts` tablosuna **taslak** (`status = 'pending'`) olarak yazılır. Metinler hackathon kapsamında organizasyonca paylaşılmış veri setidir; yine de hiçbir şey otomatik yayınlanmaz, yayına alma admin panelindeki **Eser metinleri** sayfasındadır. Her taslak `source_id` (kitap + cilt) ve `page` (basılı sayfa) ile atfedilir; yayınlanan metinde kitap kaynak olarak gösterilmelidir. Seed dosyaları kitabın tam metnini içerdiği için git'e girmez (`supabase/.gitignore`); her makinede PDF'lerden yeniden üretilir.
@@ -93,7 +95,7 @@ Organizasyon 14 Ekim'de Bursa örnekleminin yüksek çözünürlüklü arşivini
 # izole ortam: pip install pillow pymupdf
 python -I data/inventory_photos.py docs/drive bursa data/raw/books/bursa-envanteri-cilt-{1,2,3}.pdf
 python -I data/inventory_media_import.py bursa --upload
-npx supabase@latest db query --linked --project-ref jejsvycpzulpleftkssj -f supabase/seed_media_bursa.sql
+npx supabase@latest db query --linked --project-ref <proje-ref> -f supabase/seed_media_bursa.sql
 ```
 
 **`inventory_photos.py`**
@@ -115,7 +117,7 @@ Envanter fotoğrafı olmayan, Wikidata kimliği olan eserlere Wikidata P18 görs
 ```bash
 # izole ortam: python -m venv data/.venv && data/.venv/Scripts/pip install pillow
 data/.venv/Scripts/python -I data/commons_photos.py --upload
-npx supabase@latest db query --linked --project-ref jejsvycpzulpleftkssj -f supabase/seed_media_commons.sql
+npx supabase@latest db query --linked --project-ref <proje-ref> -f supabase/seed_media_commons.sql
 ```
 
 - Lisans süzgeci: CC0, kamu malı, CC BY, CC BY-SA (NC / ND / bilinmeyen atlanır). Yazar, lisans, lisans bağlantısı, dosya sayfası ve yaptığımız değişiklik (`modifications`) satırda tutulur.
@@ -155,7 +157,7 @@ Eşleme sırası: eserin `external_ids.osm` kimliği, eser konumunu içeren bina
 
 ```bash
 python -I data/build_sense_points.py bursa-hanlar            # → supabase/seed_sense_points.sql
-npx supabase@latest db query --linked --project-ref jejsvycpzulpleftkssj -f supabase/seed_sense_points.sql
+npx supabase@latest db query --linked --project-ref <proje-ref> -f supabase/seed_sense_points.sql
 ```
 
 Tekrar uygulanabilir: kaynak notunda aynı OSM kimliği varsa satır ikinci kez girmez. 23 Ekim: 60 aday (9 çeşme, 9 fırın/pastane, 42 cami; 21'i esere bağlı). Bunlar **olasılıktır**: çeşme kuru, fırın kapanmış, ezan o camiden duyulmuyor olabilir. Admin **Noktalar**'da sahada bakıp (`Sahada doğrulandı`) yayınlar; OSM adı bozuksa (ör. "Firini") düzeltir.

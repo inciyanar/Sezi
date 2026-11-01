@@ -35,7 +35,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
 PROJECT_REF = "jejsvycpzulpleftkssj"
-USER_AGENT = "Sezi/0.1 (https://sezi.info; edizkeskin@gmail.com)"
+USER_AGENT = "Sezi/0.1 (https://sezi.info; https://github.com/kokkodhackathon/Sezi)"
 OUT = ROOT / "data/out/commons"
 CACHE = ROOT / "data/raw/commons_cache.json"
 LARGE_PX = 1600

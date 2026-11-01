@@ -45,7 +45,7 @@ pnpm install
 
 ## 3. Ortam dosyaları (.env)
 
-Anahtarlar repoda yok (gitignore). Supabase anahtarlarını takımdan (Ediz) özel mesajla isteyin ya da Supabase Dashboard → Project Settings → API'den alın. Proje: **sezi-eu**, ref `jejsvycpzulpleftkssj`.
+Anahtarlar depoda yoktur (gitignore). Supabase değerleri Dashboard → Project Settings → API sayfasındadır. Henüz bir Supabase projeniz yoksa önce [7. adımı](#7-kendi-supabase-projenizi-kurmak) uygulayın.
 
 ```bash
 cp .env.example apps/mobile/.env
@@ -57,7 +57,7 @@ Doldurulacak alanlar:
 
 | Dosya | Değişken | Değer |
 |---|---|---|
-| `apps/mobile/.env` | `EXPO_PUBLIC_SUPABASE_URL` | `https://jejsvycpzulpleftkssj.supabase.co` |
+| `apps/mobile/.env` | `EXPO_PUBLIC_SUPABASE_URL` | `https://<proje-ref>.supabase.co` |
 | | `EXPO_PUBLIC_SUPABASE_KEY` | Publishable key (`sb_publishable_…`) |
 | | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Eski anon key (publishable yoksa) |
 | `apps/admin/.env` | `VITE_SUPABASE_URL` | Aynı URL |
@@ -74,8 +74,8 @@ Mapbox token'ı için: yayına çıkarken mobil ve admin için **ayrı** token k
 Kontrol:
 
 ```bash
-pnpm test        # 62+ test geçmeli
-pnpm typecheck   # üç paket de "Done"
+pnpm test        # ortak motorun testleri geçmeli
+pnpm typecheck   # dört paket de "Done"
 ```
 
 ## 4. Admin paneli
@@ -183,18 +183,37 @@ cd android
 2. Dosyaya dokunun; "Bilinmeyen kaynaklardan yükleme" izni isterse verin.
 3. Uygulama açılınca profil sorularını yanıtlayın. Konum izni Yürüyüş ekranında istenir.
 
-## 7. Veritabanı (yalnız şema değiştirecekler için)
+## 7. Kendi Supabase projenizi kurmak
 
-Herkes aynı bulut veritabanını (Supabase, Frankfurt) kullanır; yerel veritabanı kurmanız gerekmez.
+Uygulamalar bir Supabase projesine bağlanır. Yeni bir proje (ücretsiz plan yeterli) şöyle hazırlanır:
 
 ```bash
 npx supabase login
-# Yeni migration: supabase/migrations/<YYYYMMDDHHMMSS>_ad.sql
-npx supabase@latest db query --linked --project-ref jejsvycpzulpleftkssj -f supabase/migrations/<dosya>.sql
-npx supabase@latest db advisors --linked --project-ref jejsvycpzulpleftkssj --type security
+npx supabase link --project-ref <proje-ref>
+npx supabase db push                     # tüm migration'lar: şema, RLS, tetikleyiciler, tur ve nokta verisi
+npx supabase db query --linked -f supabase/seed.sql            # bölgeler, iller, eser türleri, pilot külliye
+npx supabase db query --linked -f supabase/seed_inventory.sql  # envanter: eser adları, il, ilçe, tür, kitap atfı
 ```
 
-`supabase/.temp/project-ref` eski bir projeyi gösteriyor; komutlarda `--project-ref` her zaman açıkça verilmeli. Ayrıntı: [AGENTS.md](AGENTS.md#veritabanı-supabase-cloud).
+- Migration'lar PostGIS ve pgvector eklentilerini `extensions` şemasına kurar; PostGIS fonksiyonları `extensions.st_*` adıyla çağrılır.
+- Diğer seed dosyaları (konum adayları, fotoğraf kayıtları, duyu noktaları) isteğe bağlıdır; ne üreteceklerini [data/README.md](data/README.md) anlatır. Fotoğraf seed'leri yalnızca kayıt satırlarını içerir, dosyaların kendisi Storage'a ayrıca yüklenir.
+- Kitap metni taslakları depoda yoktur (telif). Envanter PDF'leri elinizdeyse `data/inventory_texts.py` ile yerelde üretilir.
+- Şema değişikliği: `supabase/migrations/<YYYYMMDDHHMMSS>_ad.sql` dosyası eklenir, `npx supabase db push` ile uygulanır, ardından güvenlik uyarıları kontrol edilir: `npx supabase db advisors --linked --type security`. Her yeni tabloda RLS açık olmalıdır.
+
+### Edge Functions
+
+```bash
+npx supabase functions deploy ask tts summarize admin-users delete-account
+npx supabase secrets set GEMINI_API_KEY=… GOOGLE_TTS_API_KEY=…
+```
+
+| Fonksiyon | Görev | Gereken gizli değişken |
+|---|---|---|
+| `ask` | Sezi'ye Sor: doğrulanmış eser içeriğinden yanıt | `GEMINI_API_KEY` (ya da `LLM_PROVIDER=deepseek` ile `DEEPSEEK_API_KEY`) |
+| `summarize` | Yönetim panelinde sade özet önerisi | Aynı LLM anahtarı |
+| `tts` | Türkçe metinlerin seslendirilmesi (Google Cloud Text-to-Speech, Chirp 3 HD) | `GOOGLE_TTS_API_KEY`; isteğe bağlı `TTS_DAILY_CHAR_LIMIT` |
+| `admin-users` | Yönetim panelinde kullanıcı işlemleri | Yok (Supabase'in kendi değişkenleri) |
+| `delete-account` | Kullanıcının hesabını silmesi | Yok |
 
 ## 8. Sık karşılaşılan sorunlar
 

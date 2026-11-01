@@ -1,6 +1,6 @@
 # Sezi nasıl çalışır?
 
-Bu belge Sezi'nin parçalarını şemalarla anlatır: veri nereden gelir, rota nasıl bulunur, telefon yürürken ne yapar, ses nereden çalar. Kod ayrıntısı için [ARCHITECTURE.md](ARCHITECTURE.md). Son güncelleme: 26 Ekim 2026.
+Bu belge Sezi'nin parçalarını şemalarla anlatır: veri nereden gelir, rota nasıl bulunur, telefon yürürken ne yapar ve ses nereden çalar. Kod ayrıntıları için [Mimari](MIMARI.md) belgesine bakın.
 
 ---
 

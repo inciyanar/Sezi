@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parent.parent
 IN = ROOT / "data/out/inventory_toc.json"
 OUT = ROOT / "data/out/inventory_geo.json"
 CACHE = ROOT / "data/raw/geo_cache.json"
-UA = "SeziHackathon/0.1 (edizkeskin@gmail.com)"
+UA = "SeziHackathon/0.1 (https://github.com/kokkodhackathon/Sezi)"
 PROVINCES = {"Bursa": "Q43690", "Konya": "Q81551", "Hatay": "Q83274"}
 CITY_CENTER = {"Bursa": (29.06, 40.19), "Konya": (32.49, 37.87), "Hatay": (36.16, 36.20)}
 

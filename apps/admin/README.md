@@ -1,6 +1,6 @@
 # Sezi yönetim paneli
 
-Vite + React + TypeScript; Supabase (yalnızca anonim/publishable anahtar, yazma yetkisi RLS'te), TanStack Query, React Router, Mapbox GL. Arayüz shadcn/ui (radix, `components.json`) + Tailwind v4; tema mobil uygulamayla aynı "Çini 2" token'ları (`src/index.css`, [DESIGN.md](../../DESIGN.md)). Bileşen eklemek: `cd apps/admin && npx shadcn@latest add <ad>`.
+Vite + React + TypeScript; Supabase (yalnızca anonim/publishable anahtar, yazma yetkisi RLS'te), TanStack Query, React Router, Mapbox GL. Arayüz shadcn/ui (radix, `components.json`) + Tailwind v4; tema mobil uygulamayla aynı "Çini 2" token'ları (`src/index.css`, [docs/TASARIM.md](../../docs/TASARIM.md)). Bileşen eklemek: `cd apps/admin && npx shadcn@latest add <ad>`.
 
 ## Çalıştırma
 
@@ -13,7 +13,7 @@ Port 3000, Supabase Auth'un varsayılan "Site URL" adresi: e-postadaki giriş ba
 
 ## Yönetici yapmak
 
-Kullanıcı panelden bir kez giriş yapar, sonra (Supabase MCP ya da SQL Editor):
+Kullanıcı panelden bir kez giriş yapar, sonra (Supabase SQL Editor):
 
 ```sql
 update auth.users set raw_app_meta_data = raw_app_meta_data || '{"role":"admin"}' where email = '<e-posta>';

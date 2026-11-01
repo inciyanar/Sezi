@@ -44,7 +44,7 @@ Kaynak: *KÖK&KOD Hackathonu – Vakıf Eserleri Envanter Projesi Bilgi Notu* ve
 
 | Beklenti | Karşılık |
 |---|---|
-| Kullanıcı dostu, mobil, hızlı, görsel anlatımı güçlü | Expo mobil uygulama; harita gecikmeli yüklenir; tür glifleri, kilim motifleri |
+| Kullanıcı dostu, mobil, görsel anlatımı güçlü | Expo mobil uygulama; Mapbox haritası, eser fotoğrafları ve tür glifleri |
 | Tarihçe, mimari ve teknik detay; Vakıf Katılım + diğer güvenilir kaynaklar | `history`, `architecture`, `period`, `work_events` (zaman çizelgesi), `inscriptions` (kitabeler). Kaynak gösterimi zorunlu: envanter kitabı **cilt/sayfa** ile |
 | Veri alanları: il, ad, tür, konum, tarihçe, TR/EN, foto galerisi, sergi | `cities` (envanter bilgileriyle), `works` (ilçe, adres, konum kesinliği), `media`, `exhibitions` + `work_exhibitions`; tüm metinler `{tr, en}` |
 | Harita + şehir/tür filtresi | Keşfet: şehir seçici, tür ve ilçe filtresi, harita |

@@ -6,7 +6,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[3]
 SRC = Path(r"C:\Users\edizk\Downloads\logo.png")
-# DESIGN.md / sweetThemes: açık zemin, koyu metin.
+# docs/TASARIM.md / sweetThemes: açık zemin, koyu metin.
 BG = (0xF6, 0xF4, 0xF0)
 DARK_INK = (0xF3, 0xF1, 0xF5)
 WHITE = (255, 255, 255)
