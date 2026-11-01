@@ -1,7 +1,8 @@
 import type { LngLat, SweetTheme, UserProfile } from '@sezi/shared';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Text } from '@/components/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EndPin, ExtraLines, PointsLayer, SeziMap, type SeziMapHandle } from '@/components/map';

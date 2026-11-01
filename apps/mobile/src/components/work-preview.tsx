@@ -1,6 +1,7 @@
 import { coverOf, loc, toneForType, type WorkRow } from '@sezi/shared';
 import { Image } from 'expo-image';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { ChevronIcon } from '@/design/icons';
 import { outline, SoftPressable } from '@/design/sweet/components';

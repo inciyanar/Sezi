@@ -1,6 +1,7 @@
 import { loc } from '@sezi/shared';
 import { router } from 'expo-router';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { StampGrid } from '@/components/social-grids';
 import { EmptyInvite, EmptyPassportArt, StatStrip } from '@/components/social-visuals';

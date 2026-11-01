@@ -124,6 +124,41 @@ export const sweetThemes: Record<"light" | "dark" | "highContrast", SweetTheme> 
   },
 };
 
+/**
+ * Renk körlüğüne uygun tonlar (Okabe–Ito ailesi: mavi, mavimsi yeşil, turuncu-kırmızı, sarı, gri, morumsu pembe).
+ * Pastel tonlar kırmızı-yeşil körlüğünde birbirine karışıyor; bunlar daha doygun ve parlaklıkları ayrık.
+ * Protan, deutan ve tritan benzetiminde her çift ayrışır (testle korunur).
+ */
+const colorSafeLightTones: Record<SweetToneName, SweetTone> = {
+  cobalt: { fill: "#8EC1F0", ink: "#0B2A4A" },
+  teal: { fill: "#6FD2B4", ink: "#06372A" },
+  coral: { fill: "#F7A877", ink: "#4A1A00" },
+  saffron: { fill: "#F5E56E", ink: "#3A3200" },
+  sage: { fill: "#ECEBE7", ink: "#33312D" },
+  plum: { fill: "#E7A9CF", ink: "#4A1438" },
+};
+
+const colorSafeDarkTones: Record<SweetToneName, SweetTone> = {
+  cobalt: { fill: "#142E4A", ink: "#C2DFFA" },
+  teal: { fill: "#0F4A46", ink: "#B2EDE3" },
+  coral: { fill: "#411900", ink: "#FFCBA8" },
+  saffron: { fill: "#4F3E04", ink: "#F8E9A6" },
+  sage: { fill: "#3A3F2A", ink: "#E3E6D6" },
+  plum: { fill: "#351B2A", ink: "#F5CDE4" },
+};
+
+/** Açık ve koyu temanın renk körlüğüne uygun hâli: yalnız tonlar ve vurgu değişir. */
+export const colorSafeThemes: Record<"light" | "dark", SweetTheme> = {
+  light: { ...sweetThemes.light, tones: colorSafeLightTones, accent: colorSafeLightTones.coral, accentText: "#8F3500" },
+  dark: { ...sweetThemes.dark, tones: colorSafeDarkTones, accent: colorSafeDarkTones.coral, accentText: "#FFBE92" },
+};
+
+/** Ekran teması: yüksek kontrast her şeyin önünde (ton zaten kullanmaz); sonra renk körlüğü seçeneği. */
+export function resolveSweetTheme(mode: "light" | "dark", options: { highContrast: boolean; colorSafe: boolean }): SweetTheme {
+  if (options.highContrast) return sweetThemes.highContrast;
+  return options.colorSafe ? colorSafeThemes[mode] : sweetThemes[mode];
+}
+
 const byType: Record<string, SweetToneName> = {
   // Firuze ana renkle karışmasın diye camiler kobalt; çeşme ve sebil firuze.
   cami: "cobalt",

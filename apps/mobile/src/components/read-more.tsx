@@ -1,6 +1,7 @@
 import { excerpt } from '@sezi/shared';
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { Button } from '@/components/ui';
 import { ChevronIcon } from '@/design/icons';

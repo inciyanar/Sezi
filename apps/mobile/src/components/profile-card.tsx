@@ -1,6 +1,7 @@
 import type { SweetTheme, UserProfile } from '@sezi/shared';
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 import { ChevronIcon, EyeIcon, HearingIcon, LanguageIcon, MobilityIcon, SensesIcon } from '@/design/icons';
 import { outline, SoftPressable } from '@/design/sweet/components';
 import { radius, space, type } from '@/design/type';

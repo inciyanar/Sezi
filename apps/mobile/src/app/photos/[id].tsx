@@ -2,7 +2,8 @@ import { loc, type UserPhoto } from '@sezi/shared';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { AccessibilityInfo, Alert, Text, View } from 'react-native';
+import { AccessibilityInfo, Alert, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { FormError, FormScreen } from '@/components/account-fields';
 import { SeziLoader } from '@/components/sezi-loader';

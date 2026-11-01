@@ -5,7 +5,8 @@
  */
 import { createContext, useContext, useRef, useState, type ReactNode, type RefObject } from 'react';
 import * as Haptics from 'expo-haptics';
-import { Pressable, StyleSheet, Switch, Text, TextInput, useWindowDimensions, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, Switch, TextInput, useWindowDimensions, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native';
+import { Text } from '@/components/text';
 
 import { ChevronIcon, InfoIcon } from '@/design/icons';
 import { EmptyMotif } from '@/design/motif';
@@ -71,7 +72,8 @@ export function Button({
 /** Kart: beyaz yüzey, 22 köşe, gölgesiz (zeminden tonla ayrılır). */
 export function Card({ children, style, padded = true }: { children: ReactNode; style?: StyleProp<ViewStyle>; padded?: boolean }) {
   const t = useSweetTheme();
-  return <View style={[styles.card, { backgroundColor: t.surface }, outline(t), padded && { padding: space.lg }, style]}>{children}</View>;
+  // Çerçeve kalkınca 0 açıkça verilir: Android'de kenarlık silinince taşma kırpması bozulup içerik kayboluyor (tema canlı değişince).
+  return <View style={[styles.card, { backgroundColor: t.surface }, outline(t) ?? { borderWidth: 0 }, padded && { padding: space.lg }, style]}>{children}</View>;
 }
 
 export function SectionTitle({ title, action }: { title: string; action?: ReactNode }) {

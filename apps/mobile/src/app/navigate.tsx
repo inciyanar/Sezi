@@ -3,7 +3,8 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CueFlash } from '@/components/cue-flash';

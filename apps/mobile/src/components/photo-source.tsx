@@ -1,6 +1,7 @@
 import { isAttributed, isCommons, loc, type WorkPhoto } from '@sezi/shared';
 import { useState } from 'react';
-import { Linking, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Linking, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Text } from '@/components/text';
 
 import { Button, Card, ListRow } from '@/components/ui';
 import { ExternalIcon } from '@/design/icons';

@@ -1,24 +1,18 @@
-import { sweetThemes, type SweetTheme } from '@sezi/shared';
+import { resolveSweetTheme, type SweetTheme } from '@sezi/shared';
 import { useColorScheme } from 'react-native';
 
-import { useProfile } from '@/lib/profile';
 import { useSettings } from '@/lib/settings';
 
-/** Uygulama teması. Öncelik: az gören profili → yüksek kontrast; sonra ayardaki tema; "sistem" ise cihaz tercihi. */
+/** Uygulama teması: yüksek kontrast açıksa o; değilse ayardaki tema ("sistem" ise cihaz tercihi), renk körlüğü seçeneğiyle. */
 export function useSweetTheme(): SweetTheme {
-  const scheme = useColorScheme();
-  const { profile } = useProfile();
   const { settings } = useSettings();
-  if (profile?.vision === 'low') return sweetThemes.highContrast;
-  const mode = settings.themeMode === 'system' ? (scheme === 'dark' ? 'dark' : 'light') : settings.themeMode;
-  return sweetThemes[mode];
+  return resolveSweetTheme(useIsDark() ? 'dark' : 'light', settings);
 }
 
 /** Koyu tema etkin mi (durum çubuğu ve gezinti teması için). Yüksek kontrast açık temadır. */
 export function useIsDark(): boolean {
   const scheme = useColorScheme();
   const { settings } = useSettings();
-  const { profile } = useProfile();
-  if (profile?.vision === 'low') return false;
+  if (settings.highContrast) return false;
   return settings.themeMode === 'dark' || (settings.themeMode === 'system' && scheme === 'dark');
 }

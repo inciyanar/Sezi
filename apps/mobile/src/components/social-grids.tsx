@@ -2,7 +2,8 @@ import { loc, type Achievement, type LocalizedText, type UserPhoto, type Visit }
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useState, type ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { AchievementDetail, AchievementTile, achievementTitle, photoStatus, Stamp, StatusDots, useGridColumns } from '@/components/social-visuals';
 import { CameraIcon } from '@/design/icons';

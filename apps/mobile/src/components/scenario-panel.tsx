@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { outline, SoftPressable } from '@/design/sweet/components';
 import { radius, space, type } from '@/design/type';

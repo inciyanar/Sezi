@@ -1,7 +1,8 @@
 import { loc, toneForType, type SweetTheme } from '@sezi/shared';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { Button, Card, EmptyState, Field, Note } from '@/components/ui';
 import { CheckIcon, InfoIcon } from '@/design/icons';

@@ -1,5 +1,6 @@
 import { loc, type ExhibitionRow } from '@sezi/shared';
-import { Linking, StyleSheet, Text, View } from 'react-native';
+import { Linking, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { Badge } from '@/components/ui';
 import { ExternalIcon } from '@/design/icons';

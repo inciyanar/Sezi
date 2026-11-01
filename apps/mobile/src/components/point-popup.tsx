@@ -1,6 +1,7 @@
 import { isWorkPoint, type NavPoint } from '@sezi/shared';
 import { router } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 import Animated, { FadeIn, FadeInDown, FadeOut, FadeOutDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 

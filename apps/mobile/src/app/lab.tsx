@@ -12,7 +12,8 @@ import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
 import * as Speech from 'expo-speech';
 import { useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 import { AudioContext, type OscillatorNode, type StereoPannerNode } from 'react-native-audio-api';
 
 const ULU_CAMI: LngLat = [29.0618995, 40.1838059];

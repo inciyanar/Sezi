@@ -4,7 +4,8 @@ import * as Haptics from 'expo-haptics';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeIn, FadeInDown, FadeOut, FadeOutDown, LinearTransition, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AccessibilityInfo, Linking, ScrollView, Share, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { AccessibilityInfo, Linking, ScrollView, Share, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Text } from '@/components/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FloatingHeader, useFloatingHeaderScroll } from '@/components/floating-header';

@@ -1,7 +1,8 @@
 import { type IdentityPatch } from '@sezi/shared';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { FormError, FormScreen } from '@/components/account-fields';
 import { SeziLoader } from '@/components/sezi-loader';

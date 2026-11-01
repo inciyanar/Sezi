@@ -1,7 +1,8 @@
 import { hasLocation, inventorySource, loc, normalize, toneForType, type SweetTheme, type WorkRow } from '@sezi/shared';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, StyleSheet, TextInput, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { SeziMap, WorkClusters } from '@/components/map';
 import { Badge, Button, Chip, EmptyState, Eyebrow, Segmented } from '@/components/ui';

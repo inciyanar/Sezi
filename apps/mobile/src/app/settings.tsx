@@ -1,10 +1,12 @@
 import type { SweetTheme } from '@sezi/shared';
 import { router } from 'expo-router';
 import { useMemo } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
+import { VisionSettings } from '@/components/vision-settings';
 
-import { Button, Card, ListRow, Note, SectionTitle, Segmented, ToggleRow } from '@/components/ui';
-import { InfoIcon, PlayIcon } from '@/design/icons';
+import { Button, Card, ListRow, SectionTitle, Segmented, ToggleRow } from '@/components/ui';
+import { PlayIcon } from '@/design/icons';
 import { space, type } from '@/design/type';
 import { useSweetTheme } from '@/hooks/use-sweet-theme';
 import { useT } from '@/lib/i18n';
@@ -19,7 +21,7 @@ export default function SettingsScreen() {
   const { t: tr, lang } = useT();
   const { settings, update } = useSettings();
   const { count, clear } = usePassport();
-  const { profile, resetProfile } = useProfile();
+  const { resetProfile } = useProfile();
   const confirm = (title: string, action: () => void) =>
     Alert.alert(title, `${tr('settings.confirm')} ${tr('settings.confirmBody')}`, [
       { text: tr('common.cancel'), style: 'cancel' },
@@ -29,20 +31,23 @@ export default function SettingsScreen() {
   return (
     <ScrollView style={s.screen} contentContainerStyle={s.body}>
       <SectionTitle title={tr('settings.appearance')} />
-      <View style={{ gap: space.sm }}>
-        <Text style={[type.itemTitle, { color: t.text, fontSize: 16 }]}>{tr('settings.theme')}</Text>
-        <Segmented
-          label={tr('settings.theme')}
-          value={settings.themeMode}
-          onChange={(v) => update({ themeMode: v })}
-          options={[
-            { value: 'system', label: tr('settings.theme.system') },
-            { value: 'light', label: tr('settings.theme.light') },
-            { value: 'dark', label: tr('settings.theme.dark') },
-          ]}
-        />
-        {profile?.vision === 'low' ? <Note text={tr('settings.contrastNote')} icon={<InfoIcon color={t.textMuted} />} /> : null}
-      </View>
+      {/* Yüksek kontrast açık temadır; açıkken tema seçimi gizlenir. */}
+      {!settings.highContrast ? (
+        <View style={{ gap: space.sm }}>
+          <Text style={[type.itemTitle, { color: t.text, fontSize: 16 }]}>{tr('settings.theme')}</Text>
+          <Segmented
+            label={tr('settings.theme')}
+            value={settings.themeMode}
+            onChange={(v) => update({ themeMode: v })}
+            options={[
+              { value: 'system', label: tr('settings.theme.system') },
+              { value: 'light', label: tr('settings.theme.light') },
+              { value: 'dark', label: tr('settings.theme.dark') },
+            ]}
+          />
+        </View>
+      ) : null}
+      <VisionSettings />
 
       <SectionTitle title={tr('settings.guidance')} />
       <View style={{ gap: space.sm }}>

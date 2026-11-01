@@ -3,7 +3,8 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { AccessibilityInfo, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { FormError, FormScreen } from '@/components/account-fields';
 import { SeziLoader } from '@/components/sezi-loader';

@@ -1,7 +1,8 @@
 import { achievements, friendState, hasLocation, passportStats } from '@sezi/shared';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { FormError, FormScreen } from '@/components/account-fields';
 import { SeziLoader } from '@/components/sezi-loader';

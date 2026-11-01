@@ -1,5 +1,6 @@
 import { bookPageUrl, inventorySource, loc, type SweetTheme, type WorkRow } from '@sezi/shared';
-import { Linking, StyleSheet, Text, View } from 'react-native';
+import { Linking, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { Card, ListRow } from '@/components/ui';
 import { ExternalIcon } from '@/design/icons';

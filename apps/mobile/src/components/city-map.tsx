@@ -1,7 +1,8 @@
 import { loc, type CityRow, type WorkRow } from '@sezi/shared';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 

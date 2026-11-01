@@ -1,7 +1,8 @@
 import { Code, CODE_LENGTH } from '@sezi/shared';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { AccessibilityInfo, Text, View } from 'react-native';
+import { AccessibilityInfo, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { CodeField, FormScreen, useCooldown } from '@/components/account-fields';
 import { Button, Note } from '@/components/ui';

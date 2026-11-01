@@ -1,4 +1,5 @@
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { AchievementGrid, sortAchievements } from '@/components/social-grids';
 import { SectionTitle } from '@/components/ui';

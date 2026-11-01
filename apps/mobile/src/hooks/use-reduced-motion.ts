@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo } from 'react-native';
 
-/** Sistem tercihi okunana kadar hareketsiz başla. */
+import { useSettings } from '@/lib/settings';
+
+/** Sistem tercihi ya da uygulamadaki "Hareketleri azalt" ayarı. Sistem okunana kadar hareketsiz başla. */
 export function useReducedMotion() {
-  const [reduced, setReduced] = useState(true);
+  const { settings } = useSettings();
+  const [system, setSystem] = useState(true);
   useEffect(() => {
     let active = true;
-    void AccessibilityInfo.isReduceMotionEnabled().then((value) => { if (active) setReduced(value); });
-    const listener = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduced);
+    void AccessibilityInfo.isReduceMotionEnabled().then((value) => { if (active) setSystem(value); });
+    const listener = AccessibilityInfo.addEventListener('reduceMotionChanged', setSystem);
     return () => { active = false; listener.remove(); };
   }, []);
-  return reduced;
+  return system || settings.reduceMotion;
 }

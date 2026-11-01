@@ -1,7 +1,8 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { AccessibilityInfo, Alert, Text } from 'react-native';
+import { AccessibilityInfo, Alert } from 'react-native';
+import { Text } from '@/components/text';
 
 import { FormScreen } from '@/components/account-fields';
 import { Button, Note } from '@/components/ui';

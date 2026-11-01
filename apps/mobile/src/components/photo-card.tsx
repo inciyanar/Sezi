@@ -2,7 +2,8 @@ import { coverOf, loc, toneForType, type SweetTheme, type WorkPhoto, type WorkRo
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useId } from 'react';
-import { ScrollView, StyleSheet, Text, useWindowDimensions, View, type DimensionValue } from 'react-native';
+import { ScrollView, StyleSheet, useWindowDimensions, View, type DimensionValue } from 'react-native';
+import { Text } from '@/components/text';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { PhotoSourceTag } from '@/components/photo-source';

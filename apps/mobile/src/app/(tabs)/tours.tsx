@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Text } from '@/components/text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useTabBarSpace } from '@/components/app-tabs';

@@ -1,6 +1,7 @@
 import { PHOTO_ALT_MAX, PHOTO_CAPTION_MAX, type UserPhoto, type Visibility } from '@sezi/shared';
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { photoStatus, VisibilityChoice } from '@/components/social-visuals';
 import { Button, Card, Field, ToggleRow } from '@/components/ui';

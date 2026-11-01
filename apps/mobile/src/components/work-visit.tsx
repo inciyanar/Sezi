@@ -1,6 +1,7 @@
 import { loc, type PlannedRoute, type SweetTheme, type UserProfile, type WorkRow } from '@sezi/shared';
 import { router } from 'expo-router';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { Card, ListRow } from '@/components/ui';
 import { space, type } from '@/design/type';

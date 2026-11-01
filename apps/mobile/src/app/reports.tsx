@@ -1,6 +1,7 @@
 import { loc, type SweetTheme } from '@sezi/shared';
 import { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { Badge, Button, Card, EmptyState, Note } from '@/components/ui';
 import { InfoIcon } from '@/design/icons';

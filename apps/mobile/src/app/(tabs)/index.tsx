@@ -2,7 +2,8 @@ import { coverOf, loc, toneForType, type WorkRow } from '@sezi/shared';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Text } from '@/components/text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CheckIcon, ChevronIcon, InfoIcon, PlayIcon, SearchIcon } from '@/design/icons';

@@ -2,7 +2,8 @@ import { badgeFor, loc, THRESHOLDS, toneForType, type Achievement, type BadgeId,
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useEffect, type ComponentType, type ReactNode } from 'react';
-import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Text } from '@/components/text';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { ProgressBar } from '@/components/ui';

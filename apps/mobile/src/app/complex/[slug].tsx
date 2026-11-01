@@ -1,7 +1,8 @@
 import { hasLocation, loc, toneForType, type SweetTheme } from '@sezi/shared';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { PointsLayer, SeziMap } from '@/components/map';
 import { SeziLoader } from '@/components/sezi-loader';

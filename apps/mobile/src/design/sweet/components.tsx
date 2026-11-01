@@ -1,7 +1,8 @@
 import { hasLocation, loc, type SweetTheme, type SweetTone, type WorkRow } from '@sezi/shared';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
+import { Modal, Pressable, StyleSheet, View, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
+import { Text } from '@/components/text';
 import Animated, {
   FadeIn,
   FadeInDown,

@@ -1,6 +1,7 @@
 import { type SweetTheme } from '@sezi/shared';
 import { Fragment, useEffect, useEffectEvent, useRef } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { space, type } from '@/design/type';
 

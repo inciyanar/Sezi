@@ -1,7 +1,8 @@
 import { loc, searchAskWorks, type AskCitation, type AskHistoryMessage, type SweetTheme, type WorkRow } from '@sezi/shared';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AccessibilityInfo, FlatList, KeyboardAvoidingView, Linking, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { AccessibilityInfo, FlatList, KeyboardAvoidingView, Linking, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Text } from '@/components/text';
 import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 

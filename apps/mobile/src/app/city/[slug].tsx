@@ -1,7 +1,8 @@
 import { coverOf, loc, type SweetTheme } from '@sezi/shared';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
-import { Linking, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Linking, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Text } from '@/components/text';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 

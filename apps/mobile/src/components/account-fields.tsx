@@ -1,6 +1,7 @@
 import { CODE_LENGTH, PASSWORD_MIN, RESEND_SECONDS } from '@sezi/shared';
 import { useCallback, useContext, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
-import { Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { Keyboard, Pressable, ScrollView, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
+import { Text } from '@/components/text';
 
 import { Field, RevealContext } from '@/components/ui';
 import { CheckIcon, EyeIcon, InfoIcon, LockIcon } from '@/design/icons';

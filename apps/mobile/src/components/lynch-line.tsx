@@ -1,6 +1,7 @@
 import type { WorkPhoto } from '@sezi/shared';
 import { Image } from 'expo-image';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { PhotoSourceThumbTag } from '@/components/photo-source';
 import { CheckIcon, ChevronIcon, MapIcon, PinIcon, RouteIcon, TurnIcon } from '@/design/icons';

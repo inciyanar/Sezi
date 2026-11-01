@@ -1,6 +1,7 @@
 import { TabList, TabSlot, Tabs, TabTrigger, type TabTriggerSlotProps } from 'expo-router/ui';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Keyboard, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 

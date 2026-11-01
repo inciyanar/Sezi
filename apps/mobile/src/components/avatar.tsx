@@ -1,6 +1,7 @@
 import type { Identity } from '@sezi/shared';
 import { Image } from 'expo-image';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { PersonIcon } from '@/design/icons';
 import { font } from '@/design/type';

@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
+import { Text } from '@/components/text';
 
 import { ExhibitionCard } from '@/components/exhibition-card';
 import { SeziLoader } from '@/components/sezi-loader';

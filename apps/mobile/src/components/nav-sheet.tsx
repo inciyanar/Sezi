@@ -1,6 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Text } from '@/components/text';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

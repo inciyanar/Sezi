@@ -2,7 +2,8 @@ import { loc, type SweetTheme } from '@sezi/shared';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { useMemo } from 'react';
-import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { Card, ListRow, SectionTitle } from '@/components/ui';
 import { space, type } from '@/design/type';

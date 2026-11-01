@@ -2,7 +2,8 @@ import { Username, type FriendshipRow } from '@sezi/shared';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState, type ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { FormError, FormScreen } from '@/components/account-fields';
 import { SeziLoader } from '@/components/sezi-loader';

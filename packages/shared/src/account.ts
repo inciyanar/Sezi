@@ -61,6 +61,14 @@ export const SyncedSettings = z.object({
   speechRate: z.number().min(0.5).max(1.5).default(0.95),
   /** Anlatım noktası sesi: otomatik ya da dokununca. */
   storyPlayback: z.enum(["auto", "tap"]).default("auto"),
+  /** Yüksek kontrast: dolgu yok, siyah-beyaz, çerçeveli yüzeyler. Az gören profili seçilince açılır. */
+  highContrast: z.boolean().default(false),
+  /** Uygulama içi yazı büyütme; sistem yazı boyutuyla çarpılır. */
+  textScale: z.enum(["normal", "large", "xlarge"]).default("normal"),
+  /** Renk körlüğüne uygun tonlar (eser türleri, vurgu). */
+  colorSafe: z.boolean().default(false),
+  /** Sistem ayarından bağımsız olarak hareketleri azaltır. */
+  reduceMotion: z.boolean().default(false),
 });
 export type SyncedSettings = z.infer<typeof SyncedSettings>;
 

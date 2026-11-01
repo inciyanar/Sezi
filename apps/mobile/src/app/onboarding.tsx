@@ -1,19 +1,22 @@
-import { defaultSenses, sweetThemes, type SweetTheme, type UserProfile } from '@sezi/shared';
+import { defaultSenses, type SweetTheme, type UserProfile } from '@sezi/shared';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, findNodeHandle, ScrollView, StyleSheet, Text, useColorScheme, View, type TextStyle, type ViewStyle } from 'react-native';
+import { AccessibilityInfo, findNodeHandle, ScrollView, StyleSheet, View, type TextStyle, type ViewStyle } from 'react-native';
+import { Text, type TextRef } from '@/components/text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { z } from 'zod';
 import { ProfileCard } from '@/components/profile-card';
+import { VisionSettings } from '@/components/vision-settings';
 
 import { CheckIcon } from '@/design/icons';
 import { CengelMark } from '@/design/motif';
 import { FadeInItem, outline, SoftPressable } from '@/design/sweet/components';
 import { font, radius, space, type } from '@/design/type';
-import { useSettings } from '@/lib/settings';
+import { useIsDark, useSweetTheme } from '@/hooks/use-sweet-theme';
 import { translate, type Lang, type MessageKey } from '@/lib/i18n';
 import { useProfile } from '@/lib/profile';
+import { DEFAULT_VISION_LOOK, LOW_VISION_DEFAULTS, useSettings } from '@/lib/settings';
 
 type Step = 'welcome' | 'lang' | 'vision' | 'hearing' | 'mobility' | 'senses' | 'summary';
 const STEPS: Step[] = ['welcome', 'lang', 'vision', 'hearing', 'mobility', 'senses', 'summary'];
@@ -21,8 +24,7 @@ const STEPS: Step[] = ['welcome', 'lang', 'vision', 'hearing', 'mobility', 'sens
 export default function Onboarding() {
   const { profile, saveProfile } = useProfile();
   const editing = profile !== null;
-  const scheme = useColorScheme();
-  const { settings } = useSettings();
+  const { update } = useSettings();
 
   const params = useLocalSearchParams<{ step?: string }>();
   const requestedStep = z.enum(['lang', 'vision', 'hearing', 'mobility', 'senses']).safeParse(params.step);
@@ -33,14 +35,15 @@ export default function Onboarding() {
   const [mobility, setMobility] = useState<UserProfile['mobility']>(profile?.mobility ?? 'none');
   const [senses, setSenses] = useState<UserProfile['senses']>(profile?.senses ?? defaultSenses('full'));
 
-  // Önizleme: az gören seçilince yüksek kontrast hemen uygulanır.
-  const t: SweetTheme = vision === 'low' ? sweetThemes.highContrast : sweetThemes[settings.themeMode === 'system' ? (scheme === 'dark' ? 'dark' : 'light') : settings.themeMode];
+  // Görünüm ayarları (kontrast, yazı) seçildiği anda uygulanır; tema doğrudan ayarlardan gelir.
+  const t = useSweetTheme();
+  const dark = useIsDark();
   const s = useMemo(() => makeStyles(t), [t]);
   const tr = (key: MessageKey, vars?: Record<string, string | number>) => translate(lang, key, vars);
 
   const steps = editing ? STEPS.filter((x) => x !== 'welcome') : STEPS;
   const index = steps.indexOf(step);
-  const titleRef = useRef<Text>(null);
+  const titleRef = useRef<TextRef>(null);
 
   useEffect(() => {
     // Ekran okuyucu odağını yeni adımın başlığına taşı.
@@ -52,6 +55,9 @@ export default function Onboarding() {
   }, [step]);
 
   const pickVision = (v: UserProfile['vision']) => {
+    // Az gören profiline girerken yüksek kontrast ve büyük yazı açılır, çıkarken varsayılana döner.
+    if (v === 'low' && vision !== 'low') update(LOW_VISION_DEFAULTS);
+    if (v !== 'low' && vision === 'low') update(DEFAULT_VISION_LOOK);
     setVision(v);
     if (!editing || v !== profile?.vision) setSenses(defaultSenses(v, hearing));
   };
@@ -75,7 +81,7 @@ export default function Onboarding() {
 
   return (
     <SafeAreaView style={s.screen}>
-      <StatusBar style={t === sweetThemes.dark ? 'light' : 'dark'} />
+      <StatusBar style={dark ? 'light' : 'dark'} />
 
       <View style={s.progress} accessibilityLabel={tr('onb.step', { n: index + 1, total: steps.length })}>
         {steps.map((x, i) => (
@@ -123,19 +129,31 @@ export default function Onboarding() {
         )}
 
         {step === 'vision' && (
-          <Question title={tr('onb.vision.title')} hint={tr('onb.vision.hint')} titleRef={titleRef} s={s}>
-            {(['full', 'low', 'blind'] as const).map((v) => (
-              <Option
-                key={v}
-                label={tr(`onb.vision.${v}`)}
-                description={tr(`onb.vision.${v}.d`)}
-                selected={vision === v}
-                onPress={() => pickVision(v)}
-                t={t}
-                s={s}
-              />
-            ))}
-          </Question>
+          <>
+            <Question title={tr('onb.vision.title')} hint={tr('onb.vision.hint')} titleRef={titleRef} s={s}>
+              {(['full', 'low', 'blind'] as const).map((v) => (
+                <Option
+                  key={v}
+                  label={tr(`onb.vision.${v}`)}
+                  description={tr(`onb.vision.${v}.d`)}
+                  selected={vision === v}
+                  onPress={() => pickVision(v)}
+                  t={t}
+                  s={s}
+                />
+              ))}
+            </Question>
+            {/* Az gören seçilince görünüm ayarları seçeneklerin altında belirir; değişiklik ekrana hemen yansır. */}
+            {vision === 'low' ? (
+              <FadeInItem index={1} style={s.look}>
+                <Text style={[type.heading, { color: t.text }]} accessibilityRole="header">
+                  {tr('vision.lookTitle')}
+                </Text>
+                <Text style={s.hint}>{tr('vision.lookHint')}</Text>
+                <VisionSettings tr={tr} />
+              </FadeInItem>
+            ) : null}
+          </>
         )}
 
         {step === 'hearing' && (
@@ -249,7 +267,7 @@ function Question({
 }: {
   title: string;
   hint?: string;
-  titleRef: React.RefObject<Text | null>;
+  titleRef: React.RefObject<TextRef | null>;
   s: QuestionStyles;
   multi?: boolean;
   children: React.ReactNode;
@@ -327,6 +345,7 @@ const makeStyles = (t: SweetTheme) =>
     lead: { ...type.lead, color: t.text, flexShrink: 1 },
     hint: { ...type.body, color: t.textMuted },
     options: { gap: space.md, marginTop: space.xs },
+    look: { gap: space.md, marginTop: space.lg },
     option: { flexDirection: 'row', gap: 14, alignItems: 'center', minHeight: 64, padding: space.lg, borderRadius: radius.lg, borderCurve: 'continuous' },
     optionText: { flex: 1, gap: 4 },
     optionLabel: { ...type.itemTitle, color: t.text },
