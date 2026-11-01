@@ -2,7 +2,8 @@ import { AVATAR_TONES, DisplayName, NAME_MAX, Username, USERNAME_MAX, USERNAME_M
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
-import { AccessibilityInfo, StyleSheet, Text, type TextInput, View } from 'react-native';
+import { AccessibilityInfo, StyleSheet, type TextInput, View } from 'react-native';
+import { Text } from '@/components/text';
 
 import { FormError, FormScreen } from '@/components/account-fields';
 import { SeziLoader } from '@/components/sezi-loader';
@@ -108,7 +109,7 @@ function Editor({ identity, avatar, save, setAvatar, removeAvatar }: { identity:
     <FormScreen>
       <View style={styles.photo}>
         <Avatar identity={{ display_name: name || identity.display_name, avatar_tone: tone }} source={avatar} size={112} />
-        {photoBusy ? <SeziLoader size={24} label={tr('account.photoUploading')} /> : null}
+        {photoBusy ? <SeziLoader size={40} label={tr('account.photoUploading')} /> : null}
         <View style={styles.photoActions}>
           <Button compact variant="secondary" label={tr('account.photoPick')} onPress={() => void pick('library')} disabled={photoBusy} />
           <Button compact variant="secondary" icon={(c) => <CameraIcon color={c} />} label={tr('account.photoTake')} onPress={() => void pick('camera')} disabled={photoBusy} />

@@ -2,6 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, RefreshControl, StyleSheet, View } from 'react-native';
 import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { SeziLoader } from '@/components/sezi-loader';
@@ -10,9 +11,11 @@ import { space } from '@/design/type';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useT } from '@/lib/i18n';
 
-const LOADER = 40;
+const LOADER = 72;
 /** Android'de saydam dairenin zemini ve gölgesi kalabiliyor; göstergeyi ekranın üstüne iter. */
 const SPINNER_OFFSET = Platform.OS === 'android' ? -1000 : 0;
+/** Önbellekten yenileme anında bitebiliyor; çizim en az bu kadar görünür kalır, yoksa kullanıcı bir şey olduğunu görmez. */
+const MIN_VISIBLE_MS = 900;
 
 /**
  * Aşağı çekerek yenileme: sistem hareketi durur, illüstrasyon üstte görünür.
@@ -28,7 +31,8 @@ export function useSeziRefresh(refetch: () => void | Promise<unknown>) {
     setRefreshing(true);
     AccessibilityInfo.announceForAccessibility(tr('common.loading'));
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    void Promise.resolve(refetch()).finally(() => setRefreshing(false));
+    const shown = new Promise((resolve) => setTimeout(resolve, MIN_VISIBLE_MS));
+    void Promise.allSettled([refetch(), shown]).then(() => setRefreshing(false));
   }, [refetch, tr]);
 
   const refreshControl = (
@@ -50,6 +54,7 @@ export function useSeziRefresh(refetch: () => void | Promise<unknown>) {
 /** Listenin üstünde, yenileme bitince solan illüstrasyon. Her başlangıçta yeni kare. */
 function SeziRefreshOverlay({ refreshing, frameKey }: { refreshing: boolean; frameKey: number }) {
   const reduced = useReducedMotion();
+  const insets = useSafeAreaInsets();
   const opacity = useSharedValue(0);
   const [heldKey, setHeldKey] = useState(frameKey);
   const [held, setHeld] = useState(false);
@@ -77,8 +82,9 @@ function SeziRefreshOverlay({ refreshing, frameKey }: { refreshing: boolean; fra
 
   if (!held) return null;
 
+  // Mutlak konum ebeveynin dolgusunu yok sayar: durum çubuğu payını kendimiz ekliyoruz.
   return (
-    <View pointerEvents="none" style={styles.overlay}>
+    <View pointerEvents="none" style={[styles.overlay, { top: insets.top + space.md }]}>
       <Animated.View style={animated}>
         <SeziLoader key={heldKey} size={LOADER} />
       </Animated.View>
@@ -89,7 +95,6 @@ function SeziRefreshOverlay({ refreshing, frameKey }: { refreshing: boolean; fra
 const styles = StyleSheet.create({
   overlay: {
     position: 'absolute',
-    top: space.md,
     left: 0,
     right: 0,
     alignItems: 'center',

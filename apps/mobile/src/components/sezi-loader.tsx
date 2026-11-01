@@ -21,8 +21,8 @@ function pickFrame(): FrameName {
   return NAMES[index] ?? 'lahmacun';
 }
 
-/** Dönen illüstrasyon. `size` 24 satır içi, 48 sayfa yüklemesi. */
-export function SeziLoader({ size = 48, label }: { size?: number; label?: string }) {
+/** Dönen illüstrasyon. `size` 40 satır içi, 72 sayfa yüklemesi (küçükken çizim seçilmiyor). */
+export function SeziLoader({ size = 72, label }: { size?: number; label?: string }) {
   const { t: tr } = useT();
   const reduced = useReducedMotion();
   const [name] = useState(pickFrame);
