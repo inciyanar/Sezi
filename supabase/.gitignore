@@ -9,3 +9,6 @@
 
 # Kitap metni taslakları: envanter kitaplarının tam metnini içerir; yerel PDF'lerden yeniden üretilir (data/inventory_texts.py)
 seed_text_drafts_*.sql
+
+# Kitap metninden türetilmiş hazır özet önerileri: yalnız yerelde
+seed_summary_suggestions_*.sql
