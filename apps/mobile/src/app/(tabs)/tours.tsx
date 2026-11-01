@@ -63,7 +63,7 @@ export default function Tours() {
         <ScreenHeader title={tr('tours.title')} subtitle={tr('design.pilotSubtitle')} />
         {/* Canlı yürüyüş: anlatım noktaları her ilde çalışır; tur kartlarıyla aynı kapaksız düzen. */}
         <SoftPressable
-          onPress={() => router.push('/navigate')}
+          onPress={() => router.push({ pathname: '/navigate', params: { stroll: '1' } })}
           accessibilityRole="button"
           accessibilityLabel={`${tr('nav.walkCard')}. ${tr('nav.walkCardBody')}. ${tr('nav.storyCount', { n: stories })}`}
           accessibilityHint={tr('nav.beginHint')}

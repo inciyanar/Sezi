@@ -1,18 +1,23 @@
 import { distanceM } from "./geo";
 import type { LngLat, NavNode, NavSegment, UserProfile } from "./schemas";
 
+/** Rota maliyetinin amacı: profil uyumlu ya da yalnızca mesafe. */
+export type RouteObjective = "profile" | "shortest";
+
+/** Segmentin bu profil için geçilebilir olup olmadığını belirler. */
+function isSegmentTraversable(s: NavSegment, p: UserProfile): boolean {
+  if (s.blocked) return false;
+  if (p.mobility !== "wheelchair") return true;
+  return s.steps === 0 && !s.kerb && s.slopePct <= 8 && (s.widthCm === undefined || s.widthCm >= 90);
+}
+
 /**
  * Segmentin bu profil için maliyeti (metre eşdeğeri). `null` = geçilemez.
  * Ağırlıklar Lynch yaklaşımını yansıtır: görsel kullanıcı için landmark görünürlüğü
  * rotayı ucuzlatır, görme engelli için gürültü ses ipuçlarını bastırdığı için pahalılaştırır.
  */
 export function segmentCost(s: NavSegment, p: UserProfile): number | null {
-  if (s.blocked) return null;
-
-  if (p.mobility === "wheelchair") {
-    if (s.steps > 0 || s.kerb || s.slopePct > 8) return null;
-    if (s.widthCm !== undefined && s.widthCm < 90) return null;
-  }
+  if (!isSegmentTraversable(s, p)) return null;
 
   let cost = s.lengthM;
 
@@ -106,12 +111,13 @@ class MinHeap<T> {
   }
 }
 
-/** Profil ağırlıklı Dijkstra. Yol yoksa `null`. */
+/** Profil ağırlıklı ya da en kısa mesafeli Dijkstra. Yol yoksa `null`. */
 export function findRoute(
   segments: NavSegment[],
   profile: UserProfile,
   fromId: string,
   toId: string,
+  objective: RouteObjective = "profile",
 ): Route | null {
   const adj = buildAdjacency(segments);
   const dist = new Map<string, number>([[fromId, 0]]);
@@ -124,9 +130,16 @@ export function findRoute(
     if (node === toId) break;
     if (key > (dist.get(node) ?? Infinity)) continue;
     for (const { to, segment } of adj.get(node) ?? []) {
-      const c = segmentCost(segment, profile);
-      if (c === null) continue;
-      const nd = key + c;
+      let edgeCost: number;
+      if (objective === "shortest") {
+        if (!isSegmentTraversable(segment, profile)) continue;
+        edgeCost = segment.lengthM;
+      } else {
+        const profileCost = segmentCost(segment, profile);
+        if (profileCost === null) continue;
+        edgeCost = profileCost;
+      }
+      const nd = key + edgeCost;
       if (nd < (dist.get(to) ?? Infinity)) {
         dist.set(to, nd);
         prev.set(to, { node, segment });

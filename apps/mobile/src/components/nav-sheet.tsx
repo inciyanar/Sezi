@@ -1,20 +1,19 @@
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { Text } from '@/components/text';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { SoftPressable, sweetShadow } from '@/design/sweet/components';
-import { radius, space, type } from '@/design/type';
+import { radius, space } from '@/design/type';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useSweetTheme } from '@/hooks/use-sweet-theme';
 import { useT } from '@/lib/i18n';
 
 /** Haritayla aynı ekranda kalan iki duraklı panel; kaydırma yalnız tutamaçtan başlar. */
-export function NavSheet({ phase, popup, children }: { phase: 'plan' | 'active' | 'arrived'; popup: boolean; children: ReactNode }) {
+export function NavSheet({ phase, popup, children, onHeightChange }: { phase: 'plan' | 'active' | 'arrived'; popup: boolean; children: ReactNode; onHeightChange?: (height: number) => void }) {
   const t = useSweetTheme();
   const { t: tr } = useT();
   const reduced = useReducedMotion();
@@ -34,6 +33,9 @@ export function NavSheet({ phase, popup, children }: { phase: 'plan' | 'active' 
   const origin = useSharedValue(0);
   const detent = useSharedValue(phase !== 'active');
   const scrollRef = useRef<ScrollView>(null);
+  useEffect(() => {
+    onHeightChange?.(expanded ? panelHeight : shortHeight);
+  }, [expanded, panelHeight, shortHeight, onHeightChange]);
 
   // Aşama değişince panel o aşamanın varsayılan yüksekliğine döner (state render sırasında eşitlenir).
   const [seenPhase, setSeenPhase] = useState(phase);
@@ -105,13 +107,13 @@ export function NavSheet({ phase, popup, children }: { phase: 'plan' | 'active' 
             onPress={toggle}
             style={styles.handleButton}>
             <View accessible={false} style={[styles.handle, { backgroundColor: t.textMuted }]} />
-            <Text style={[type.meta, { color: t.textMuted }]}>{tr(expanded ? 'nav.sheetLess' : 'nav.sheetDetails')}</Text>
           </SoftPressable>
         </View>
       </GestureDetector>
       <ScrollView
         ref={scrollRef}
         style={styles.scroll}
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + space.xl + (expanded ? 0 : travel) + (popup ? 380 : 0) }]}>
         <View style={styles.content} onLayout={(e) => setContentHeight(Math.ceil(e.nativeEvent.layout.height))}>
           {children}
@@ -123,7 +125,7 @@ export function NavSheet({ phase, popup, children }: { phase: 'plan' | 'active' 
 
 const styles = StyleSheet.create({
   panel: { position: 'absolute', bottom: 0, left: 0, right: 0, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden' },
-  handleButton: { minHeight: 56, alignItems: 'center', justifyContent: 'center', gap: space.xs, padding: space.sm },
+  handleButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: space.xs, padding: space.sm },
   handle: { width: 40, height: 4, borderRadius: 2 },
   scroll: { flex: 1 },
   body: { paddingHorizontal: space.xl, paddingTop: space.sm },

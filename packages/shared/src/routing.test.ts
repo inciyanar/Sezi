@@ -38,6 +38,12 @@ const segments = [
   { id: "CD", from: "C", to: "D", lengthM: 80, slopePct: 5 },
 ].map((s) => NavSegment.parse(s));
 
+const scenicSegments = [
+  { id: "AD", from: "A", to: "D", lengthM: 100 },
+  { id: "AC", from: "A", to: "C", lengthM: 60, landmarkVisibility: 1 },
+  { id: "CD", from: "C", to: "D", lengthM: 60, landmarkVisibility: 1 },
+].map((s) => NavSegment.parse(s));
+
 describe("findRoute", () => {
   it("varsayılan profil kısa merdivenli yolu seçer", () => {
     expect(findRoute(segments, base, "A", "D")?.nodeIds).toEqual(["A", "B", "D"]);
@@ -59,6 +65,28 @@ describe("findRoute", () => {
       s.id === "AB" || s.id === "BD" ? { ...s, noise: 1 } : s,
     );
     expect(findRoute(noisy, blind, "A", "D")?.nodeIds).toEqual(["A", "C", "D"]);
+  });
+
+  it("shortest mesafeyi en aza indirir, profil maliyeti görünür rotayı seçmeye devam eder", () => {
+    expect(findRoute(scenicSegments, base, "A", "D")?.nodeIds).toEqual(["A", "C", "D"]);
+    const shortest = findRoute(scenicSegments, base, "A", "D", "shortest");
+    expect(shortest?.nodeIds).toEqual(["A", "D"]);
+    expect(shortest?.lengthM).toBe(100);
+  });
+
+  it.each([
+    ["blocked", { blocked: true }],
+    ["steps", { steps: 1 }],
+    ["kerb", { kerb: true }],
+    ["slope", { slopePct: 9 }],
+    ["width", { widthCm: 80 }],
+  ])("shortest tekerlekli sandalye için %s segmentini dışarıda bırakır", (_constraint, exclusion) => {
+    const graph = [
+      NavSegment.parse({ id: "AB", from: "A", to: "D", lengthM: 10, ...exclusion }),
+      NavSegment.parse({ id: "AC", from: "A", to: "C", lengthM: 40 }),
+      NavSegment.parse({ id: "CD", from: "C", to: "D", lengthM: 40 }),
+    ];
+    expect(findRoute(graph, wheelchair, "A", "D", "shortest")?.segmentIds).toEqual(["AC", "CD"]);
   });
 });
 

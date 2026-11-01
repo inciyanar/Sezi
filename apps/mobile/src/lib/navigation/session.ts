@@ -32,7 +32,7 @@ import * as Location from 'expo-location';
 import { useSyncExternalStore } from 'react';
 import { AccessibilityInfo } from 'react-native';
 
-import { blockableAhead, detourFrom, inPilotArea, landmarkNodes, planRoute, planStroll, startLocation, walkingSpeed, type PlannedRoute } from '../nav';
+import { blockableAhead, choiceOptions, defaultStart, detourFrom, inPilotArea, landmarkNodes, planOptions, planRoute, planStroll, startLocation, walkingSpeed, type PlannedRoute, type RouteChoice, type RouteOption } from '../nav';
 import { navPoints, pointAudioUri, workPoints } from '../points';
 import { hapticAlert, hapticForTurn } from '../sim/cues';
 import { cancelEarcons, playEarcon, preloadEarcons } from './earcons';
@@ -45,10 +45,11 @@ import { NAV_TEXT as TEXT } from './texts';
 /**
  * Tek navigasyon oturumu: rota planı, canlı rehberlik ve yürüyüş aynı yerde.
  *
- * - Başlangıç: bulunduğum yer (GPS), admin panelindeki bir başlangıç noktası ya da haritada seçilen yer.
- * - Hedef: bir eser (rota yakındaki anlatım noktalarına uğrar), tur (eserler sırayla) ya da hedefsiz gezinti.
- * - Konum kaynağı: gerçek GPS ya da (geliştirici simülasyon modunda) sanal yürüyüşçü. İkisi de aynı takip
- *   hattından geçer (`trackFix`, `dueStep`, `duePoints`); yalnızca konumun nereden geldiği değişir.
+ * - Başlangıç: bulunduğum yer (GPS). Geliştirici modunda ayrıca admin panelindeki bir başlangıç noktası ya da haritada seçilen yer.
+ * - Hedef: bir eser (Hikâyeli / En kısa / Basamaksız seçenekleriyle), tur (eserler sırayla) ya da hedefsiz gezinti.
+ * - Konum kaynağı: gerçek GPS ya da sanal yürüyüşçü. Kullanıcı pilot alanda değilse (ya da konum izni yoksa) rota
+ *   varsayılan başlangıçtan çizilir ve yürüyüş sanaldır; geliştirici modunda seçilen başlangıç da sanal yürür.
+ *   İkisi de aynı takip hattından geçer (`trackFix`, `dueStep`, `duePoints`); yalnızca konumun nereden geldiği değişir.
  * - Anlatım noktasına girince bilgi açılır, ayara göre ses çalar; esere varınca varış kartı ve sesi.
  */
 
@@ -72,6 +73,12 @@ export interface NavState {
   /** Turda sıradaki eserler. */
   tour: string[];
   plan: PlannedRoute | null;
+  /** Esere giden rota seçenekleri (plan aşamasında; gezintide tek). */
+  options: RouteOption[];
+  /** Seçili seçenek: yeniden rota da bununla hesaplanır. */
+  choice: RouteChoice;
+  /** Yürüyüş sanal: kullanıcı pilot alanda değil, konum izni yok ya da (geliştirici) başka başlangıç seçildi. */
+  virtual: boolean;
   /** Rota neden yok: konum bekleniyor, pilot alan dışında, yol yok, yakında anlatım noktası yok. */
   note: 'need_location' | 'outside_pilot' | 'no_route' | 'no_points' | null;
   /** Son GPS konumu. */
@@ -110,7 +117,7 @@ export interface NavConfig {
   profile: UserProfile;
   speechRate: number;
   playback: 'auto' | 'tap';
-  /** Geliştirici simülasyon modu: başlangıç GPS değilse yürüyüş sanaldır. */
+  /** Geliştirici modu: başlangıç noktası seçilebilir; seçim ekran açılışında korunur. */
   sim: boolean;
   onArrive: (slug: string, walkedM: number) => void;
 }
@@ -148,6 +155,9 @@ let state: NavState = {
   dest: null,
   tour: [],
   plan: null,
+  options: [],
+  choice: 'story',
+  virtual: false,
   note: null,
   here: null,
   cueCount: 0,
@@ -191,7 +201,9 @@ const findPoint = (id: string): NavPoint | undefined => navPoints().find((p) => 
 /** Varış metni: eserin özeti, yoksa tarihçesinin başı, o da yoksa admin'in varış noktası (`shared/points.ts › arrivalText`). */
 const workArrival = (slug: string | null, fallback: NavPoint | undefined) => arrivalText(slug, workPoints(), fallback);
 const canHear = () => !!cfg && cfg.profile.hearing !== 'deaf' && cfg.profile.senses.audio && !state.noisy;
-const wantsSim = (c: NavConfig, start: StartChoice) => c.sim && start.kind !== 'here';
+/** GPS yoksa ya da pilot alan dışındaysa yürüyüş sanal; geliştirici başlangıcı da sanal yürür. */
+const virtualStart = (start: StartChoice, here: LngLat | null, permission: NavState['permission']) =>
+  start.kind !== 'here' || permission === 'denied' || permission === 'off' || (!!here && !inPilotArea(here));
 
 // ---------- Ses ve uyarılar ----------
 
@@ -317,30 +329,64 @@ function origin(start: StartChoice): LngLat | null {
   return start.location;
 }
 
-/** Bu başlangıç ve hedef için rota; bulunamazsa nedeni. */
+/** Türkçe talimatlar Chirp ile önceden hazırlanır: yürürken beklemeden ve internetsiz çalsın. */
+function prefetch(plan: PlannedRoute) {
+  const p = cfg?.profile;
+  if (p && p.lang === 'tr' && p.hearing !== 'deaf' && p.senses.audio) {
+    void prefetchChirp([introText(plan, 'tr'), ...plan.steps.map((s) => s.text)]);
+  }
+}
+
+/** Yürürken (yeniden rota, konum gelince) seçili seçenekle tek rota; bulunamazsa nedeni. */
 function compute(from: LngLat, dest: string | null, leadIn: boolean, extra: { blocked?: string[]; skip?: string[] } = {}) {
   if (!cfg) return { plan: null, note: null };
   if (!inPilotArea(from)) return { plan: null, note: 'outside_pilot' as const };
   const opts = { leadIn, blocked: new Set(extra.blocked ?? []), skip: new Set(extra.skip ?? []) };
-  const plan = dest ? planRoute(dest, cfg.profile, from, opts) : planStroll(cfg.profile, from, opts);
+  const plan = dest ? planRoute(dest, cfg.profile, from, { ...opts, ...choiceOptions(state.choice) }) : planStroll(cfg.profile, from, opts);
   if (!plan) return { plan: null, note: dest ? ('no_route' as const) : ('no_points' as const) };
-  // Türkçe talimatlar Chirp ile önceden hazırlanır: yürürken beklemeden ve internetsiz çalsın.
-  const p = cfg.profile;
-  if (p.lang === 'tr' && p.hearing !== 'deaf' && p.senses.audio) {
-    void prefetchChirp([introText(plan, 'tr'), ...plan.steps.map((s) => s.text)]);
-  }
+  prefetch(plan);
   return { plan, note: null };
+}
+
+/** Plan aşaması: hedefe giden seçenekler ve seçili olanın rotası. Önceki seçim varsa korunur. */
+function computeOptions(from: LngLat, dest: string | null, leadIn: boolean): Pick<NavState, 'plan' | 'options' | 'choice' | 'note'> {
+  if (!cfg || !inPilotArea(from)) return { plan: null, options: [], choice: state.choice, note: 'outside_pilot' };
+  let options: RouteOption[];
+  if (dest) options = planOptions(dest, cfg.profile, from, { leadIn });
+  else {
+    const stroll = planStroll(cfg.profile, from, { leadIn });
+    options = stroll ? [{ choice: 'story', plan: stroll }] : [];
+  }
+  // Tekilleştirme seçilen tercihi silemez: aynı yol bugün Hikâyeli ile örtüşse bile Basamaksız
+  // yarınki GPS yenilemesinde ve yeniden rotada basamak yasağını korur.
+  if (dest && state.choice !== 'story' && !options.some((o) => o.choice === state.choice)) {
+    const requested = planRoute(dest, cfg.profile, from, { leadIn, ...choiceOptions(state.choice) });
+    if (!requested) return { plan: null, options, choice: state.choice, note: 'no_route' };
+    const same = options.findIndex((o) => o.plan.route.segmentIds.length === requested.route.segmentIds.length && o.plan.route.segmentIds.every((id, i) => id === requested.route.segmentIds[i]));
+    const option = { choice: state.choice, plan: requested };
+    if (same >= 0) options[same] = option;
+    else options.push(option);
+  }
+  const picked = options.find((o) => o.choice === state.choice) ?? options[0];
+  if (!picked) return { plan: null, options, choice: state.choice, note: dest ? 'no_route' : 'no_points' };
+  prefetch(picked.plan);
+  return { plan: picked.plan, options, choice: picked.choice, note: null };
 }
 
 function replanPreview() {
   if (!cfg || state.phase !== 'plan') return;
-  const from = origin(state.start);
-  plannedFrom = from;
+  const virtual = virtualStart(state.start, state.here, state.permission);
+  const gps = state.start.kind === 'here';
+  // Kullanıcı pilot alanda değilse (ya da konum yoksa) rota varsayılan başlangıçtan önizlenir; yürüyüş sanal olur.
+  const from = gps ? (virtual ? defaultStart() : state.here) : origin(state.start);
+  plannedFrom = gps ? state.here : from;
   if (!from) {
-    emit({ plan: null, note: 'need_location' });
+    emit({ plan: null, options: [], virtual, note: 'need_location' });
     return;
   }
-  emit(compute(from, state.dest, state.start.kind !== 'point'));
+  const next = computeOptions(from, state.dest, state.start.kind === 'pick' || (gps && !virtual));
+  const outside = gps && !!state.here && !inPilotArea(state.here);
+  emit({ ...next, virtual, note: next.note ?? (outside ? 'outside_pilot' : null) });
 }
 
 // ---------- Yürüyüş ----------
@@ -361,13 +407,17 @@ async function startWatch(): Promise<boolean> {
   const token = ++watchToken;
   try {
     if (!(await Location.hasServicesEnabledAsync())) {
-      if (token === watchToken) emit({ permission: 'off' });
+      if (token === watchToken) {
+        emit({ permission: 'off' });
+        replanPreview();
+      }
       return false;
     }
     const perm = await Location.requestForegroundPermissionsAsync();
     if (token !== watchToken) return false;
     if (perm.status !== 'granted') {
       emit({ permission: 'denied' });
+      replanPreview();
       return false;
     }
     emit({ permission: 'granted' });
@@ -386,7 +436,10 @@ async function startWatch(): Promise<boolean> {
     watch = sub;
     return true;
   } catch {
-    if (token === watchToken) emit({ permission: 'denied' });
+    if (token === watchToken) {
+      emit({ permission: 'denied' });
+      replanPreview();
+    }
     return false;
   }
 }
@@ -547,7 +600,7 @@ function arrive() {
 
 async function begin() {
   if (!cfg) return;
-  const sim = wantsSim(cfg, state.start);
+  const sim = state.virtual;
   if (sim && !state.plan) return;
   stopTimer();
   silence();
@@ -578,7 +631,9 @@ async function begin() {
   walker = null;
   emit({ running: true });
   if (!(await startWatch())) {
+    // Konum alınamadı: plana dönülür; önizleme varsayılan başlangıçtan sanal yürüyüşe geçer.
     emit({ phase: 'plan', running: false });
+    replanPreview();
     return;
   }
   if (state.plan) intro(state.plan);
@@ -590,6 +645,7 @@ export const navigation = {
   configure(c: NavConfig) {
     const changed = !cfg || cfg.profile !== c.profile || cfg.sim !== c.sim;
     cfg = c;
+    if (!c.sim && state.speed !== 1) emit({ speed: 1 });
     if (changed && state.phase === 'plan') replanPreview();
   },
   /** Ekran açılınca: hedef ve tur. Başlangıç seçimi korunur. */
@@ -597,7 +653,8 @@ export const navigation = {
     navigation.stop();
     walkedBefore = 0;
     shownWorks = new Set();
-    emit({ dest, tour });
+    // Seçim her açılışta Hikâyeli'ye döner; başlangıç yalnız geliştirici modunda korunur (normalde her zaman konum).
+    emit({ dest, tour, choice: 'story', start: cfg?.sim ? state.start : { kind: 'here' } });
     replanPreview();
     if (state.start.kind === 'here') void startWatch();
   },
@@ -606,6 +663,13 @@ export const navigation = {
     emit({ start });
     if (start.kind === 'here') void startWatch();
     replanPreview();
+  },
+  /** Plan aşamasında rota seçeneği seçilir (kart ya da haritadaki gri çizgi). */
+  choose(choice: RouteChoice) {
+    const option = state.options.find((o) => o.choice === choice);
+    if (state.phase !== 'plan' || !option) return;
+    prefetch(option.plan);
+    emit({ choice, plan: option.plan });
   },
   setDest(dest: string | null) {
     if (state.phase !== 'plan') return;

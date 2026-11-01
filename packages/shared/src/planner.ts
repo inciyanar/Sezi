@@ -1,7 +1,7 @@
 import { distanceM } from "./geo";
 import { buildGuidance, type GuidanceStep } from "./guidance";
 import { arrivalFor, opensOnApproach, startPointsOf, type Ambient, type NavPoint } from "./points";
-import { findRoute, routeGeometry, type Route, type RouteGeometry } from "./routing";
+import { findRoute, routeGeometry, type Route, type RouteGeometry, type RouteObjective } from "./routing";
 import { buildDetour, segmentAhead, withLeadIn } from "./scenarios";
 import { NavSegment, type LngLat, type LocalizedText, type NavNode, type UserProfile } from "./schemas";
 import { joinRoutes, routeVia } from "./via";
@@ -66,6 +66,29 @@ export interface PlanOptions {
   via?: boolean;
   /** Uğranmayacak noktalar (bu yürüyüşte zaten açılmış olanlar). */
   skip?: ReadonlySet<string>;
+  /** Basamaklı segmentlere girme (profil basamağa izin verse de). */
+  stepFree?: boolean;
+  /** Segment maliyeti: profil uyumlu ya da yalnızca mesafeye göre en kısa. */
+  objective?: RouteObjective;
+}
+
+/**
+ * Rota seçeneği: kullanıcının harita üstünde karşılaştırıp seçtiği rotalar.
+ * - story: yakındaki anlatım noktalarına uğrayan (varsayılan; uygulamanın ana fikri anlatım),
+ * - short: noktalara uğramadan en kısa,
+ * - stepFree: basamaksız (yalnız basamağa izin veren profilde ve diğerleri basamaklıysa).
+ * Tekerlekli sandalye profilinde basamak zaten geçilemez (`segmentCost`): her seçenek basamaksızdır.
+ */
+export type RouteChoice = "story" | "short" | "stepFree";
+
+export interface RouteOption {
+  choice: RouteChoice;
+  plan: PlannedRoute;
+}
+
+/** Seçeneğin planlayıcı ayarları (yeniden rota da aynı seçenekle hesaplanır). */
+export function choiceOptions(choice: RouteChoice): Pick<PlanOptions, "via" | "stepFree" | "objective"> {
+  return { via: choice !== "short", stepFree: choice === "stepFree", objective: choice === "short" ? "shortest" : "profile" };
 }
 
 /** Yer işareti noktası en yakın düğüme en çok bu uzaklıktan bağlanır (m). */
@@ -228,6 +251,26 @@ export function createPlanner(raw: PilotGraphData) {
     };
   }
 
+  /**
+   * Başlangıçtan esere rota. Yakındaki anlatım ve varış noktalarına sınırlı bir uzamayla uğrar
+   * (rota en çok %25 ve 300 m uzar; bkz. via.ts). Yol yoksa null.
+   */
+  function planRoute(destSlug: string, profile: UserProfile, from: LngLat = defaultStart(), opts: PlanOptions = {}): PlannedRoute | null {
+    const end = landmarkNodeForWork(destSlug);
+    if (!end) return null;
+    const start = nearestNode(from);
+    const open = segmentsWith(opts.blocked);
+    const segs = opts.stepFree ? open.map((s) => (s.steps > 0 ? { ...s, blocked: true } : s)) : open;
+    const arrival = arrivalFor(navPoints, destSlug);
+    // Uğranabilecek noktalar düğümlerine göre gruplanır (aynı düğüme bağlı iki nokta tek uğrama).
+    const nodeToPoints = opts.via === false ? new Map<string, string[]>() : viaCandidates(opts.skip, [start.id, end.id], arrival?.id);
+    const v = nodeToPoints.size > 0 ? routeVia(segs, profile, start.id, end.id, [...nodeToPoints.keys()], nodeLocations) : null;
+    const route = v ? v.route : findRoute(segs, profile, start.id, end.id, opts.objective);
+    if (!route) return null;
+    const via = { pointIds: v ? v.via.flatMap((id) => nodeToPoints.get(id)!) : [], extraM: v ? Math.round(v.route.lengthM - v.baseLengthM) : 0 };
+    return finish("work", route, nodes, profile, from, opts.leadIn, via, arrival);
+  }
+
   return {
     /** Pilot alanın kimliği (bildirimler ve onaylı etkiler bununla eşleşir). */
     area: raw.area,
@@ -271,23 +314,28 @@ export function createPlanner(raw: PilotGraphData) {
     /** Talimatta anılan ve ses veren yer işaretleri: eserler ve admin yer işaretleri. */
     landmarkNodes: () => [...nodes.values()].filter((n) => n.lynchType === "landmark"),
 
+    planRoute,
+
     /**
-     * Başlangıçtan esere rota. Yakındaki anlatım ve varış noktalarına sınırlı bir uzamayla uğrar
-     * (rota en çok %25 ve 300 m uzar; bkz. via.ts). Yol yoksa null.
+     * Esere giden rota seçenekleri, sırayla: Hikâyeli, En kısa, Basamaksız. Aynı yoldan geçen seçenekler
+     * tek seçenek olur (öndeki kalır); anlatım noktasına uğramayan "Hikâyeli" En kısa'nın aynısıdır, çıkmaz.
      */
-    planRoute(destSlug: string, profile: UserProfile, from: LngLat = defaultStart(), opts: PlanOptions = {}): PlannedRoute | null {
-      const end = landmarkNodeForWork(destSlug);
-      if (!end) return null;
-      const start = nearestNode(from);
-      const segs = segmentsWith(opts.blocked);
-      const arrival = arrivalFor(navPoints, destSlug);
-      // Uğranabilecek noktalar düğümlerine göre gruplanır (aynı düğüme bağlı iki nokta tek uğrama).
-      const nodeToPoints = opts.via === false ? new Map<string, string[]>() : viaCandidates(opts.skip, [start.id, end.id], arrival?.id);
-      const v = nodeToPoints.size > 0 ? routeVia(segs, profile, start.id, end.id, [...nodeToPoints.keys()], nodeLocations) : null;
-      const route = v ? v.route : findRoute(segs, profile, start.id, end.id);
-      if (!route) return null;
-      const via = { pointIds: v ? v.via.flatMap((id) => nodeToPoints.get(id)!) : [], extraM: v ? Math.round(v.route.lengthM - v.baseLengthM) : 0 };
-      return finish("work", route, nodes, profile, from, opts.leadIn, via, arrival);
+    planOptions(destSlug: string, profile: UserProfile, from: LngLat = defaultStart(), opts: Omit<PlanOptions, "via" | "stepFree" | "objective"> = {}): RouteOption[] {
+      const out: RouteOption[] = [];
+      const seen = new Set<string>();
+      const add = (choice: RouteChoice) => {
+        const plan = planRoute(destSlug, profile, from, { ...opts, ...choiceOptions(choice) });
+        if (!plan || (choice === "story" && plan.via.pointIds.length === 0)) return;
+        const key = plan.route.segmentIds.join(">");
+        if (!seen.has(key)) {
+          seen.add(key);
+          out.push({ choice, plan });
+        }
+      };
+      add("story");
+      add("short");
+      if (profile.mobility !== "wheelchair" && out.some((o) => o.plan.stairSegments > 0)) add("stepFree");
+      return out;
     },
 
     /**

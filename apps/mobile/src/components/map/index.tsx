@@ -358,6 +358,31 @@ export function RouteLine({ id = 'route', pieces, activeLeg = null, walked, anim
   );
 }
 
+/**
+ * Seçilmemiş rota seçenekleri: soluk gri çizgi, zeminden kenarla ayrılır. Basılınca `onPress(id)` (seçenek seçilir).
+ * Seçili rota (`RouteLine`) bundan sonra eklenir, ortak yollarda üstte kalır.
+ */
+export function AltLines({ lines, onPress }: { lines: { id: string; line: LngLat[] }[]; onPress: (id: string) => void }) {
+  const t = useSweetTheme();
+  const shape: GeoJSON.FeatureCollection<GeoJSON.LineString> = {
+    type: 'FeatureCollection',
+    features: lines.map((l) => ({ type: 'Feature', properties: { id: l.id }, geometry: { type: 'LineString', coordinates: l.line } })),
+  };
+  return (
+    <ShapeSource
+      id="alt-routes-src"
+      shape={shape}
+      hitbox={{ width: 32, height: 32 }}
+      onPress={(e) => {
+        const hit = e.features[0]?.properties?.id;
+        if (typeof hit === 'string') onPress(hit);
+      }}>
+      <LineLayer id="alt-routes-casing" slot="middle" style={{ lineCap: 'round', lineJoin: 'round', lineColor: t.surface, lineWidth: ROUTE_WIDTH + 4 }} />
+      <LineLayer id="alt-routes-line" slot="middle" style={{ lineCap: 'round', lineJoin: 'round', lineColor: t.textMuted, lineWidth: ROUTE_WIDTH }} />
+    </ShapeSource>
+  );
+}
+
 /** Ek çizgiler: kapalı yollar (kesikli) ya da karşılaştırmadaki diğer rotalar. */
 export function ExtraLines({ id, data, color, width = 5, dashed, opacity = 1 }: { id: string; data: GeoJSON.FeatureCollection | GeoJSON.Feature; color: string; width?: number; dashed?: boolean; opacity?: number }) {
   return (

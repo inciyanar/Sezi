@@ -6,7 +6,7 @@ import { useSyncExternalStore } from 'react';
 // Planlayıcının kendisi ortak pakette (shared/planner.ts): admin panelindeki rota testi aynı rotayı çizer.
 import raw from '../../assets/pilot/bursa-hanlar-nav.json';
 
-export { boundsOf, formatDistance, walkingSpeed, type OverrideType, type PilotNode, type PlannedRoute, type PlanOptions, type StartPoint } from '@sezi/shared';
+export { boundsOf, choiceOptions, formatDistance, walkingSpeed, type OverrideType, type PilotNode, type PlannedRoute, type PlanOptions, type RouteChoice, type RouteOption, type StartPoint } from '@sezi/shared';
 
 export const planner = createPlanner(raw);
 
@@ -24,6 +24,7 @@ export const {
   inPilotArea,
   landmarkNodes,
   planRoute,
+  planOptions,
   planStroll,
   blockableAhead,
   detourFrom,

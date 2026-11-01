@@ -102,6 +102,73 @@ describe("createPlanner", () => {
   });
 });
 
+describe("rota seçenekleri", () => {
+  // A —100— M —100 (6 basamak)— B (eser); M —20— C —100— B basamaksız dolaşma.
+  const stairsGraph: PilotGraphData = {
+    area: "test",
+    name: { tr: "Test" },
+    center: pt(100, 0),
+    nodes: [
+      { id: "A", lynchType: "node", location: pt(0, 0) },
+      { id: "M", lynchType: "node", location: pt(100, 0) },
+      { id: "B", lynchType: "landmark", location: pt(200, 0), workSlug: "eser-b", workType: "han", name: { tr: "B Hanı" } },
+      { id: "C", lynchType: "node", location: pt(110, 15) },
+    ],
+    segments: [
+      { id: "AM", from: "A", to: "M", lengthM: 100 },
+      { id: "MB", from: "M", to: "B", lengthM: 100, steps: 6 },
+      { id: "MC", from: "M", to: "C", lengthM: 20 },
+      { id: "CB", from: "C", to: "B", lengthM: 100 },
+    ],
+  };
+  const wheelchair: UserProfile = { ...walker, mobility: "wheelchair" };
+  const choices = (p: ReturnType<typeof createPlanner>, profile: UserProfile) => p.planOptions("eser-b", profile, pt(0, 0)).map((o) => [o.choice, o.plan.stairSegments]);
+
+  it("En kısa seçeneği segment ağırlıklarını değil metreleri en aza indirir", () => {
+    const scenicGraph: PilotGraphData = {
+      ...raw,
+      segments: [
+        { id: "AD", from: "A", to: "B", lengthM: 100 },
+        { id: "AM", from: "A", to: "M", lengthM: 60, landmarkVisibility: 1 },
+        { id: "MB", from: "M", to: "B", lengthM: 60, landmarkVisibility: 1 },
+      ],
+    };
+    const visualWalker: UserProfile = { ...walker, senses: { ...walker.senses, visual: true } };
+    const p = createPlanner(scenicGraph);
+    expect(p.planRoute("eser-b", visualWalker, pt(0, 0))?.route.segmentIds).toEqual(["AM", "MB"]);
+    const short = p.planOptions("eser-b", visualWalker, pt(0, 0)).find((o) => o.choice === "short");
+    expect(short?.plan.route.segmentIds).toEqual(["AD"]);
+    expect(short?.plan.route.lengthM).toBe(100);
+  });
+
+  it("noktasız yolda En kısa basamaklıysa basamaksız dolaşma ayrı seçenek olur", () => {
+    const p = createPlanner(stairsGraph);
+    expect(choices(p, walker)).toEqual([["short", 1], ["stepFree", 0]]);
+  });
+
+  it("Hikâyeli rota noktaya uğrar; basamaksız dolaşmayla aynı yoldan geçtiği için tek seçenek kalır", () => {
+    const p = createPlanner(stairsGraph);
+    p.setNavPoints([point("s", pt(112, 20))]);
+    const options = p.planOptions("eser-b", walker, pt(0, 0));
+    expect(options.map((o) => o.choice)).toEqual(["story", "short"]);
+    expect(options[0]!.plan.via.pointIds).toEqual(["s"]);
+    expect(options[0]!.plan.stairSegments).toBe(0);
+  });
+
+  it("tekerlekli sandalyede hiçbir seçenek basamaklı segmente girmez", () => {
+    const p = createPlanner(stairsGraph);
+    expect(choices(p, wheelchair)).toEqual([["short", 0]]);
+    p.setNavPoints([point("s", pt(112, 20))]);
+    expect(choices(p, wheelchair)).toEqual([["story", 0]]);
+  });
+
+  it("basamaksız yol yoksa Basamaksız seçeneği çıkmaz, tekerlekli sandalyeye rota yoktur", () => {
+    const p = createPlanner({ ...stairsGraph, segments: stairsGraph.segments.slice(0, -1) });
+    expect(choices(p, walker)).toEqual([["short", 1]]);
+    expect(p.planOptions("eser-b", wheelchair, pt(0, 0))).toEqual([]);
+  });
+});
+
 describe("duyu ipucu atfı", () => {
   const cueAt = (points: NavPoint[], nodeId: string) => {
     const p = createPlanner(raw);
