@@ -1,4 +1,4 @@
-import { loc, searchAskWorks, type AskCitation, type AskHistoryMessage, type SweetTheme, type WorkRow } from '@sezi/shared';
+import { askFailure, loc, searchAskWorks, type AskCitation, type AskFailure, type AskHistoryMessage, type SweetTheme, type WorkRow } from '@sezi/shared';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AccessibilityInfo, FlatList, KeyboardAvoidingView, Linking, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '@/components/app-tabs';
 import { ScreenHeader } from '@/components/screen-header';
 import { Button, Eyebrow, Note } from '@/components/ui';
-import { ChatIcon, ChevronIcon, InfoIcon, PlusIcon, TurnIcon } from '@/design/icons';
+import { ChatIcon, ChevronIcon, InfoIcon, PlayIcon, PlusIcon, StopIcon, TurnIcon } from '@/design/icons';
 import { FadeInItem, IconBubble, outline, SoftPressable, SweetSheet } from '@/design/sweet/components';
 import { duration, ease, stagger } from '@/design/sweet/motion';
 import { radius, space, type } from '@/design/type';
@@ -18,6 +18,9 @@ import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useSweetTheme } from '@/hooks/use-sweet-theme';
 import { askSezi } from '@/lib/ask';
 import { useT } from '@/lib/i18n';
+import { useProfile } from '@/lib/profile';
+import { useSettings } from '@/lib/settings';
+import { say, silence } from '@/lib/voice/speech';
 import { useWorks } from '@/lib/works';
 
 type Message = {
@@ -27,6 +30,8 @@ type Message = {
   works?: WorkRow[];
   citations?: AskCitation[];
   mode?: 'rag' | 'insufficient' | 'conversation' | 'local';
+  /** Yalnız `local`: neden yapay zekâ cevabı yerine cihazdaki kayıtların gösterildiği. */
+  failure?: AskFailure;
 };
 
 export default function Ask() {
@@ -35,12 +40,18 @@ export default function Ask() {
   const s = useMemo(() => makeStyles(t), [t]);
   const { t: tr, lang } = useT();
   const { data: works } = useWorks();
+  const { settings } = useSettings();
+  const { profile } = useProfile();
+  const canHear = profile?.hearing !== 'deaf';
   const tabSpace = useTabBarSpace();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [sheet, setSheet] = useState<'privacy' | 'reset' | null>(null);
   const [sourceMessage, setSourceMessage] = useState<Message | null>(null);
   const [sourceError, setSourceError] = useState(false);
+  /** Cevaptaki [n] işaretinden açılınca kaynak penceresinde öne çıkan kaynak. */
+  const [sourceFocus, setSourceFocus] = useState<number | null>(null);
+  const [speakingId, setSpeakingId] = useState<number | null>(null);
   const [awayFromBottom, setAwayFromBottom] = useState(false);
   const followBottom = useRef(true);
   const listRef = useRef<FlatList<Message>>(null);
@@ -49,21 +60,29 @@ export default function Ask() {
   const [waiting, setWaiting] = useState(false);
   const pending = useRef(false);
   const mounted = useRef(true);
-  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; silence(); }; }, []);
 
-  const ask = async (question: string) => {
+  /** `retryOf`: yeniden denenen başarısız cevabın kimliği; soru listede zaten olduğu için ikinci kez eklenmez. */
+  const ask = async (question: string, retryOf?: number) => {
     const q = question.trim();
     if (!q || pending.current) return;
     pending.current = true;
     followBottom.current = true;
     setAwayFromBottom(false);
-    const message: Message = { id: nextId.current++, role: 'user', text: q };
-    setMessages((m) => [...m, message]);
+    silence();
+    setSpeakingId(null);
+    const before = retryOf === undefined ? messages : messages.filter((m) => m.id !== retryOf).slice(0, -1);
+    if (retryOf === undefined) {
+      const message: Message = { id: nextId.current++, role: 'user', text: q };
+      setMessages((m) => [...m, message]);
+    } else {
+      setMessages((m) => m.filter((x) => x.id !== retryOf));
+    }
     setWaiting(true);
     setInput('');
     AccessibilityInfo.announceForAccessibility(tr('ask.waiting'));
-    const history: AskHistoryMessage[] = messages.slice(-6).map((m) => ({ role: m.role === 'user' ? 'user' : 'assistant', text: m.text }));
-    const previousWorkSlugs = [...messages].reverse().find((m) => m.role === 'sezi' && m.works?.length)?.works?.map((w) => w.slug) ?? [];
+    const history: AskHistoryMessage[] = before.slice(-6).map((m) => ({ role: m.role === 'user' ? 'user' : 'assistant', text: m.text }));
+    const previousWorkSlugs = [...before].reverse().find((m) => m.role === 'sezi' && m.works?.length)?.works?.map((w) => w.slug) ?? [];
     let answer: Message;
     try {
       const result = await askSezi(q, lang, works ?? [], history, previousWorkSlugs);
@@ -75,15 +94,20 @@ export default function Ask() {
         citations: result.response.citations,
         mode: result.response.mode,
       };
-    } catch {
-      // İnternet, Edge Function ya da LLM kullanılamıyorsa doğrulanmış kayıtların cihazdaki yerel araması çalışır.
+    } catch (error) {
+      // Cevap üretilemezse cihazdaki doğrulanmış kayıtlar aranır; en iyi eşleşmenin yayımlanmış özeti varsa o gösterilir.
       const found = searchAskWorks(q, works ?? []).slice(0, 10);
+      const top = found[0];
+      const summary = top?.summary ? loc(top.summary, lang) : '';
       answer = {
         id: nextId.current++,
         role: 'sezi',
-        text: found.length ? tr('ask.found', { n: found.length }) : tr('ask.notFound'),
+        text: top && summary
+          ? `${tr('ask.localSummary', { name: loc(top.name, lang) })}\n\n${summary}`
+          : found.length ? tr('ask.found', { n: found.length }) : tr('ask.notFound'),
         works: found,
         mode: 'local',
+        failure: askFailure(error),
       };
     }
     if (mounted.current) {
@@ -94,11 +118,39 @@ export default function Ask() {
     pending.current = false;
   };
 
-  const suggestions = [
-    { question: tr('ask.suggest1'), topic: tr('ask.topicHistory'), glyph: 'cami' },
-    { question: tr('ask.suggest2'), topic: tr('ask.topicArchitecture'), glyph: 'han' },
-    { question: tr('ask.suggest3'), topic: tr('ask.topicExplore'), glyph: 'carsi' },
-  ];
+  const toggleListen = (msg: Message) => {
+    if (speakingId === msg.id) {
+      silence();
+      setSpeakingId(null);
+      return;
+    }
+    setSpeakingId(msg.id);
+    say(msg.text.replace(/\s*\[\d+\]/g, ''), {
+      lang,
+      rate: settings.speechRate,
+      interrupt: true,
+      onDone: () => setSpeakingId((id) => (id === msg.id ? null : id)),
+    });
+  };
+
+  const openSources = (msg: Message, focus: number | null) => {
+    setSourceError(false);
+    setSourceFocus(focus);
+    setSourceMessage(msg);
+  };
+
+  // Öneriler seçili ilin eserlerinden: tarihçesi ve mimarisi yayımlanmış, en çok fotoğraflı iki eser ve ilde gezi sorusu.
+  const suggestions = useMemo(() => {
+    const cityWorks = (works ?? []).filter((w) => w.city_slug === settings.city);
+    const known = [...cityWorks].sort((a, b) => b.photos.length - a.photos.length || a.slug.localeCompare(b.slug));
+    const withHistory = known.find((w) => w.history && loc(w.history, lang));
+    const withArchitecture = known.find((w) => w !== withHistory && w.architecture && loc(w.architecture, lang));
+    const out: { question: string; topic: string; glyph: string }[] = [];
+    if (withHistory) out.push({ question: tr('ask.suggestHistory', { name: loc(withHistory.name, lang) }), topic: tr('ask.topicHistory'), glyph: withHistory.type_slug });
+    if (withArchitecture) out.push({ question: tr('ask.suggestArchitecture', { name: loc(withArchitecture.name, lang) }), topic: tr('ask.topicArchitecture'), glyph: withArchitecture.type_slug });
+    if (cityWorks[0]) out.push({ question: tr('ask.suggestExplore', { city: loc(cityWorks[0].city_name, lang) }), topic: tr('ask.topicExplore'), glyph: 'carsi' });
+    return out;
+  }, [works, settings.city, lang, tr]);
 
   const header = (
     <View style={s.welcome}>
@@ -127,7 +179,8 @@ export default function Ask() {
       <View style={s.topBar}>
         <ScreenHeader title={tr('ask.title')} action={
           <View style={{ flexDirection: 'row', gap: space.xs }}>
-            <IconBubble label={tr('ask.howTitle')} icon={c => <InfoIcon color={c} />} onPress={() => setSheet('privacy')} />
+            {/* Boş ekranda "Nasıl çalışır?" yazı alanının üstünde; sohbet başlayınca yalnız buradan açılır. */}
+            {messages.length > 0 ? <IconBubble label={tr('ask.howTitle')} icon={c => <InfoIcon color={c} />} onPress={() => setSheet('privacy')} /> : null}
             {messages.length > 0 && !waiting ? <IconBubble label={tr('ask.newChat')} icon={c => <PlusIcon color={c} />} onPress={() => { if (!pending.current) setSheet('reset'); }} /> : null}
           </View>
         } />
@@ -186,19 +239,20 @@ export default function Ask() {
         </View>
       </KeyboardAvoidingView>
       <SweetSheet visible={sheet === 'privacy'} onClose={() => setSheet(null)} title={tr('ask.howTitle')}>
-        <Text style={[type.body, { color: t.text }]}>{tr('design.askScope')}</Text>
+        <Text style={[type.body, { color: t.text, paddingHorizontal: space.xl }]}>{tr('design.askScope')}</Text>
       </SweetSheet>
       <SweetSheet visible={sheet === 'reset'} onClose={() => setSheet(null)} title={tr('ask.newChatTitle')}>
-        <View style={{ gap: space.lg }}>
+        <View style={{ gap: space.lg, paddingHorizontal: space.xl }}>
           <Text style={[type.body, { color: t.text }]}>{tr('ask.newChatBody')}</Text>
-          <Button label={tr('ask.newChat')} onPress={() => { if (pending.current) return; setMessages([]); setInput(''); animatedIds.current.clear(); followBottom.current = true; setAwayFromBottom(false); setSheet(null); }} />
+          <Button label={tr('ask.newChat')} onPress={() => { if (pending.current) return; silence(); setSpeakingId(null); setMessages([]); setInput(''); animatedIds.current.clear(); followBottom.current = true; setAwayFromBottom(false); setSheet(null); }} />
           <Button label={tr('ask.keepChat')} variant="ghost" onPress={() => setSheet(null)} />
         </View>
       </SweetSheet>
       <SweetSheet visible={!!sourceMessage} onClose={() => setSourceMessage(null)} title={tr('ask.sources')}>
-        <ScrollView style={{ maxHeight: 420 }} contentContainerStyle={{ gap: space.md }}>
-          {sourceMessage?.citations?.map(c => <View key={c.index} style={[s.sourceCard, outline(t)]}>
+        <ScrollView style={{ maxHeight: 420 }} contentContainerStyle={{ gap: space.md, paddingHorizontal: space.xl }}>
+          {sourceMessage?.citations?.map(c => <View key={c.index} style={[s.sourceCard, outline(t), c.index === sourceFocus && { borderWidth: 2, borderColor: t.primaryText }]}>
             <Text style={[type.itemTitle, { color: t.text }]}>[{c.index}] {c.workName}</Text>
+            {c.section === 'summary' || c.section === 'app' ? <Text style={[type.meta, { color: t.textMuted }]}>{tr(c.section === 'summary' ? 'ask.section.summary' : 'ask.section.app')}</Text> : null}
             <Text selectable style={[type.body, { color: t.text }]}>{c.sourceTitle}</Text>
             <Text style={[type.meta, { color: t.textMuted }]}>{[c.sourcePublisher, c.sourceYear, c.sourceVolume ? tr('ask.volume', { n: c.sourceVolume }) : null, c.sourcePage ? tr('ask.page', { page: c.sourcePage }) : null].filter(Boolean).join(' · ')}</Text>
             {c.sourceUrl ? <Button compact label={tr('ask.openSource')} variant="secondary" onPress={() => { setSourceError(false); void Linking.openURL(c.sourceUrl!).catch(() => setSourceError(true)); }} /> : null}
@@ -210,17 +264,28 @@ export default function Ask() {
   );
 
   function SeziAnswer({ msg, t }: { msg: Message; t: SweetTheme }) {
+    // Okunma: yeni cevap `announceForAccessibility` ile bir kez duyurulur; kutu ayrıca canlı bölge değildir.
+    const speaking = speakingId === msg.id;
     return (
-      <View style={[s.answer, outline(t)]} accessibilityLiveRegion="polite">
+      <View style={[s.answer, outline(t)]}>
         <Eyebrow text={tr('ask.sezi')} />
-        <Text selectable style={[type.body, { color: t.text }]}>{msg.text}</Text>
-        {msg.mode === 'local' ? <View style={{ gap: space.sm }}>
-          <Note text={tr('ask.localFallback')} icon={<InfoIcon color={t.textMuted} />} />
-          {msg.id === messages[messages.length - 1]?.id && !waiting ? <Button compact variant="secondary" label={tr('ask.retry')} onPress={() => { const lastQuestion = [...messages].reverse().find(m => m.role === 'user'); if (lastQuestion) void ask(lastQuestion.text); }} /> : null}
+        <Text selectable style={[type.body, { color: t.text }]}>
+          {msg.text.split(/(\[\d+\])/).map((part, i) => {
+            const marker = /^\[(\d+)\]$/.exec(part);
+            const citation = marker ? msg.citations?.find((c) => c.index === Number(marker[1])) : undefined;
+            return citation ? (
+              <Text key={i} accessibilityRole="link" accessibilityLabel={tr('ask.citation', { n: citation.index })} onPress={() => openSources(msg, citation.index)} style={{ color: t.primaryText, fontFamily: type.itemTitle.fontFamily }}>{part}</Text>
+            ) : part;
+          })}
+        </Text>
+        {msg.mode === 'local' && msg.failure ? <View style={{ gap: space.sm }}>
+          <Note text={tr(`ask.fail.${msg.failure}`)} icon={<InfoIcon color={t.textMuted} />} />
+          {msg.failure !== 'quota' && msg.id === messages[messages.length - 1]?.id && !waiting ? <Button compact variant="secondary" label={tr('ask.retry')} onPress={() => { const lastQuestion = [...messages].reverse().find(m => m.role === 'user'); if (lastQuestion) void ask(lastQuestion.text, msg.id); }} /> : null}
         </View> : null}
-        {msg.citations?.length ? (
-          <View style={s.citations}>
-            <Button compact label={tr('ask.sourcesCount', { n: msg.citations.length })} variant="secondary" icon={c => <InfoIcon color={c} size={18} />} onPress={() => { setSourceError(false); setSourceMessage(msg); }} />
+        {msg.citations?.length || canHear ? (
+          <View style={s.answerActions}>
+            {msg.citations?.length ? <Button compact label={tr('ask.sourcesCount', { n: msg.citations.length })} variant="secondary" icon={c => <InfoIcon color={c} size={18} />} onPress={() => openSources(msg, null)} /> : null}
+            {canHear ? <Button compact label={speaking ? tr('ask.stop') : tr('ask.listen')} variant="secondary" icon={c => (speaking ? <StopIcon color={c} size={18} /> : <PlayIcon color={c} size={18} />)} onPress={() => toggleListen(msg)} /> : null}
           </View>
         ) : null}
         {msg.works?.map((w) => {
@@ -327,7 +392,7 @@ const makeStyles = (t: SweetTheme) =>
       borderTopWidth: t.outlined ? 1 : StyleSheet.hairlineWidth,
       borderTopColor: t.border,
     },
-    citations: { gap: space.xs, paddingTop: space.xs },
+    answerActions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, paddingTop: space.xs },
     composer: {
       flexDirection: 'row',
       alignItems: 'flex-end',

@@ -5,6 +5,8 @@ import type { Lang } from './i18n';
 import { supabase } from './supabase';
 
 const MAX_CANDIDATES = 8;
+/** Sunucu cevap üretemezse kullanıcı uzun beklemesin; cihazdaki kayıtlara düşülür. */
+const ASK_TIMEOUT_MS = 30_000;
 
 export type AskResult = {
   response: AskResponse;
@@ -34,6 +36,8 @@ export async function askSezi(
       candidateSlugs,
       history: history.slice(-6).map(m => ({ ...m, text: m.text.slice(0, 600) })),
     },
+    // Sunucu cevap üretemezse kullanıcı uzun beklemesin; cihazdaki kayıtlara düşülür.
+    timeout: ASK_TIMEOUT_MS,
   });
   if (error) throw error;
   const response = AskResponseSchema.parse(data);

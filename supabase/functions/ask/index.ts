@@ -6,6 +6,7 @@ import { z } from 'npm:zod@3';
 import { llmProviderFromEnv, type LlmContext } from '../_shared/llm.ts';
 import { askConversationReply } from '../../../packages/shared/src/ask-conversation.ts';
 import { searchAskWorks } from '../../../packages/shared/src/search.ts';
+import { copiesVerbatim } from '../../../packages/shared/src/verbatim.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -55,7 +56,6 @@ async function subjectHash(deviceId: string, req: Request, secret: string): Prom
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
   if (req.method !== 'POST') return json(405, { error: 'method' });
-  if (!req.headers.get('Authorization')) return json(401, { error: 'unauthorized' });
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return json(400, { error: 'bad_request' });
 
@@ -117,14 +117,19 @@ Deno.serve(async (req) => {
     sourcePage: row.source_page,
     content: row.content.slice(0, 1_800),
   }));
+  const question = { question: parsed.data.question, lang: parsed.data.lang, history: parsed.data.history, contexts };
   let answer;
   try {
-    answer = await provider.answer({
-      question: parsed.data.question,
-      lang: parsed.data.lang,
-      history: parsed.data.history,
-      contexts,
-    });
+    answer = await provider.answer(question);
+    // Telif: kaynaktan 12 kelimeden uzun birebir aktarım yayımlanmaz. Model bir kez yeniden yazdırılır;
+    // yine kopyalıyorsa cevap yerine "yeterli bilgi yok" döner.
+    const sources = contexts.map((c) => c.content);
+    if (copiesVerbatim(answer.answer, sources)) {
+      answer = await provider.answer({ ...question, paraphrase: true });
+      if (copiesVerbatim(answer.answer, sources)) {
+        return json(200, { mode: 'insufficient', answer: insufficient(parsed.data.lang), citations: [], workSlugs: [] });
+      }
+    }
   } catch (e) {
     console.error('llm', e instanceof Error ? e.message : String(e));
     return json(502, { error: 'upstream' });

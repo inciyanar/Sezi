@@ -11,11 +11,13 @@ export type LlmContext = {
 
 export type LlmMessage = { role: 'user' | 'assistant'; text: string };
 export type LlmAnswer = { status: 'answer' | 'insufficient'; answer: string; citationIds: string[] };
+/** `paraphrase`: önceki taslak kaynaktan uzun birebir alıntı yaptı; bu kez her cümle yeniden yazılır. */
+export type LlmInput = { question: string; lang: 'tr' | 'en'; history: LlmMessage[]; contexts: LlmContext[]; paraphrase?: boolean };
 
 export interface LLMProvider {
   readonly name: string;
   readonly model: string;
-  answer(input: { question: string; lang: 'tr' | 'en'; history: LlmMessage[]; contexts: LlmContext[] }): Promise<LlmAnswer>;
+  answer(input: LlmInput): Promise<LlmAnswer>;
 }
 
 const DeepSeekResponse = z.object({
@@ -70,14 +72,17 @@ export class DeepSeekProvider implements LLMProvider {
     this.baseUrl = (options.baseUrl || 'https://api.deepseek.com').replace(/\/$/, '');
   }
 
-  async answer(input: { question: string; lang: 'tr' | 'en'; history: LlmMessage[]; contexts: LlmContext[] }): Promise<LlmAnswer> {
+  async answer(input: LlmInput): Promise<LlmAnswer> {
     const context = input.contexts.map((c) =>
       `[${c.id}]\nWork: ${c.workName}\nSection: ${c.section}\nSource: ${c.sourceTitle}${c.sourcePage ? `, page ${c.sourcePage}` : ''}\nText: ${c.content}`,
     ).join('\n\n');
     const history = input.history.length
       ? input.history.map((m) => `${m.role === 'user' ? 'User' : 'Sezi'}: ${m.text}`).join('\n')
       : '(none)';
-    const user = `LANGUAGE: ${input.lang}\n\nCONVERSATION HISTORY (not evidence):\n${history}\n\nCONTEXT:\n${context}\n\nCURRENT QUESTION:\n${input.question}`;
+    const retry = input.paraphrase
+      ? '\n\nNOTE: Your previous draft copied long passages from CONTEXT word for word. Rewrite every sentence in your own words; never reuse more than 8 consecutive words.'
+      : '';
+    const user = `LANGUAGE: ${input.lang}\n\nCONVERSATION HISTORY (not evidence):\n${history}\n\nCONTEXT:\n${context}\n\nCURRENT QUESTION:\n${input.question}${retry}`;
     const body = JSON.stringify({
       model: this.model,
       messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: user }],

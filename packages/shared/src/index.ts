@@ -26,5 +26,6 @@ export * from "./summary-check";
 export * from "./route-lines";
 export * from "./ask";
 export * from "./ask-conversation";
+export * from "./verbatim";
 export * from "./passport";
 export * from "./achievements";

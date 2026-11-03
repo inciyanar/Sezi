@@ -1,6 +1,7 @@
+import { FunctionsFetchError, FunctionsHttpError, FunctionsRelayError } from "@supabase/functions-js";
 import { describe, expect, it } from "vitest";
 
-import { AskRequestSchema, AskResponseSchema } from "./ask";
+import { askFailure, AskRequestSchema, AskResponseSchema } from "./ask";
 
 const deviceId = "123e4567-e89b-42d3-a456-426614174000";
 
@@ -64,5 +65,16 @@ describe("Sezi'ye Sor şemaları", () => {
     });
 
     expect(response.citations[0]?.section).toBe("app");
+  });
+});
+
+describe("cevap alınamama nedeni", () => {
+  it("supabase-js hatalarını kullanıcıya söylenecek nedene çevirir", () => {
+    expect(askFailure(new FunctionsFetchError(new TypeError("Network request failed")))).toBe("offline");
+    expect(askFailure(new FunctionsFetchError(new DOMException("aborted", "AbortError")))).toBe("service");
+    expect(askFailure(new FunctionsHttpError(new Response(null, { status: 429 })))).toBe("quota");
+    expect(askFailure(new FunctionsHttpError(new Response(null, { status: 502 })))).toBe("service");
+    expect(askFailure(new FunctionsRelayError(new Response(null, { status: 500 })))).toBe("service");
+    expect(askFailure(new Error("şema uymadı"))).toBe("service");
   });
 });

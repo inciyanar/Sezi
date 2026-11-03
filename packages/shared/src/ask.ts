@@ -41,3 +41,22 @@ export const AskResponseSchema = z.object({
   model: z.string().optional(),
 });
 export type AskResponse = z.infer<typeof AskResponseSchema>;
+
+/** Cevap üretilemeyince kullanıcıya söylenen neden: soru sınırı doldu, bağlantı yok ya da Sezi'nin sunucusu cevap veremedi. */
+export type AskFailure = "quota" | "offline" | "service";
+
+/**
+ * `supabase.functions.invoke` hatasının nedeni. Hata sınıfları uygulamalar arasında paylaşılmadığı için
+ * supabase-js'in verdiği ada bakılır: `FunctionsFetchError` (istek gitmedi; süre aşımı da buraya düşer, ama o
+ * zaman bağlantı vardır), `FunctionsHttpError` (sunucu 2xx dışı döndü; 429 soru sınırıdır).
+ */
+export function askFailure(error: unknown): AskFailure {
+  if (!(error instanceof Error)) return "service";
+  const context = "context" in error ? error.context : undefined;
+  if (error.name === "FunctionsFetchError") {
+    const cause = context && typeof context === "object" && "name" in context ? String(context.name) : "";
+    return /Abort|Timeout/.test(cause) ? "service" : "offline";
+  }
+  if (error.name === "FunctionsHttpError" && context && typeof context === "object" && "status" in context && context.status === 429) return "quota";
+  return "service";
+}
