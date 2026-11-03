@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 
 import "../globals.css";
+import { AskCat } from "@/components/ask/ask-cat";
 import { Providers } from "@/components/providers";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -51,6 +52,7 @@ export default async function LangLayout({ children, params }: { children: React
             {children}
           </main>
           <SiteFooter lang={lang} />
+          <AskCat />
         </Providers>
       </body>
     </html>

@@ -1,6 +1,6 @@
 "use client";
 
-import { ALargeSmallIcon, ContrastIcon, UserRoundIcon } from "lucide-react";
+import { ALargeSmallIcon, CatIcon, ContrastIcon, UserRoundIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -33,8 +33,8 @@ function useActive() {
 }
 
 /**
- * Görünüm: yüksek kontrast anahtarı ve üç yazı boyutu (her seçenek kendi boyutunda "A"). Açılır pencere tetikleyiciden
- * açılır; değişiklik hemen uygulanır.
+ * Görünüm: yüksek kontrast, Sezi kedisi (gizlenebilir) ve üç yazı boyutu (her seçenek kendi boyutunda "A").
+ * Açılır pencere tetikleyiciden açılır; değişiklik hemen uygulanır.
  */
 function AppearanceMenu() {
   const { t } = useT();
@@ -53,6 +53,13 @@ function AppearanceMenu() {
             {t("appearance.contrast")}
           </span>
           <Switch checked={a.contrast} onCheckedChange={(v) => setAppearance({ contrast: v })} />
+        </label>
+        <label className="flex min-h-12 cursor-pointer items-center justify-between gap-3 rounded-lg px-2 hover:bg-muted">
+          <span className="flex items-center gap-2.5 text-sm font-semibold">
+            <CatIcon className="size-4" aria-hidden />
+            {t("appearance.cat")}
+          </span>
+          <Switch checked={a.cat} onCheckedChange={(v) => setAppearance({ cat: v })} />
         </label>
         <div className="px-2 pt-2 pb-1">
           <p id="text-size-label" className="pb-2 text-sm font-semibold">

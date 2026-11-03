@@ -171,6 +171,20 @@ Bunlar tahmindir; saha ölçümü gelince güncellenir (ROADMAP #6). Yol verisin
 
 **Yeni pilot alan eklemek:** `AREAS` sözlüğüne bir girdi ekleyin, Overpass çıktısını `data/raw/osm_<alan>.json` olarak indirin ve script'i alan adıyla çalıştırın.
 
-## 4. Eski: İstanbul Wikidata pilotu
+## 4. Sezi maskotu (web)
+
+Sitedeki Sezi'ye Sor kedisi tasarımcının kare paketinden üretilir (288 x 224 şeffaf PNG kareler ve `manifest.json`). Paket depoya girmez; çıktı girer.
+
+```bash
+data/.venv/Scripts/python -I data/build_mascot.py <paket>/maskot
+```
+
+- `apps/web/public/maskot/<hareket>.webp`: hareketin kareleri tek satırda. WebP kalite 90, alfa kayıpsız (toplam ~600 KB; PNG atlaslar 2,7 MB).
+- `apps/web/public/maskot/poz.webp`: ilk boyamadaki oturan poz.
+- `apps/web/src/components/ask/mascot.json`: kare sıraları ve süreler; oynatıcı (`mascot-player.ts`) bunu okur.
+
+Sola bakan kareler sağa bakanların aynası olduğu için heterokromi ters çıkıyor. Kedinin sağ gözü yeşil, sol gözü mavi olmalı; script bu karelerde yeşil ve mavi iris tonlarını değiştirir (`MIRRORED`, `FAR_EYE_ONLY`). Tasarımcı yeni kare verirse önce bunu yeniden kontrol edin.
+
+## 5. Eski: İstanbul Wikidata pilotu
 
 `wikidata_pilot.py` ve `supabase/seed_wikidata_pilot.sql` ilk prototipin Süleymaniye verisidir. Kayıtlar veritabanında `archived` durumunda; yeni işte kullanmayın.
