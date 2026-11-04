@@ -51,7 +51,7 @@ export default function Profile() {
     .filter((visit) => bySlug.has(visit.work_slug))
     .sort((a, b) => b.first_at.localeCompare(a.first_at));
   const { earned, locked } = sortAchievements(list);
-  const preview = [...earned.slice(0, 3), ...locked.slice(0, 1)];
+  const preview = [...earned, ...locked].slice(0, 4);
   const cities = stats.cities.filter((city) => city.visited > 0).length;
   const visibility = identity?.visibility ?? 'private';
   const card = [s.card, { backgroundColor: t.surface }, outline(t)];
@@ -253,7 +253,7 @@ const s = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   stamps: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   more: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
-  badges: { flexDirection: 'row', gap: space.lg, paddingTop: 4 },
+  badges: { flexDirection: 'row', justifyContent: 'space-between', gap: space.lg, paddingTop: 4 },
   tiles: { flexDirection: 'row', gap: space.md },
   tile: {
     flex: 1,

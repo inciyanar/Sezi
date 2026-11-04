@@ -39,7 +39,7 @@ type StampWork = { slug: string; name: LocalizedText; type_slug: string };
 /** Az önce basılan damga (son iki dakika) bir kez "basılır". */
 const isFresh = (visit: Visit) => Date.now() - new Date(visit.first_at).getTime() < 120_000;
 
-/** Damga ızgarası: tür glifli eğik damgalar, altında tek satır ad; dokununca eser sayfası. */
+/** Damga ızgarası: tür glifli eğik damgalar, altında ad ve tarih; dokununca eser sayfası. */
 export function StampGrid({ visits, works, limit }: { visits: Visit[]; works: Map<string, StampWork>; limit?: number }) {
   const t = useSweetTheme();
   const { t: tr, lang } = useT();
@@ -57,16 +57,25 @@ export function StampGrid({ visits, works, limit }: { visits: Visit[]; works: Ma
         const work = works.get(visit.work_slug)!;
         const name = loc(work.name, lang);
         const date = new Date(visit.first_at).toLocaleDateString(lang, { dateStyle: 'long' });
+        const shortDate = new Date(visit.first_at).toLocaleDateString(lang, { day: 'numeric', month: 'short' });
         const method = tr(visit.method === 'checkin' ? 'passport.byCheckin' : 'passport.byRoute');
         return (
           <SoftPressable
             onPress={() => router.push({ pathname: '/work/[slug]', params: { slug: visit.work_slug } })}
             accessibilityRole="button"
             accessibilityLabel={`${name}, ${date}, ${method}`}
-            style={s.stampCell}>
+            style={[s.stampCell, { backgroundColor: t.surface }, outline(t)]}>
             <Stamp slug={visit.work_slug} typeSlug={work.type_slug} fresh={isFresh(visit)} />
-            <Text style={[type.bubble, { color: t.text, textAlign: 'center' }]} numberOfLines={1}>
-              {name}
+            <View style={s.stampTitleBox} importantForAccessibility="no-hide-descendants">
+              <Text style={[type.bubble, { color: t.text, textAlign: 'center' }]} numberOfLines={2}>
+                {name}
+              </Text>
+            </View>
+            <Text
+              style={[type.tab, { color: t.textMuted, textAlign: 'center', marginTop: 'auto' }]}
+              numberOfLines={1}
+              importantForAccessibility="no-hide-descendants">
+              {shortDate}
             </Text>
           </SoftPressable>
         );
@@ -173,9 +182,24 @@ export function PhotoGrid({
 }
 
 const s = StyleSheet.create({
-  row: { flexDirection: 'row', gap: space.md },
+  row: { flexDirection: 'row', alignItems: 'stretch', gap: space.md },
   cell: { flex: 1, minWidth: 0 },
-  stampCell: { alignItems: 'center', gap: space.sm, minHeight: 48, paddingVertical: space.xs },
+  stampCell: {
+    flex: 1,
+    alignItems: 'center',
+    gap: space.sm,
+    minHeight: 164,
+    paddingVertical: space.md,
+    paddingHorizontal: space.sm,
+    borderRadius: radius.md,
+    borderCurve: 'continuous',
+  },
+  stampTitleBox: {
+    minHeight: 36,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   photo: { aspectRatio: 1, borderRadius: radius.md, borderCurve: 'continuous', overflow: 'hidden' },
   add: { borderWidth: 2, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: space.xs },
 });

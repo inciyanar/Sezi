@@ -5,7 +5,7 @@ import { Text } from '@/components/text';
 
 import { StampGrid } from '@/components/social-grids';
 import { EmptyInvite, EmptyPassportArt, StatStrip } from '@/components/social-visuals';
-import { Button, ProgressBar, SectionTitle } from '@/components/ui';
+import { Button, Card, ProgressBar, SectionTitle } from '@/components/ui';
 import { FootprintsIcon, MapAreaIcon, RouteIcon, StampIcon } from '@/design/icons';
 import { space, type } from '@/design/type';
 import { useSweetTheme } from '@/hooks/use-sweet-theme';
@@ -38,7 +38,10 @@ export default function PassportScreen() {
       />
       {stats.stamps ? (
         <View style={{ gap: space.lg }}>
-          <SectionTitle title={tr('passport.recent')} />
+          <SectionTitle
+            title={tr('passport.recent')}
+            action={<Text style={[type.meta, { color: t.textMuted }]}>{String(stats.stamps)}</Text>}
+          />
           <StampGrid visits={visits} works={bySlug} />
         </View>
       ) : (
@@ -51,21 +54,23 @@ export default function PassportScreen() {
       {visited.length ? (
         <View style={{ gap: space.lg }}>
           <SectionTitle title={tr('passport.cityProgress')} />
-          {visited.map((city) => {
-            const row = cities.find((item) => item.slug === city.slug);
-            const name = row ? loc(row.name, lang) : city.slug;
-            return (
-              <View key={city.slug} style={{ gap: space.sm }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }} importantForAccessibility="no-hide-descendants">
-                  <Text style={[type.itemTitle, { color: t.text }]}>{name}</Text>
-                  <Text style={[type.meta, { color: t.textMuted }]}>
-                    {city.visited}/{city.total}
-                  </Text>
+          <Card style={{ gap: space.lg }}>
+            {visited.map((city) => {
+              const row = cities.find((item) => item.slug === city.slug);
+              const name = row ? loc(row.name, lang) : city.slug;
+              return (
+                <View key={city.slug} style={{ gap: space.sm }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }} importantForAccessibility="no-hide-descendants">
+                    <Text style={[type.itemTitle, { color: t.text }]}>{name}</Text>
+                    <Text style={[type.meta, { color: t.textMuted }]}>
+                      {city.visited}/{city.total}
+                    </Text>
+                  </View>
+                  <ProgressBar compact value={city.visited} max={city.total} label={name} />
                 </View>
-                <ProgressBar compact value={city.visited} max={city.total} label={name} />
-              </View>
-            );
-          })}
+              );
+            })}
+          </Card>
         </View>
       ) : null}
     </ScrollView>

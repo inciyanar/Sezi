@@ -82,9 +82,14 @@ export function PassportContent({ data }: { data: PassportData }) {
       />
       {data.stats.stamps ? (
         <section aria-labelledby="stamps-heading" className="grid gap-4">
-          <h2 id="stamps-heading" className="font-heading text-lg font-bold">
-            {t("passport.recent")}
-          </h2>
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 id="stamps-heading" className="font-heading text-lg font-bold">
+              {t("passport.recent")}
+            </h2>
+            <span className="text-sm font-medium tabular-nums text-muted-foreground">
+              {data.stats.stamps}
+            </span>
+          </div>
           <StampGrid visits={data.visits} works={bySlug} />
         </section>
       ) : (
@@ -99,17 +104,19 @@ export function PassportContent({ data }: { data: PassportData }) {
           <h2 id="cities-heading" className="font-heading text-lg font-bold">
             {t("passport.cities")}
           </h2>
-          {visited.map((city) => {
-            const name = data.cities.find((item) => item.slug === city.slug)?.name;
-            return (
-              <ProgressBar
-                key={city.slug}
-                value={city.visited}
-                max={city.total}
-                label={name ? (name[lang] ?? name.tr) : city.slug}
-              />
-            );
-          })}
+          <div className="grid gap-4 rounded-2xl border bg-card p-4 contrast:border-2 contrast:border-border">
+            {visited.map((city) => {
+              const name = data.cities.find((item) => item.slug === city.slug)?.name;
+              return (
+                <ProgressBar
+                  key={city.slug}
+                  value={city.visited}
+                  max={city.total}
+                  label={name ? (name[lang] ?? name.tr) : city.slug}
+                />
+              );
+            })}
+          </div>
         </section>
       ) : null}
     </>

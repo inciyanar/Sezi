@@ -6,7 +6,7 @@ import { useEffect } from "react";
 
 import { FormError } from "@/components/account/form-error";
 import { usePassportData } from "@/components/account/passport-content";
-import { AchievementIcon, EmptyStamp, sortAchievements, Stamp, StatStrip } from "@/components/account/social-visuals";
+import { AchievementIcon, achievementTitle, EmptyStamp, sortAchievements, Stamp, StatStrip } from "@/components/account/social-visuals";
 import { Skeleton } from "@/components/ui/skeleton";
 import { errorKey } from "@/lib/account";
 import { href } from "@/lib/i18n";
@@ -30,7 +30,7 @@ export function SocialOverview({ uid }: { uid: string }) {
   const stamps = [...data.visits].filter((visit) => bySlug.has(visit.work_slug)).sort((a, b) => b.first_at.localeCompare(a.first_at));
   const cities = data.stats.cities.filter((city) => city.visited > 0).length;
   const { earned, locked } = sortAchievements(data.list);
-  const preview = [...earned.slice(0, 3), ...locked.slice(0, 1)];
+  const preview = [...earned, ...locked].slice(0, 4);
   return (
     <div className="grid gap-4">
       <Link
@@ -38,16 +38,24 @@ export function SocialOverview({ uid }: { uid: string }) {
         className={cardLink}
         aria-label={`${t("passport.title")}. ${data.stats.stamps} ${t("stat.stamps")}, ${cities} ${t("stat.cities")}`}
       >
-        <CardHead title={t("passport.title")} />
-        <div aria-hidden className="flex items-center gap-3">
+        <CardHead title={t("passport.title")} trailing={stamps.length > 4 ? `+${stamps.length - 4}` : undefined} />
+        <div aria-hidden className="grid grid-cols-4 gap-3">
           {stamps.length
-            ? stamps.slice(0, 4).map((visit) => (
-                <Stamp key={visit.work_slug} slug={visit.work_slug} typeSlug={bySlug.get(visit.work_slug)!.type_slug} className="size-16" />
-              ))
-            : [0, 1, 2].map((i) => <EmptyStamp key={i} className="size-16" />)}
-          {stamps.length > 4 ? (
-            <span className="grid size-12 place-items-center rounded-full bg-muted font-heading font-bold">+{stamps.length - 4}</span>
-          ) : null}
+            ? stamps.slice(0, 4).map((visit) => {
+                const work = bySlug.get(visit.work_slug)!;
+                const name = work.name[lang] ?? work.name.tr;
+                return (
+                  <div key={visit.work_slug} className="flex flex-col items-center gap-1.5 text-center">
+                    <Stamp slug={visit.work_slug} typeSlug={work.type_slug} className="size-16" />
+                    <span className="line-clamp-1 w-full text-xs font-semibold">{name}</span>
+                  </div>
+                );
+              })
+            : [0, 1, 2, 3].map((i) => (
+                <div key={i} className="flex flex-col items-center gap-1.5">
+                  <EmptyStamp className="size-16" />
+                </div>
+              ))}
         </div>
         <div aria-hidden>
           <StatStrip
@@ -69,9 +77,14 @@ export function SocialOverview({ uid }: { uid: string }) {
         aria-label={`${t("ach.title")}. ${t("ach.count", { n: earned.length, total: data.list.length })}`}
       >
         <CardHead title={t("ach.title")} trailing={`${earned.length}/${data.list.length}`} />
-        <div aria-hidden className="flex flex-wrap gap-4 pt-1">
+        <div aria-hidden className="grid grid-cols-4 gap-3 pt-1">
           {preview.map((a) => (
-            <AchievementIcon key={a.id} achievement={a} size="sm" />
+            <div key={a.id} className="flex flex-col items-center gap-1.5 text-center">
+              <AchievementIcon achievement={a} size="sm" />
+              <span className={cn("line-clamp-1 w-full text-xs font-semibold", a.level === 0 && "text-muted-foreground")}>
+                {achievementTitle(a, t, lang)}
+              </span>
+            </div>
           ))}
         </div>
       </Link>

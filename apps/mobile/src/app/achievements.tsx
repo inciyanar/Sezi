@@ -2,7 +2,7 @@ import { ScrollView, View } from 'react-native';
 import { Text } from '@/components/text';
 
 import { AchievementGrid, sortAchievements } from '@/components/social-grids';
-import { SectionTitle } from '@/components/ui';
+import { Card, SectionTitle } from '@/components/ui';
 import { space, type } from '@/design/type';
 import { useSweetTheme } from '@/hooks/use-sweet-theme';
 import { useAchievements } from '@/lib/achievements';
@@ -26,12 +26,17 @@ export default function AchievementsScreen() {
         {earned.length ? (
           <AchievementGrid list={earned} />
         ) : (
-          <Text style={[type.body, { color: t.textMuted }]}>{tr('ach.noneEarned')}</Text>
+          <Card>
+            <Text style={[type.body, { color: t.textMuted }]}>{tr('ach.noneEarned')}</Text>
+          </Card>
         )}
       </View>
       {locked.length ? (
         <View style={{ gap: space.lg }}>
-          <SectionTitle title={tr('ach.next')} />
+          <SectionTitle
+            title={tr('ach.next')}
+            action={<Text style={[type.meta, { color: t.textMuted }]}>{String(locked.length)}</Text>}
+          />
           <AchievementGrid list={locked} />
         </View>
       ) : null}
