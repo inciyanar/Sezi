@@ -148,12 +148,17 @@ export function EmptyInvite({ art, text, action }: { art: ReactNode; text: strin
 /** Sayı şeridi: simge + büyük sayı + tek sözcük. */
 export function StatStrip({ items }: { items: { icon: LucideIcon; value: string; label: string }[] }) {
   return (
-    <dl className="grid grid-cols-[repeat(auto-fit,minmax(6.5rem,1fr))] gap-2">
+    <dl className="grid grid-cols-[repeat(auto-fit,minmax(6.5rem,1fr))] gap-2.5">
       {items.map(({ icon: Icon, value, label }) => (
-        <div key={label} className="grid gap-0.5 rounded-lg bg-muted p-3 contrast:outline-2 contrast:outline-border">
-          <Icon aria-hidden className="size-5 text-link" />
-          <dd className="font-heading text-2xl font-extrabold">{value}</dd>
-          <dt className="text-sm text-muted-foreground">{label}</dt>
+        <div
+          key={label}
+          className="flex flex-col justify-between gap-1.5 rounded-xl bg-muted p-3.5 contrast:outline-2 contrast:outline-border"
+        >
+          <Icon aria-hidden className="size-5 shrink-0 text-link" />
+          <div className="mt-auto grid gap-0.5">
+            <dd className="font-heading text-2xl font-extrabold leading-tight tabular-nums">{value}</dd>
+            <dt className="truncate text-sm font-medium text-muted-foreground">{label}</dt>
+          </div>
         </div>
       ))}
     </dl>
@@ -162,7 +167,7 @@ export function StatStrip({ items }: { items: { icon: LucideIcon; value: string;
 
 const subjectName = (a: Achievement, lang: Lang) => (a.subject ? (a.subject.name[lang] ?? a.subject.name.tr) : "");
 
-const BADGE_NAME = {
+export const BADGE_NAME = {
   "01-ilk-damga": "badge.01-ilk-damga.name",
   "02-vakif-kasifi": "badge.02-vakif-kasifi.name",
   "03-uslup-avcisi": "badge.03-uslup-avcisi.name",
@@ -203,7 +208,7 @@ export function AchievementIcon({ achievement: a, size = "md" }: { achievement: 
   const Mark = earned ? Check : Lock;
   const box = { sm: "size-14 rounded-xl", md: "size-[4.5rem] rounded-2xl", lg: "size-24 rounded-3xl" }[size];
   return (
-    <span aria-hidden className="relative inline-block">
+    <span aria-hidden className="relative inline-block shrink-0">
       <span
         className={cn(
           "grid place-items-center overflow-hidden bg-muted contrast:bg-card contrast:outline-2 contrast:outline-border",
@@ -240,30 +245,52 @@ export function AchievementGrid({ list }: { list: Achievement[] }) {
       <ul className="grid grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))] gap-4">
         {list.map((a) => {
           const title = achievementTitle(a, t, lang);
+          const badge = t(BADGE_NAME[badgeFor(a)]);
+          const subject = (a.kind === "complex" || a.kind === "tour") && a.subject ? subjectName(a, lang) : null;
           const target = achievementTarget(a);
           return (
-            <li key={a.id}>
+            <li key={a.id} className="flex">
               <button
                 type="button"
                 onClick={() => setOpen(a)}
                 aria-label={achievementLabel(a, t, lang)}
                 aria-haspopup="dialog"
-                className="grid min-h-12 w-full justify-items-center gap-2 rounded-xl p-2 text-center outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring"
+                className="group flex h-full min-h-12 w-full flex-col items-center gap-2.5 rounded-2xl border bg-card p-3.5 text-center transition-colors outline-none hover:border-link hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring contrast:border-2 contrast:border-border"
               >
                 <AchievementIcon achievement={a} />
-                <span aria-hidden className={cn("line-clamp-2 text-sm font-semibold", a.level === 0 && "text-muted-foreground")}>
-                  {title}
+                <span aria-hidden className="flex min-h-10 w-full flex-col items-center justify-center gap-0.5">
+                  {subject ? (
+                    <>
+                      <span className={cn("line-clamp-1 w-full text-sm leading-5 font-semibold", a.level === 0 && "text-muted-foreground")}>
+                        {badge}
+                      </span>
+                      <span className="line-clamp-1 w-full text-xs leading-4 font-medium text-muted-foreground">
+                        {subject}
+                      </span>
+                    </>
+                  ) : (
+                    <span className={cn("line-clamp-2 w-full text-sm leading-5 font-semibold", a.level === 0 && "text-muted-foreground")}>
+                      {title}
+                    </span>
+                  )}
                 </span>
                 {a.level === 0 ? (
-                  <span aria-hidden className="grid w-full gap-1">
-                    <span className="h-1.5 overflow-hidden rounded-full bg-border">
-                      <span className="block h-full bg-link" style={{ width: `${target ? Math.min(100, (a.current / target) * 100) : 0}%` }} />
+                  <span aria-hidden className="mt-auto grid w-full gap-1.5 pt-1">
+                    <span className="h-1.5 w-full overflow-hidden rounded-full bg-border">
+                      <span
+                        className="block h-full rounded-full bg-link"
+                        style={{ width: `${target ? Math.min(100, (a.current / target) * 100) : 0}%` }}
+                      />
                     </span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs font-medium tabular-nums text-muted-foreground">
                       {a.current}/{target}
                     </span>
                   </span>
-                ) : null}
+                ) : (
+                  <span aria-hidden className="mt-auto pt-1 text-xs font-medium tabular-nums text-muted-foreground">
+                    {a.earnedAt ? formatDate(lang, a.earnedAt) : t("ach.earnedStatus")}
+                  </span>
+                )}
               </button>
             </li>
           );
@@ -306,7 +333,7 @@ export function sortAchievements(list: Achievement[]) {
 
 type StampWork = { slug: string; name: LocalizedText; type_slug: string };
 
-/** Damga ızgarası: eğik damgalar, altında tek satır ad; eser sayfasına bağlantı. */
+/** Damga ızgarası: eğik damgalar, altında ad ve tarih; eser sayfasına bağlantı. */
 export function StampGrid({ visits, works, limit }: { visits: Visit[]; works: Map<string, StampWork>; limit?: number }) {
   const { t, lang } = useT();
   const items = [...visits]
@@ -314,21 +341,24 @@ export function StampGrid({ visits, works, limit }: { visits: Visit[]; works: Ma
     .sort((a, b) => b.first_at.localeCompare(a.first_at))
     .slice(0, limit);
   return (
-    <ul className="grid grid-cols-[repeat(auto-fill,minmax(7rem,1fr))] gap-4">
+    <ul className="grid grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))] gap-4">
       {items.map((visit) => {
         const work = works.get(visit.work_slug)!;
         const name = work.name[lang] ?? work.name.tr;
         const method = t(visit.method === "checkin" ? "passport.byCheckin" : "passport.byRoute");
         return (
-          <li key={visit.work_slug}>
+          <li key={visit.work_slug} className="flex">
             <Link
               href={href(lang, `/eser/${work.slug}`)}
               aria-label={`${name}, ${formatDate(lang, visit.first_at)}, ${method}`}
-              className="grid min-h-12 justify-items-center gap-2 rounded-xl p-2 text-center outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring"
+              className="group flex h-full min-h-12 w-full flex-col items-center gap-2.5 rounded-2xl border bg-card p-3.5 text-center transition-colors outline-none hover:border-link hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring contrast:border-2 contrast:border-border"
             >
-              <Stamp slug={work.slug} typeSlug={work.type_slug} className="w-full max-w-24" />
-              <span aria-hidden className="line-clamp-1 text-sm font-semibold">
+              <Stamp slug={work.slug} typeSlug={work.type_slug} className="size-20" />
+              <span aria-hidden className="line-clamp-2 flex min-h-10 w-full items-center justify-center text-sm leading-5 font-semibold">
                 {name}
+              </span>
+              <span aria-hidden className="mt-auto pt-1 text-xs font-medium tabular-nums text-muted-foreground">
+                {formatDate(lang, visit.first_at)}
               </span>
             </Link>
           </li>

@@ -272,26 +272,48 @@ export function AchievementTile({ achievement: a, onPress }: { achievement: Achi
   const t = useSweetTheme();
   const { t: tr, lang } = useT();
   const title = achievementTitle(a, tr, lang);
+  const badge = tr(BADGE_NAME[badgeFor(a)]);
+  const subject = (a.kind === 'complex' || a.kind === 'tour') && a.subject ? loc(a.subject.name, lang) : null;
   const target = achievementTarget(a);
+  const date = a.earnedAt ? new Date(a.earnedAt).toLocaleDateString(lang, { day: 'numeric', month: 'short' }) : null;
   return (
     <SoftPressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={achievementLabel(a, tr, lang)}
       accessibilityHint={tr('ach.openHint')}
-      style={s.tile}>
+      style={[s.tile, { backgroundColor: t.surface }, outline(t)]}>
       <AchievementIcon achievement={a} />
-      <Text style={[type.bubble, { color: a.level > 0 ? t.text : t.textMuted, textAlign: 'center' }]} numberOfLines={2}>
-        {title}
-      </Text>
+      <View style={s.tileTitleBox} importantForAccessibility="no-hide-descendants">
+        {subject ? (
+          <>
+            <Text style={[type.bubble, { color: a.level > 0 ? t.text : t.textMuted, textAlign: 'center' }]} numberOfLines={1}>
+              {badge}
+            </Text>
+            <Text style={[type.tab, { color: t.textMuted, textAlign: 'center' }]} numberOfLines={1}>
+              {subject}
+            </Text>
+          </>
+        ) : (
+          <Text style={[type.bubble, { color: a.level > 0 ? t.text : t.textMuted, textAlign: 'center' }]} numberOfLines={2}>
+            {title}
+          </Text>
+        )}
+      </View>
       {a.level === 0 ? (
-        <View style={{ alignSelf: 'stretch', gap: 2 }} importantForAccessibility="no-hide-descendants">
+        <View style={s.tileFooter} importantForAccessibility="no-hide-descendants">
           <ProgressBar compact value={a.current} max={target} label={title} />
           <Text style={[type.tab, { color: t.textMuted, textAlign: 'center' }]}>
             {a.current}/{target}
           </Text>
         </View>
-      ) : null}
+      ) : (
+        <View style={s.tileFooter} importantForAccessibility="no-hide-descendants">
+          <Text style={[type.tab, { color: t.textMuted, textAlign: 'center' }]} numberOfLines={1}>
+            {date ?? tr('ach.earnedStatus')}
+          </Text>
+        </View>
+      )}
     </SoftPressable>
   );
 }
@@ -451,9 +473,31 @@ const s = StyleSheet.create({
   circle: { alignItems: 'center', justifyContent: 'center', borderWidth: 3, overflow: 'hidden' },
   invite: { alignItems: 'center', gap: space.lg, paddingVertical: space.xl, paddingHorizontal: space.lg },
   strip: { flexDirection: 'row', gap: space.sm },
-  stat: { flex: 1, minWidth: 0, alignItems: 'flex-start', gap: 2, padding: space.md, borderRadius: radius.md, borderCurve: 'continuous' },
+  stat: { flex: 1, minWidth: 0, alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, padding: space.md, borderRadius: radius.md, borderCurve: 'continuous' },
   statValue: { fontFamily: type.screenTitle.fontFamily, fontSize: 26, lineHeight: 32 },
-  tile: { flex: 1, alignItems: 'center', gap: space.sm, minHeight: 96, paddingVertical: space.sm },
+  tile: {
+    flex: 1,
+    alignItems: 'center',
+    gap: space.sm,
+    minHeight: 156,
+    paddingVertical: space.md,
+    paddingHorizontal: space.sm,
+    borderRadius: radius.md,
+    borderCurve: 'continuous',
+  },
+  tileTitleBox: {
+    minHeight: 36,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  tileFooter: {
+    marginTop: 'auto',
+    alignSelf: 'stretch',
+    gap: 4,
+    paddingTop: 2,
+  },
   tileBox: { borderRadius: radius.lg, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   corner: {
     position: 'absolute',

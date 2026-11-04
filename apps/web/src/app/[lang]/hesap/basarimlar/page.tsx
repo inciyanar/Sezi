@@ -19,17 +19,28 @@ export default function AchievementsPage() {
           <h2 id="earned-heading" className="font-heading text-lg font-bold">
             {t("ach.earned")}
           </h2>
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm font-medium tabular-nums text-muted-foreground">
             {earned.length}/{earned.length + locked.length}
           </span>
         </div>
-        {earned.length ? <AchievementGrid list={earned} /> : <p className="text-muted-foreground">{t("ach.noneEarned")}</p>}
+        {earned.length ? (
+          <AchievementGrid list={earned} />
+        ) : (
+          <p className="rounded-2xl border border-dashed bg-card px-4 py-6 text-center text-sm text-muted-foreground">
+            {t("ach.noneEarned")}
+          </p>
+        )}
       </section>
       {locked.length ? (
         <section aria-labelledby="next-heading" className="grid gap-4">
-          <h2 id="next-heading" className="font-heading text-lg font-bold">
-            {t("ach.next")}
-          </h2>
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 id="next-heading" className="font-heading text-lg font-bold">
+              {t("ach.next")}
+            </h2>
+            <span className="text-sm font-medium tabular-nums text-muted-foreground">
+              {locked.length}
+            </span>
+          </div>
           <AchievementGrid list={locked} />
         </section>
       ) : null}
