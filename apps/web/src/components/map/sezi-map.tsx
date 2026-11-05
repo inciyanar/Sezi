@@ -24,8 +24,9 @@ import {
 } from "@sezi/shared";
 import type { Feature, FeatureCollection, GeoJsonProperties } from "geojson";
 import type { ExpressionSpecification, LineLayerSpecification, Map as MapboxMap } from "mapbox-gl";
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
+import { Glass } from "@/components/ui/glass";
 import { useAppearance } from "@/lib/appearance";
 import { useT } from "@/lib/i18n-client";
 import { useProfile } from "@/lib/profile";
@@ -70,6 +71,7 @@ export interface SeziMapProps {
   zoom?: number;
   /** Küçük, statik hisli konum haritasında kaydırma yakınlaştırmasını kapatır. */
   miniMap?: boolean;
+  controlsUnderHeader?: boolean;
   /** [batı, güney, doğu, kuzey]: verilirse harita buna sığdırılır. */
   bounds?: [number, number, number, number] | null;
   /** Sığdırırken kenar boşluğu (px); haritanın üstündeki panel için. */
@@ -127,11 +129,11 @@ function addRouteLayers(m: MapboxMap, th: SweetTheme) {
   const opacity: ExpressionSpecification = ["get", "opacity"];
   const offset: ExpressionSpecification = ["get", "offset"];
   const layout: LineLayerSpecification["layout"] = { "line-join": "round", "line-cap": "round" };
-  m.addLayer({ id: "route-casing", type: "line", slot: "top", source: "route-parts", layout, paint: { "line-color": th.surface, "line-width": ROUTE_WIDTH + 4, "line-offset": offset, "line-opacity": opacity } });
-  m.addLayer({ id: "route-parts", type: "line", slot: "top", source: "route-parts", layout, paint: { "line-color": th.outlined ? th.primaryText : ["interpolate", ["linear"], ["get", "progress"], 0, th.primaryText, 1, th.accentText], "line-width": ROUTE_WIDTH, "line-offset": offset, "line-opacity": opacity } });
+  m.addLayer({ id: "route-casing", type: "line", slot: "top", source: "route-parts", layout, paint: { "line-color": th.onPhoto.text, "line-width": ROUTE_WIDTH + 6, "line-offset": offset, "line-opacity": opacity } });
+  m.addLayer({ id: "route-parts", type: "line", slot: "top", source: "route-parts", layout, paint: { "line-color": th.text, "line-width": ROUTE_WIDTH, "line-offset": offset, "line-opacity": opacity } });
   m.addLayer({ id: "route-connectors", type: "line", slot: "top", source: "route-connectors", paint: { "line-color": th.textMuted, "line-width": 1.5, "line-dasharray": [2, 2] } });
   // Akan çizgi okların altında ve soluk: yönü oklar söyler, akış yalnız hareket hissi verir.
-  m.addLayer({ id: "route-flow", type: "line", slot: "top", source: "route-runs", layout, paint: { "line-color": th.surface, "line-width": 1.5, "line-offset": offset, "line-opacity": 0, "line-dasharray": [...ROUTE_FLOW_DASHES[0]!] } });
+  m.addLayer({ id: "route-flow", type: "line", slot: "top", source: "route-runs", layout, paint: { "line-color": th.gold.fill, "line-width": 2.5, "line-offset": offset, "line-opacity": th.outlined ? 0 : 1, "line-dasharray": [...ROUTE_FLOW_DASHES[0]!] } });
   m.addLayer({ id: "route-arrows", type: "symbol", slot: "top", source: "route-runs", layout: { "symbol-placement": "line", "symbol-spacing": ROUTE_ARROW_SPACING_PX, "icon-image": "route-arrow", "icon-size": 1, "icon-rotation-alignment": "map", "icon-keep-upright": false, "icon-offset": ["array", "number", 2, ["get", "arrowOffset"]], "icon-allow-overlap": true, "icon-ignore-placement": true }, paint: { "icon-opacity": opacity, "icon-occlusion-opacity": 1 } });
 }
 
@@ -216,6 +218,7 @@ export default function SeziMap(props: SeziMapProps) {
   const { t } = useT();
   const { contrast } = useAppearance();
   const profile = useProfile();
+  const [show3d, setShow3d] = useState(true);
   const box = useRef<HTMLDivElement>(null);
   const map = useRef<MapboxMap | null>(null);
   const ready = useRef(false);
@@ -283,7 +286,7 @@ export default function SeziMap(props: SeziMapProps) {
       m,
       "markers",
       fc(
-        [...(p.markers ?? []), ...(p.route?.stops ?? []).map((s): MapMarker => ({ id: s.id, number: s.number, location: s.onLine, label: s.label }))].map((k) => ({
+        [...(p.markers ?? []), ...(p.route?.stops ?? []).map((s, i): MapMarker => ({ id: s.id, number: s.number, location: s.onLine, label: s.label, selected: p.route?.activeLeg === i }))].map((k) => ({
           type: "Feature",
           properties: {
             id: k.id,
@@ -292,8 +295,8 @@ export default function SeziMap(props: SeziMapProps) {
             // Türü olan eser işareti simgeyle çizilir; numaralı durak ve başlangıç daire kalır.
             icon: k.typeSlug && k.number === undefined && k.emphasis !== "start" ? iconName(k.typeSlug) : "",
             scale: k.selected || k.emphasis ? ICON_SCALE_SELECTED : ICON_SCALE,
-            color: k.emphasis === "dest" ? th.accentText : k.emphasis ? th.primaryText : th.text,
-            radius: k.emphasis || k.number !== undefined ? 11 : k.selected ? 9 : 6,
+            color: k.number !== undefined ? (k.selected ? th.gold.fill : th.text) : k.emphasis === "dest" || k.emphasis === "picked" ? th.gold.fill : th.text,
+            radius: k.number !== undefined ? (k.selected && !reducedMotion ? 13 : 11) : k.emphasis ? 11 : k.selected ? 9 : 6,
             opacity: k.approximate ? 0.45 : 1,
           },
           geometry: { type: "Point", coordinates: k.location },
@@ -363,7 +366,7 @@ export default function SeziMap(props: SeziMapProps) {
         // İlk karolar inmeden çizgiyi oynatma. Ondan önce her boya haritayı yeniden kilitler.
         m.once("idle", () => {
           if (map.current !== m) return;
-          m.setPaintProperty("route-flow", "line-opacity", 0.45);
+          m.setPaintProperty("route-flow", "line-opacity", 1);
           flowTimer = window.setInterval(() => {
             if (document.hidden || !onScreen || !flowWanted.current) return;
             if (!m.loaded() || m.isMoving() || map.current !== m) return;
@@ -387,8 +390,8 @@ export default function SeziMap(props: SeziMapProps) {
           "circle-color": ["get", "color"],
           "circle-radius": ["get", "radius"],
           "circle-opacity": ["get", "opacity"],
-          "circle-stroke-color": th.surface,
-          "circle-stroke-width": 2,
+          "circle-stroke-color": th.onPhoto.text,
+          "circle-stroke-width": 3,
         },
       });
       // Simgeler 3B binaların arkasında soluklaşmaz (occlusion opacity 1); numaralı durak daima üstte.
@@ -408,7 +411,7 @@ export default function SeziMap(props: SeziMapProps) {
         source: "markers",
         filter: ["!=", ["get", "number"], ""],
         layout: { "text-field": ["get", "number"], "text-font": MAP_FONT, "text-size": 12, "text-allow-overlap": true },
-        paint: { "text-color": th.surface, "text-occlusion-opacity": 1 },
+        paint: { "text-color": ["case", ["==", ["get", "color"], th.gold.fill], th.gold.ink, th.onPhoto.text], "text-occlusion-opacity": 1 },
       });
       // Numaralı duraklar aynı yerdeki eser simgesinin altında kalmaz.
       m.moveLayer("markers", "markers-number");
@@ -465,5 +468,16 @@ export default function SeziMap(props: SeziMapProps) {
       </div>
     );
   }
-  return <div ref={box} role="region" aria-label={props.label || t("map.label")} className={`overflow-hidden ${props.className ?? "rounded-lg border"}`} />;
+  return <div className={`sezi-map relative ${props.className ?? "rounded-lg border"}`}>
+    <div ref={box} role="region" aria-label={props.label || t("map.label")} className="size-full overflow-hidden rounded-[inherit]" />
+    <div className={`absolute grid gap-1.5 ${props.controlsUnderHeader ? "route-map-controls" : "top-2.5 right-2.5"}`}>
+      <Glass as="button" type="button" tone="light" aria-label={t("map.zoomIn")} onClick={() => map.current?.zoomIn()} className="grid size-12 place-items-center rounded-full text-2xl">+</Glass>
+      <Glass as="button" type="button" tone="light" aria-label={t("map.zoomOut")} onClick={() => map.current?.zoomOut()} className="grid size-12 place-items-center rounded-full text-2xl">−</Glass>
+      {!plain && !reducedMotion && !props.miniMap ? <Glass as="button" type="button" tone="light" aria-label={t("route.toggle3d")} aria-pressed={show3d} onClick={() => {
+        const next = !show3d;
+        setShow3d(next);
+        map.current?.easeTo({ pitch: next ? mapPitch(lookRef.current) : 0 });
+      }} className="grid size-12 place-items-center rounded-full font-bold">{show3d ? "3B" : "2B"}</Glass> : null}
+    </div>
+  </div>;
 }

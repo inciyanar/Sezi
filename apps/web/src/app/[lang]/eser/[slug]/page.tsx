@@ -7,24 +7,26 @@ import {
   type WorkCondition,
   type WorkSource,
 } from "@sezi/shared";
-import { AlertTriangleIcon, ChevronRightIcon, ExternalLinkIcon } from "lucide-react";
+import { ExternalLinkIcon, LandmarkIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { LazySeziMap } from "@/components/map";
-import { PageContainer } from "@/components/page";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Eyebrow } from "@/components/ui/eyebrow";
+import { Glass } from "@/components/ui/glass";
+import { Tag } from "@/components/ui/tag";
 import { CommunityPhotos } from "@/components/works/community-photos";
+import { ListenButton } from "@/components/works/listen-button";
 import { PhotoGallery } from "@/components/works/photo-gallery";
 import { ReadMore } from "@/components/works/read-more";
 import { PrecisionBadge, WorkCard } from "@/components/works/work-card";
-import { WorkActions } from "@/components/works/work-actions";
-import { WorkTabs, type WorkTabPanel } from "@/components/works/work-tabs";
 import { getWork, getWorkIndex } from "@/lib/data";
 import { href, isLang, t, type Lang, type MessageKey } from "@/lib/i18n";
 import { AUDIO_BASE, photoUrl } from "@/lib/media";
 import { PILOT_SLUGS } from "@/lib/pilot-slugs";
+import { toneClass } from "@/lib/tone";
 
 export const revalidate = 600;
 // Sayfalar ilk ziyarette üretilir ve önbellekte kalır (ISR); derlemede önceden üretilmez.
@@ -142,17 +144,10 @@ export default async function WorkDetailPage({
   // Ses kaydı: dilde varsa o, yoksa Türkçe kayıt (varsa); hiçbiri yoksa oynatıcı gösterilmez.
   const audioPath = lang === "en" ? (work.audio_en ?? work.audio_tr) : work.audio_tr;
 
-  // Kısa bakış: kayıtta olan bilgilerden en az ikisi varsa (yapım, dönem, gezme süresi). Tek bilgi şerit olmaz.
-  const glance = [
-    work.built_year !== null ? { key: "built", label: t(lang, "works.detail.infoBuiltYear"), value: String(work.built_year) } : null,
-    period ? { key: "period", label: t(lang, "works.detail.infoPeriod"), value: period } : null,
-    work.visit_minutes ? { key: "visit", label: t(lang, "works.detail.glanceVisit"), value: t(lang, "works.detail.minutes", { n: work.visit_minutes }) } : null,
-  ].filter((x) => x !== null);
-
-  // Gitmeden önce: yalnız kaynağı ve kontrol tarihiyle girilen bilgi; yoksa bunu açıkça söyler (mobildekiyle aynı).
+  const audioSrc = audioPath ? `${AUDIO_BASE}${audioPath}` : null;
   const entrance = [
     work.visit_steps === null ? null : work.visit_steps === 0 ? t(lang, "works.detail.visitStepFree") : t(lang, "works.detail.visitSteps", { n: work.visit_steps }),
-    work.visit_ramp === null ? null : work.visit_ramp ? t(lang, "works.detail.visitRamp") : t(lang, "works.detail.visitNoRamp"),
+    work.visit_ramp ? t(lang, "works.detail.visitRamp") : null,
   ].filter((x): x is string => Boolean(x));
   const visitHours = loc(work.visit_hours, lang);
   const visitNote = loc(work.visit_note, lang);
@@ -161,10 +156,8 @@ export default async function WorkDetailPage({
     visitHours ? { key: "hours", label: t(lang, "works.detail.visitHours"), value: visitHours } : null,
     work.visit_minutes ? { key: "minutes", label: t(lang, "works.detail.glanceVisit"), value: t(lang, "works.detail.minutes", { n: work.visit_minutes }) } : null,
     visitNote ? { key: "note", label: t(lang, "works.detail.visitNote"), value: visitNote } : null,
+    work.visit_source ? { key: "source", label: t(lang, "works.detail.sourceLabel"), value: work.visit_source } : null,
   ].filter((x) => x !== null);
-  const visitChecked = work.visit_checked_on
-    ? new Date(`${work.visit_checked_on}T12:00:00`).toLocaleDateString(lang === "tr" ? "tr-TR" : "en-GB", { day: "numeric", month: "long", year: "numeric" })
-    : null;
   const siteBase = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://sezi.info").replace(/\/$/, "");
   const jsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
@@ -191,118 +184,13 @@ export default async function WorkDetailPage({
     ...(cover ? { image: photoUrl(cover, "full") } : {}),
   };
 
-  const about = (
-    <div className="grid max-w-[65ch] gap-12">
-      {summary ? <p className="text-xl leading-[1.6] text-foreground">{summary}</p> : null}
-      {history ? (
-        <section aria-labelledby="eser-tarihce-heading" className="grid gap-4">
-          <h2 id="eser-tarihce-heading" className="text-2xl font-bold leading-tight">
-            {t(lang, "works.detail.historyTitle")}
-          </h2>
-          <ReadMore text={history} headingId="eser-tarihce-heading" contentId="eser-tarihce-icerik" />
-        </section>
-      ) : null}
-      {architecture ? (
-        <section aria-labelledby="eser-mimari-heading" className="grid gap-4">
-          <h2 id="eser-mimari-heading" className="text-2xl font-bold leading-tight">
-            {t(lang, "works.detail.architectureTitle")}
-          </h2>
-          <ReadMore text={architecture} headingId="eser-mimari-heading" contentId="eser-mimari-icerik" />
-        </section>
-      ) : null}
-      {bookAttribution && (history || architecture) ? (
-        <p className="text-sm leading-relaxed text-muted-foreground">
-          {t(lang, "works.detail.bookAttribution", { attribution: bookAttribution })}
-        </p>
-      ) : null}
-    </div>
-  );
-  const aboutPanel: WorkTabPanel[] = summary || history || architecture ? [{ value: "about", label: t(lang, "works.detail.tab.about"), content: about }] : [];
-
-  const visit = (
-    <div className="grid gap-12">
-      <div className="grid items-start gap-12 lg:grid-cols-2 lg:gap-16">
-        <section aria-labelledby="eser-harita-heading" className="grid gap-4">
-          <h2 id="eser-harita-heading" className="text-2xl font-bold leading-tight">
-            {t(lang, "works.detail.mapTitle")}
-          </h2>
-          {hasLocation(work) ? (
-            <LazySeziMap
-              label={`${name} — ${t(lang, "works.detail.mapTitle")}`}
-              center={[work.lng, work.lat]}
-              zoom={work.location_precision === "exact" ? 16.5 : 15}
-              miniMap
-              markers={[
-                {
-                  id: work.slug,
-                  location: [work.lng, work.lat],
-                  label: name,
-                  typeSlug: work.type_slug,
-                  approximate: work.location_precision !== "exact",
-                  emphasis: "dest",
-                },
-              ]}
-              className="mini-map h-72 w-full rounded-xl"
-            />
-          ) : null}
-          {address ? <p className="text-lg leading-relaxed text-foreground">{address}</p> : null}
-          {!hasLocation(work) ? <p className="text-lg leading-relaxed text-muted-foreground">{t(lang, "works.detail.unlocated")}</p> : null}
-        </section>
-
-        <section aria-labelledby="eser-gitmeden-heading" className="grid gap-4">
-          <h2 id="eser-gitmeden-heading" className="text-2xl font-bold leading-tight">
-            {t(lang, "works.detail.visitTitle")}
-          </h2>
-          {visitRows.length ? (
-            <dl className="grid gap-4">
-              {visitRows.map((r) => (
-                <div key={r.key}>
-                  <dt className="text-sm text-muted-foreground">{r.label}</dt>
-                  <dd className="text-lg font-medium text-foreground">{r.value}</dd>
-                </div>
-              ))}
-            </dl>
-          ) : null}
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            {work.visit_source && visitChecked
-              ? t(lang, "works.detail.visitSource", { source: work.visit_source, date: visitChecked })
-              : t(lang, "works.detail.visitPending")}
-          </p>
-          <Link
-            href={href(lang, `/bildirim?eser=${work.slug}`)}
-            className="flex min-h-14 items-center gap-3 rounded-xl bg-card px-4 text-base font-semibold text-foreground hover:bg-muted contrast:outline-2 contrast:outline-border"
-          >
-            <AlertTriangleIcon className="size-5 shrink-0" aria-hidden />
-            <span className="flex-1">{t(lang, "works.detail.reportIssue")}</span>
-            <ChevronRightIcon className="size-5 shrink-0 text-muted-foreground" aria-hidden />
-          </Link>
-        </section>
-      </div>
-
-      <CommunityPhotos slug={work.slug} />
-
-      {complexName && work.complex_slug && complexSiblings.length > 0 ? (
-        <section aria-labelledby="eser-kulliye-heading" className="grid gap-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 id="eser-kulliye-heading" className="text-2xl font-bold leading-tight">
-              {t(lang, "works.detail.complexTitle")}
-            </h2>
-            <Link
-              href={href(lang, `/kulliye/${work.complex_slug}`)}
-              className="inline-flex min-h-12 items-center text-base font-semibold text-link underline-offset-4 hover:underline"
-            >
-              {t(lang, "works.detail.complexAllLink", { name: complexName })}
-            </Link>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {complexSiblings.slice(0, 3).map((sibling) => (
-              <WorkCard key={sibling.slug} work={sibling} lang={lang} />
-            ))}
-          </div>
-        </section>
-      ) : null}
-    </div>
-  );
+  const heroRows = [
+    { label: t(lang, "works.detail.location"), value: [work.district, cityName].filter(Boolean).join(", ") },
+    { label: t(lang, "works.detail.infoType"), value: [typeName, complexName].filter(Boolean).join(" · ") },
+    period ? { label: t(lang, "works.detail.infoPeriod"), value: [period, work.built_year].filter((x) => x !== null).join(" · ") } : null,
+    entrance.length ? { label: t(lang, "works.detail.access"), value: entrance.join(" · ") } : null,
+    visitHours ? { label: t(lang, "works.detail.visit"), value: visitHours } : null,
+  ].filter((row) => row !== null);
 
   const record = (
     <div className="grid items-start gap-12 lg:grid-cols-2 lg:gap-16">
@@ -402,52 +290,82 @@ export default async function WorkDetailPage({
   );
 
   return (
-    <PageContainer className="work-detail-page grid gap-0 pt-4 sm:pt-6">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-
-      <PhotoGallery photos={work.photos} workName={name} typeSlug={work.type_slug} />
-
-      {/* Yer kartı: kapağın son 40-48 px'ine biner (mobildeki gibi). Ad, tür ve yer, rozetler, kısa bakış ve eylemler; sonra sekmeler. */}
-      <div className="relative -mt-10 grid gap-10 rounded-t-3xl bg-background px-1 pt-7 sm:-mt-12 sm:px-8 sm:pt-9 lg:px-10">
-        <header className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-end lg:gap-12">
-          <div className="grid gap-4">
-            <h1 className="line-clamp-2 max-w-[20ch] text-[clamp(2.25rem,5vw,4.5rem)] font-extrabold leading-[0.98] tracking-[-0.04em]">
-              {name}
-            </h1>
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base text-muted-foreground">
-              <Link href={href(lang, `/?tur=${work.type_slug}`)} className="inline-flex min-h-12 items-center font-semibold text-foreground underline-offset-4 hover:underline">
-                {typeName}
-              </Link>
-              <span aria-hidden>·</span>
-              <Link href={href(lang, `/il/${work.city_slug}`)} className="inline-flex min-h-12 items-center font-semibold text-foreground underline-offset-4 hover:underline">
-                {[work.district, cityName].filter(Boolean).join(", ")}
-              </Link>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 [&_[data-slot=badge]]:h-auto [&_[data-slot=badge]]:min-h-8 [&_[data-slot=badge]]:text-sm">
-              <PrecisionBadge precision={work.location_precision} lang={lang} />
-              {work.unesco ? <Badge variant="secondary">{t(lang, "works.unesco")}</Badge> : null}
-            </div>
-            {glance.length >= 2 ? (
-              <dl className="flex flex-wrap gap-x-10 gap-y-3 pt-2">
-                {glance.map((g) => (
-                  <div key={g.key}>
-                    <dt className="text-sm text-muted-foreground">{g.label}</dt>
-                    <dd className="text-xl font-bold text-foreground">{g.value}</dd>
-                  </div>
-                ))}
-              </dl>
-            ) : null}
+    <main data-band="solid" className="work-detail-page">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
+      <header className={`relative m-3 overflow-hidden rounded-[28px] ${cover ? "min-[900px]:min-h-[min(86vh,760px)]" : toneClass(work.type_slug)}`}>
+        {cover ? (
+          <div className="h-[45vh] min-h-80 min-[900px]:absolute min-[900px]:inset-0 min-[900px]:h-full">
+            <PhotoGallery photos={work.photos} workName={name} typeSlug={work.type_slug} />
           </div>
-          <WorkActions
-            routeHref={isPilot ? href(lang, `/rota?hedef=${work.slug}`) : null}
-            audioSrc={audioPath ? `${AUDIO_BASE}${audioPath}` : null}
-            workName={name}
-          />
-        </header>
+        ) : (
+          <LandmarkIcon aria-hidden className="pointer-events-none absolute right-6 top-1/2 z-10 hidden size-[200px] -translate-y-1/2 opacity-35 sm:right-[10%] sm:block" strokeWidth={1.2} />
+        )}
+        <Glass tone="light" grain={Boolean(cover)} className={`flex flex-col justify-between gap-8 px-7 pb-10 pt-28 sm:px-12 ${cover ? "min-h-[520px] min-[900px]:min-h-[min(86vh,760px)] min-[900px]:w-[44%]" : "min-h-[420px] w-full !bg-transparent backdrop-filter-none"}`}>
+          <div className="grid gap-6">
+            <p className="flex flex-wrap items-center gap-x-2 text-[13px] font-bold tracking-[0.16em]">
+              <Link className="inline-flex min-h-12 items-center underline-offset-4 hover:underline" href={href(lang, `/eserler?tur=${encodeURIComponent(work.type_slug)}`)}>{typeName.toLocaleUpperCase(lang === "tr" ? "tr-TR" : "en-GB")}</Link>
+              <span aria-hidden>·</span>
+              <Link className="inline-flex min-h-12 items-center underline-offset-4 hover:underline" href={href(lang, `/il/${work.city_slug}`)}>{[work.district, cityName].filter(Boolean).join(", ").toLocaleUpperCase(lang === "tr" ? "tr-TR" : "en-GB")}</Link>
+            </p>
+            <h1 className="font-heading text-[clamp(3rem,5vw,4.75rem)] font-normal leading-[1.02] tracking-[-0.03em]">{name}</h1>
+            <div className="flex flex-wrap gap-2">
+              <PrecisionBadge precision={work.location_precision} lang={lang} />
+              {work.unesco ? <Tag tone="neutral">{t(lang, "works.unesco")}</Tag> : null}
+            </div>
+            {heroRows.length ? <dl className="grid gap-4">{heroRows.map((row) => (
+              <div key={row.label}><dt className="text-sm text-muted-foreground">{row.label}</dt><dd className="text-lg">{row.value}</dd></div>
+            ))}</dl> : null}
+          </div>
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            {audioSrc ? <ListenButton src={audioSrc} workName={name} /> : <span />}
+            {work.built_year !== null || period ? <span className="font-heading text-4xl">{work.built_year ?? period}</span> : null}
+          </div>
+        </Glass>
+      </header>
 
-        {/* Metni olmayan eserde Hakkında sekmesi yok; sayfa Ziyaret ile açılır. */}
-        <WorkTabs panels={[...aboutPanel, { value: "visit", label: t(lang, "works.detail.tab.visit"), content: visit }, { value: "record", label: t(lang, "works.detail.tab.record"), content: record }]} />
+      <div className="mx-auto grid w-full max-w-7xl gap-16 px-5 py-16 sm:px-8 lg:gap-24">
+        <div className="grid items-start gap-12 min-[900px]:grid-cols-[1.3fr_1fr]">
+          <section aria-label={t(lang, "works.detail.story")} className="grid max-w-[65ch] gap-7">
+            <Eyebrow as="h2" className="font-sans" lang={lang} text={t(lang, "works.detail.story")} />
+            {summary ? <p className="text-[19px] leading-relaxed first-letter:float-left first-letter:mr-2 first-letter:font-heading first-letter:text-[64px] first-letter:leading-[0.8] first-letter:text-link contrast:first-letter:float-none contrast:first-letter:mr-0 contrast:first-letter:font-sans contrast:first-letter:text-[inherit] contrast:first-letter:leading-[inherit] contrast:first-letter:text-inherit">{summary}</p> : null}
+            {history ? <section aria-labelledby="eser-tarihce-heading" className="grid gap-4">
+              <h3 id="eser-tarihce-heading" className="font-heading text-3xl font-normal">{t(lang, "works.detail.historyTitle")}</h3>
+              <ReadMore text={history} headingId="eser-tarihce-heading" contentId="eser-tarihce-icerik" />
+            </section> : null}
+            {architecture ? <section aria-labelledby="eser-mimari-heading" className="grid gap-4">
+              <h3 id="eser-mimari-heading" className="font-heading text-3xl font-normal">{t(lang, "works.detail.architectureTitle")}</h3>
+              <ReadMore text={architecture} headingId="eser-mimari-heading" contentId="eser-mimari-icerik" />
+            </section> : null}
+            {!summary && !history && !architecture ? <p className="text-muted-foreground">{t(lang, "works.detail.noText")}</p> : null}
+            {bookAttribution && (summary || history || architecture) ? <p className="text-sm text-muted-foreground">{t(lang, "works.detail.bookAttribution", { attribution: bookAttribution })}</p> : null}
+            <div className="flex flex-wrap items-center gap-3">
+              {isPilot ? <Button asChild arrow><Link href={href(lang, `/rota?hedef=${encodeURIComponent(work.slug)}`)}>{t(lang, "works.detail.planRoute")}</Link></Button> : null}
+              {audioSrc ? <ListenButton src={audioSrc} workName={name} /> : null}
+            </div>
+          </section>
+          <aside className="grid gap-6 rounded-[28px] bg-card p-7 contrast:outline-2 contrast:outline-border min-[900px]:sticky min-[900px]:top-24">
+            <h2 className="font-heading text-3xl font-normal">{t(lang, "works.detail.visitTitle")}</h2>
+            {visitRows.length ? <dl className="grid gap-4">{visitRows.map((row) => (
+              <div key={row.key} className="grid gap-1"><dt className="text-sm text-muted-foreground">{row.label}</dt><dd>{row.value}</dd></div>
+            ))}</dl> : <p className="text-muted-foreground">{t(lang, "works.detail.visitPending")}</p>}
+            <Link href={href(lang, `/bildirim?eser=${encodeURIComponent(work.slug)}`)} className="inline-flex min-h-12 items-center font-bold text-link underline underline-offset-4">{t(lang, "works.detail.reportIssue")}</Link>
+          </aside>
+        </div>
+        <section aria-labelledby="eser-harita-heading" className="grid gap-5">
+          <h2 id="eser-harita-heading" className="font-heading text-4xl font-normal">{t(lang, "works.detail.mapTitle")}</h2>
+          {hasLocation(work) ? <LazySeziMap label={`${name} — ${t(lang, "works.detail.mapTitle")}`} center={[work.lng, work.lat]} zoom={work.location_precision === "exact" ? 16.5 : 15} miniMap markers={[{ id: work.slug, location: [work.lng, work.lat], label: name, typeSlug: work.type_slug, approximate: work.location_precision !== "exact", emphasis: "dest" }]} className="mini-map h-80 w-full rounded-[28px]" /> : <p className="text-muted-foreground">{t(lang, "works.detail.unlocated")}</p>}
+          {address ? <p className="text-lg">{address}</p> : null}
+        </section>
+        <CommunityPhotos slug={work.slug} />
+        {record}
+        {complexName && work.complex_slug && complexSiblings.length > 0 ? <section aria-labelledby="eser-kulliye-heading" className="grid gap-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 id="eser-kulliye-heading" className="font-heading text-4xl font-normal">{t(lang, "works.detail.complexTitle")}</h2>
+            <Link href={href(lang, `/kulliye/${work.complex_slug}`)} className="inline-flex min-h-12 items-center font-bold text-link underline-offset-4 hover:underline">{t(lang, "works.detail.complexAllLink", { name: complexName })}</Link>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{complexSiblings.slice(0, 3).map((sibling) => <WorkCard key={sibling.slug} work={sibling} lang={lang} />)}</div>
+        </section> : null}
       </div>
-    </PageContainer>
+    </main>
   );
 }

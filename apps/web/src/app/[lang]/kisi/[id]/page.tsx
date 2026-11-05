@@ -130,7 +130,7 @@ function PersonContent() {
           <>
             <header className="grid justify-items-center gap-2 text-center">
               <Avatar identity={person} src={data?.avatar} size={96} />
-              <h2 className="break-words font-heading text-2xl font-extrabold">{person.display_name}</h2>
+              <h2 className="break-words font-heading font-normal tracking-[-0.02em] text-2xl">{person.display_name}</h2>
               {person.username ? <p className="break-all text-muted-foreground">@{person.username}</p> : null}
             </header>
             {id !== user.id && !blocked ? (
@@ -190,7 +190,7 @@ function PersonContent() {
                 />
                 {content.stats.stamps ? (
                   <section aria-labelledby="person-stamps" className="grid gap-4">
-                    <h2 id="person-stamps" className="font-heading text-lg font-bold">
+                    <h2 id="person-stamps" className="font-heading font-normal tracking-[-0.02em] text-lg">
                       {t("passport.recent")}
                     </h2>
                     <StampGrid visits={content.visits} works={new Map(content.works.map((work) => [work.slug, work]))} limit={12} />
@@ -198,7 +198,7 @@ function PersonContent() {
                 ) : null}
                 {content.achievements.length ? (
                   <section aria-labelledby="person-achievements" className="grid gap-4">
-                    <h2 id="person-achievements" className="font-heading text-lg font-bold">
+                    <h2 id="person-achievements" className="font-heading font-normal tracking-[-0.02em] text-lg">
                       {t("ach.title")}
                     </h2>
                     <AchievementGrid list={content.achievements} />
@@ -206,7 +206,7 @@ function PersonContent() {
                 ) : null}
                 {content.photos.length ? (
                   <section aria-labelledby="person-photos" className="grid gap-4">
-                    <h2 id="person-photos" className="font-heading text-lg font-bold">
+                    <h2 id="person-photos" className="font-heading font-normal tracking-[-0.02em] text-lg">
                       {t("person.photos")}
                     </h2>
                     <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">

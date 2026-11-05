@@ -95,7 +95,7 @@ export function SocialOverview({ uid }: { uid: string }) {
 function CardHead({ title, trailing }: { title: string; trailing?: string }) {
   return (
     <div aria-hidden className="flex items-center gap-2">
-      <h2 className="flex-1 font-heading text-lg font-bold">{title}</h2>
+      <h2 className="flex-1 font-heading font-normal tracking-[-0.02em] text-lg">{title}</h2>
       {trailing ? <span className="text-sm text-muted-foreground">{trailing}</span> : null}
       <ChevronRight className="size-5 text-muted-foreground transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
     </div>
@@ -125,7 +125,7 @@ export function CommunityTiles({ uid }: { uid: string }) {
   const visibility = identity?.visibility ?? "private";
   return (
     <section aria-labelledby="community-heading" className="grid gap-3">
-      <h2 id="community-heading" className="font-heading text-lg font-bold">
+      <h2 id="community-heading" className="font-heading font-normal tracking-[-0.02em] text-lg">
         {t("social.community")}
       </h2>
       <ul className="grid grid-cols-3 gap-3">

@@ -178,6 +178,70 @@ export function PersonIcon({ color, size = 24, filled }: TabIconProps) {
   );
 }
 
+/** Sezilenler sekmesi: iki kişi. */
+export function PeopleIcon({ color, size = 24, filled }: TabIconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" accessible={false}>
+      <Circle cx="9" cy="8.5" r="3.3" fill={filled ? color : 'none'} stroke={color} strokeWidth={2} />
+      <Path d="M2.8 19.5 A6.2 6.2 0 0 1 15.2 19.5 Z" fill={filled ? color : 'none'} stroke={color} strokeWidth={2} strokeLinejoin="round" />
+      <Path d="M15.5 5.6 A3.2 3.2 0 0 1 15.5 11.6 M17.6 14 A6 6 0 0 1 21.2 19.5" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/** Pasaport sekmesi: kapaklı defter ve mühür dairesi. */
+export function PassportIcon({ color, size = 24, filled }: TabIconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" accessible={false}>
+      <Rect x="5" y="3" width="14" height="18" rx="2.5" fill="none" stroke={color} strokeWidth={2} />
+      <Circle cx="12" cy="10.5" r="3" fill={filled ? color : 'none'} stroke={color} strokeWidth={1.8} />
+      <Path d="M9 16.5 H15" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/** Düğmedeki ok (altın daire içinde). */
+export function ArrowIcon({ color, size = 16 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" accessible={false}>
+      <Path d="M5 12h14M13 6l6 6-6 6" stroke={color} strokeWidth={2.4} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+export function ShareIcon({ color, size = 22 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" accessible={false}>
+      <Path d="M12 15V3.5M7.5 8 12 3.5 16.5 8M5 12.5V19a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 19v-6.5" stroke={color} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+export function BackIcon({ color, size = 22 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" accessible={false}>
+      <Path d="M15 5 L8 12 L15 19" stroke={color} strokeWidth={2.4} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+/** Ayarlar: dişli çark (lucide "settings"). */
+export function SettingsIcon({ color, size = 22 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" accessible={false}>
+      <Path
+        d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
+        stroke={color}
+        strokeWidth={2}
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Circle cx="12" cy="12" r="3" fill="none" stroke={color} strokeWidth={2} />
+    </Svg>
+  );
+}
+
 // ---------- Form alanları ----------
 
 export function MailIcon({ color, size = 20 }: IconProps) {

@@ -35,7 +35,6 @@ export function PhotoFields({
 }) {
   const t = useSweetTheme();
   const { t: tr } = useT();
-  const [captionOpen, setCaptionOpen] = useState(!!value.caption);
   const [licenseOpen, setLicenseOpen] = useState(false);
   return (
     // collapsable={false}: pointerEvents değişince Fabric bu görünümü düzleştirip geri açmasın;
@@ -46,28 +45,24 @@ export function PhotoFields({
       pointerEvents={disabled ? 'none' : 'auto'}
       accessibilityState={{ disabled }}>
       <Field
-        label={tr('photos.alt')}
-        help={tr('photos.altHelp')}
-        value={value.altText}
-        onChangeText={(altText) => onChange({ ...value, altText })}
-        maxLength={PHOTO_ALT_MAX}
+        label={tr('photos.caption')}
+        value={value.caption}
+        onChangeText={(caption) => onChange({ ...value, caption })}
+        maxLength={PHOTO_CAPTION_MAX}
         multiline
         editable={!disabled}
       />
-      {captionOpen ? (
+      <View style={{ borderWidth: 1, borderStyle: 'dashed', borderColor: t.border, borderRadius: radius.lg, padding: space.md }}>
         <Field
-          label={tr('photos.caption')}
-          value={value.caption}
-          onChangeText={(caption) => onChange({ ...value, caption })}
-          maxLength={PHOTO_CAPTION_MAX}
+          label={tr('photos.describe')}
+          help={tr('photos.altHelp')}
+          value={value.altText}
+          onChangeText={(altText) => onChange({ ...value, altText })}
+          maxLength={PHOTO_ALT_MAX}
           multiline
           editable={!disabled}
         />
-      ) : (
-        <View style={{ alignItems: 'flex-start' }}>
-          <Button variant="ghost" compact label={tr('photos.addCaption')} onPress={() => setCaptionOpen(true)} />
-        </View>
-      )}
+      </View>
       <View style={{ gap: space.sm }}>
         <Text style={[type.cardTitle, { color: t.text }]} accessibilityRole="header">
           {tr('photos.visibility')}

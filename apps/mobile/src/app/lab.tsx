@@ -124,7 +124,7 @@ export default function Lab() {
 
 const styles = StyleSheet.create({
   body: { padding: space.xl, gap: space.sm, paddingBottom: 48 },
-  map: { height: 260, borderRadius: radius.lg, borderCurve: 'continuous', overflow: 'hidden' },
+  map: { height: 260, borderRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden' },
   h: { ...type.heading, marginTop: space.xl },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
 });

@@ -144,7 +144,7 @@ function Stat({ value, label, t }: { value: string; label: string; t: SweetTheme
 }
 
 const statStyle = StyleSheet.create({
-  box: { flexGrow: 1, flexBasis: 100, paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.md, borderCurve: 'continuous', gap: 4 },
+  box: { flexGrow: 1, flexBasis: 100, paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.xl, borderCurve: 'continuous', gap: 4 },
 });
 
 const makeStyles = (t: SweetTheme) =>
@@ -152,11 +152,11 @@ const makeStyles = (t: SweetTheme) =>
     screen: { flex: 1, backgroundColor: t.background },
     body: { padding: space.xl, gap: space.xl, paddingBottom: 56 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: t.background },
-    cover: { width: '100%', aspectRatio: 16 / 10, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: t.soft },
+    cover: { width: '100%', aspectRatio: 16 / 10, borderRadius: radius.xl, borderCurve: 'continuous', backgroundColor: t.soft },
     hero: { flexDirection: 'row', gap: space.lg, alignItems: 'center' },
     stats: { flexWrap: 'wrap', flexDirection: 'row', gap: space.sm },
     districts: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-    book: { flexDirection: 'row', gap: space.lg, padding: space.lg, borderRadius: radius.lg, borderCurve: 'continuous', alignItems: 'center', minHeight: 112 },
+    book: { flexDirection: 'row', gap: space.lg, padding: space.lg, borderRadius: radius.xl, borderCurve: 'continuous', alignItems: 'center', minHeight: 112 },
     bookSpine: { width: 72, minHeight: 104, borderRadius: radius.sm, borderCurve: 'continuous', justifyContent: 'center', alignItems: 'center', gap: space.sm, padding: space.sm },
     district: {
       flexDirection: 'row',
@@ -164,7 +164,7 @@ const makeStyles = (t: SweetTheme) =>
       gap: space.sm,
       paddingHorizontal: space.md,
       paddingVertical: space.sm,
-      borderRadius: radius.md,
+      borderRadius: radius.pill,
       borderCurve: 'continuous',
       backgroundColor: t.surface,
     },

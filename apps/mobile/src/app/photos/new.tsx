@@ -1,16 +1,19 @@
-import { loc } from '@sezi/shared';
+import { distanceM, hasLocation, loc } from '@sezi/shared';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
-import { AccessibilityInfo, StyleSheet, View } from 'react-native';
+import * as Location from 'expo-location';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { AccessibilityInfo, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/text';
 
 import { FormError, FormScreen } from '@/components/account-fields';
+import { Glass, GlassScope, GlassTarget } from '@/components/glass';
 import { SeziLoader } from '@/components/sezi-loader';
 import { PhotoFields, type PhotoFieldsValue } from '@/components/photo-fields';
 import { Button, EmptyState, Field, ListRow } from '@/components/ui';
-import { CameraIcon, CloseIcon, ImageIcon, SearchIcon } from '@/design/icons';
+import { BackIcon, CameraIcon, CloseIcon, ImageIcon, SearchIcon } from '@/design/icons';
 import { IconBubble, outline, SoftPressable } from '@/design/sweet/components';
 import { radius, space, type } from '@/design/type';
 import { WorkGlyph } from '@/design/work-glyph';
@@ -18,7 +21,7 @@ import { useSweetTheme } from '@/hooks/use-sweet-theme';
 import { useAccount } from '@/lib/account';
 import { useT } from '@/lib/i18n';
 import { useIdentity } from '@/lib/identity';
-import { photoErrorKey, usePhotoActions } from '@/lib/photos';
+import { photoErrorKey, useMyPhotos, usePhotoActions } from '@/lib/photos';
 import { useWorks } from '@/lib/works';
 
 export default function NewPhotoScreen() {
@@ -56,6 +59,10 @@ function Editor({
   const theme = useSweetTheme();
   const works = useWorks();
   const actions = usePhotoActions();
+  const myPhotos = useMyPhotos();
+  const insets = useSafeAreaInsets();
+  const [nearby, setNearby] = useState<number | null>(null);
+  const [autoSelect, setAutoSelect] = useState(!initialWork);
   const [workSlug, setWorkSlug] = useState(initialWork ?? '');
   const [search, setSearch] = useState('');
   const [asset, setAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
@@ -76,6 +83,26 @@ function Editor({
         .includes(search.trim().toLocaleLowerCase(lang)),
     )
     .slice(0, 20);
+
+  useEffect(() => {
+    if (!autoSelect || !works.data?.length) return;
+    let alive = true;
+    void (async () => {
+      const permission = await Location.getForegroundPermissionsAsync();
+      if (!permission.granted) return;
+      const fix = await Location.getLastKnownPositionAsync({ maxAge: 120000 }) ?? await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      if (!fix || !alive) return;
+      const nearest = works.data.filter(hasLocation).map((work) => ({
+        work, distance: distanceM([fix.coords.longitude, fix.coords.latitude], [work.lng, work.lat]),
+      })).sort((a, b) => a.distance - b.distance)[0];
+      if (nearest && nearest.distance <= 100 && alive) {
+        setWorkSlug(nearest.work.slug);
+        setNearby(Math.round(nearest.distance));
+        setAutoSelect(false);
+      }
+    })().catch(() => {});
+    return () => { alive = false; };
+  }, [autoSelect, works.data]);
 
   const pick = async (source: 'camera' | 'library') => {
     if (picking || busy) return;
@@ -127,24 +154,27 @@ function Editor({
   };
 
   return (
-    <FormScreen>
-      {/* 1. Fotoğraf: seçilmemişse kesikli alan içinde iki büyük eylem; seçilince fotoğraf ve "değiştir". */}
+    <GlassScope>
+      <Stack.Screen options={{ headerShown: false }} />
+      <View style={{ flex: 1, backgroundColor: theme.background }}>
+        <GlassTarget style={StyleSheet.absoluteFill}>
+          {asset ? <Image source={asset.uri} accessibilityLabel={fields.altText || tr('photos.alt')} contentFit="cover" style={StyleSheet.absoluteFill} /> : null}
+        </GlassTarget>
+        <View style={{ paddingTop: insets.top + space.sm, paddingHorizontal: space.md, flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+          <Glass tone="dark" radius={radius.pill}>
+            <SoftPressable accessibilityRole="button" accessibilityLabel={tr('common.back')} onPress={() => router.back()} style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}>
+              <BackIcon color={theme.glass.dark.text} />
+            </SoftPressable>
+          </Glass>
+          <Glass tone="dark" radius={radius.pill} style={{ paddingHorizontal: space.lg, minHeight: 48, justifyContent: 'center' }}>
+            <Text style={[type.itemTitle, { color: theme.glass.dark.text }]}>{tr('photos.newTitle')}</Text>
+          </Glass>
+        </View>
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingTop: asset ? 200 : space.lg, paddingBottom: insets.bottom + space.lg }}>
+          <Glass tone="light" radius={radius.xl} style={{ marginHorizontal: space.md, padding: space.lg, gap: space.lg }}>
       {asset ? (
-        <View>
-          <Image
-            source={asset.uri}
-            accessibilityLabel={fields.altText || tr('photos.alt')}
-            contentFit="cover"
-            style={{
-              width: '100%',
-              aspectRatio: Math.max(0.75, Math.min(1.6, asset.width / asset.height)),
-              borderRadius: radius.lg,
-              backgroundColor: theme.soft,
-            }}
-          />
-          <View style={styles.change}>
-            <IconBubble icon={(c) => <ImageIcon color={c} />} label={tr('photos.changePhoto')} onPress={() => void pick('library')} />
-          </View>
+        <View style={{ alignItems: 'flex-end' }}>
+          <IconBubble icon={(c) => <ImageIcon color={c} />} label={tr('photos.changePhoto')} onPress={() => void pick('library')} />
         </View>
       ) : (
         <View style={[styles.drop, { borderColor: theme.border }]}>
@@ -157,10 +187,11 @@ function Editor({
       {selected ? (
         <View style={[styles.workChip, { backgroundColor: theme.surface }, outline(theme)]}>
           <WorkGlyph slug={selected.type_slug} size={44} />
-          <Text style={[type.itemTitle, { color: theme.text, flex: 1 }]} numberOfLines={2}>
-            {loc(selected.name, lang)}
-          </Text>
-          <IconBubble icon={(c) => <CloseIcon color={c} size={18} />} label={tr('photos.changeWork')} onPress={() => setWorkSlug('')} />
+          <View style={{ flex: 1 }}>
+            <Text style={[type.itemTitle, { color: theme.text }]} numberOfLines={2}>{loc(selected.name, lang)}</Text>
+            {nearby !== null ? <Text style={[type.meta, { color: theme.textMuted }]}>{tr('photos.nearby', { m: nearby })}</Text> : null}
+          </View>
+          <IconBubble icon={(c) => <CloseIcon color={c} size={18} />} label={tr('photos.changeWork')} onPress={() => { setAutoSelect(false); setNearby(null); setWorkSlug(''); }} />
         </View>
       ) : (
         <View style={{ gap: space.sm }}>
@@ -192,6 +223,8 @@ function Editor({
                   subtitle={loc(row.city_name, lang)}
                   onPress={() => {
                     setWorkSlug(row.slug);
+                    setAutoSelect(false);
+                    setNearby(null);
                     setSearch('');
                   }}
                 />
@@ -203,13 +236,20 @@ function Editor({
 
       {/* 3. Alt metin, açıklama, görünürlük, arşiv. */}
       <PhotoFields value={fields} onChange={setFields} disabled={busy} />
+      {fields.visibility === 'public' && myPhotos.data && !myPhotos.data.some((photo) => photo.visibility === 'public') ? (
+        <Text style={[type.body, { color: theme.text }]}>{tr('photos.firstStamp')}</Text>
+      ) : null}
       <FormError text={error} />
       <Button
-        label={tr(busy ? 'photos.saving' : 'photos.save')}
+        label={tr(busy ? 'photos.saving' : 'photos.publish')}
+        arrow
         disabled={busy || picking}
         onPress={() => void save()}
       />
-    </FormScreen>
+          </Glass>
+        </ScrollView>
+      </View>
+    </GlassScope>
   );
 }
 

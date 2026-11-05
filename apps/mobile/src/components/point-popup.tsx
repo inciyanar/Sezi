@@ -8,9 +8,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Eyebrow } from '@/components/ui';
 import { WorkPeek } from '@/components/work-preview';
 import { PlayIcon, StopIcon } from '@/design/icons';
-import { sweetShadow } from '@/design/sweet/components';
+import { outline, sweetShadow } from '@/design/sweet/components';
 import { duration, ease } from '@/design/sweet/motion';
-import { radius, space, type } from '@/design/type';
+import { font, space, type } from '@/design/type';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useSweetTheme } from '@/hooks/use-sweet-theme';
 import { useT } from '@/lib/i18n';
@@ -58,12 +58,25 @@ export function PointPopup({
       exiting={reduced ? FadeOut.duration(duration.fade) : FadeOutDown.duration(duration.sheetOut).easing(ease.out)}
       style={[styles.wrap, { paddingBottom: insets.bottom + space.md }]}
       pointerEvents="box-none">
-      <View style={[styles.sheet, sweetShadow(t), { backgroundColor: t.surface }]} accessibilityRole="alert" accessibilityLiveRegion="assertive" accessibilityViewIsModal>
-        <View style={[styles.handle, { backgroundColor: t.border }]} />
-        <Eyebrow text={eyebrow} color={t.accentText} />
-        <Text style={[type.title, { color: t.text }]} accessibilityRole="header">
-          {title}
-        </Text>
+      <View
+        style={[styles.sheet, sweetShadow(t), { backgroundColor: t.surface, borderColor: `${t.text}1F` }, outline(t)]}
+        accessibilityRole="alert"
+        accessibilityLiveRegion="assertive"
+        accessibilityViewIsModal>
+        <View style={[styles.handle, { backgroundColor: `${t.text}33` }]} />
+        <View style={styles.headRow}>
+          {order ? (
+            <View style={[styles.orderBadge, { backgroundColor: t.gold.fill }]}>
+              <Text style={[styles.orderText, { color: t.gold.ink }]}>{order}</Text>
+            </View>
+          ) : null}
+          <View style={{ flex: 1, gap: 2 }}>
+            <Eyebrow text={eyebrow} color={t.accentText} />
+            <Text style={[styles.title, { color: t.text }]} accessibilityRole="header">
+              {title}
+            </Text>
+          </View>
+        </View>
         {work ? <WorkPeek work={work} cardTitle={title} onOpen={() => router.push({ pathname: '/work/[slug]', params: { slug: work.slug } })} /> : null}
         <ScrollView style={{ maxHeight: work ? 180 : 240 }}>
           <Text style={[type.body, { color: t.text }]}>{body}</Text>
@@ -87,7 +100,18 @@ export function PointPopup({
 
 const styles = StyleSheet.create({
   wrap: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: space.md },
-  sheet: { gap: space.sm, padding: space.xl, paddingTop: space.md, borderRadius: radius.xl, borderCurve: 'continuous' },
-  handle: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, marginBottom: space.sm },
+  sheet: {
+    gap: space.sm,
+    padding: space.xl,
+    paddingTop: space.md,
+    borderRadius: 28,
+    borderCurve: 'continuous',
+    borderWidth: StyleSheet.hairlineWidth * 2,
+  },
+  handle: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, marginBottom: space.xs },
+  headRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  orderBadge: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  orderText: { fontFamily: font.serif, fontSize: 18, lineHeight: 22 },
+  title: { fontFamily: font.serif, fontSize: 22, lineHeight: 26 },
   row: { flexDirection: 'row', gap: space.sm, marginTop: space.sm },
 });

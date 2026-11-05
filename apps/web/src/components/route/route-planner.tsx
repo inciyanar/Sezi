@@ -25,6 +25,8 @@ import { PROFILE_ICON, ProfileSelect, resolveProfileChoice, resolveUserProfile, 
 import { RollingText } from "@/components/rolling-text";
 import { StepList, ViaList } from "@/components/route/step-list";
 import { Button } from "@/components/ui/button";
+import { Glass } from "@/components/ui/glass";
+import { Tag } from "@/components/ui/tag";
 import { useAppearance } from "@/lib/appearance";
 import type { NavOverlay } from "@/lib/data";
 import { href } from "@/lib/i18n";
@@ -97,11 +99,11 @@ export function RoutePlanner({ overlay, initial }: { overlay: NavOverlay; initia
   const version = usePlannerOverlay(overlay);
   const wide = useSyncExternalStore(
     (l) => {
-      const mq = window.matchMedia("(min-width: 1024px)");
+      const mq = window.matchMedia("(min-width: 900px)");
       mq.addEventListener("change", l);
       return () => mq.removeEventListener("change", l);
     },
-    () => window.matchMedia("(min-width: 1024px)").matches,
+    () => window.matchMedia("(min-width: 900px)").matches,
     () => true,
   );
 
@@ -262,10 +264,11 @@ export function RoutePlanner({ overlay, initial }: { overlay: NavOverlay; initia
   const profileName = (k: ProfileChoice) => t(k === "benim" ? "route.profile.mine" : `route.profile.${k}`);
 
   return (
-    <div className="relative flex flex-col lg:block lg:h-[calc(100dvh-4rem)] lg:min-h-[600px]">
-      {/* Harita: masaüstünde tüm alan, telefonda üstte */}
-      <div className="relative h-[46dvh] min-h-72 lg:absolute lg:inset-0 lg:h-auto">
+    <div data-route-map className="relative h-[100dvh] min-h-[600px]">
+      {/* Harita panelin arkasında tam alanı kaplar. */}
+      <div className="absolute inset-0">
         <SeziMap
+          controlsUnderHeader
           label={t("route.mapLabel")}
           center={planner.center}
           zoom={15.5}
@@ -277,7 +280,7 @@ export function RoutePlanner({ overlay, initial }: { overlay: NavOverlay; initia
             if (id.startsWith("work:")) chooseDest(id.slice(5));
           }}
           onMapClick={picking ? onMapClick : undefined}
-          fitPadding={wide ? { top: 64, right: 64, bottom: 64, left: 420 } : { top: 40, right: 40, bottom: 56, left: 40 }}
+          fitPadding={wide ? { top: 80, right: 80, bottom: 40, left: 420 } : { top: 80, right: 40, bottom: Math.round(typeof window === "undefined" ? 400 : window.innerHeight * 0.56), left: 40 }}
           className="h-full w-full rounded-none border-0"
         />
         {picking ? (
@@ -292,14 +295,17 @@ export function RoutePlanner({ overlay, initial }: { overlay: NavOverlay; initia
       </div>
 
       {/* Panel */}
-      <section
+      <div className="route-floating-panel">
+      <Glass
+        as="section"
+        tone="light"
         aria-labelledby="route-title"
-        className="relative z-10 -mt-5 flex flex-col rounded-t-xl bg-card lg:absolute lg:top-4 lg:bottom-4 lg:left-4 lg:mt-0 lg:w-[380px] lg:overflow-hidden lg:rounded-xl lg:shadow-xl contrast:outline-2 contrast:outline-border"
+        className="flex h-full flex-col overflow-hidden rounded-[28px]"
       >
         <div className="grid gap-3 border-b p-4">
-          <h1 id="route-title" className="flex items-baseline justify-between gap-2 text-lg font-extrabold">
-            {t("route.title")}
-            <span className="truncate font-sans text-xs font-normal text-muted-foreground">{t("route.area")}</span>
+          <p className="text-[13px] font-bold tracking-[0.12em]">{t("route.area")}</p>
+          <h1 id="route-title" className="font-heading text-4xl leading-[1.02] tracking-[-0.03em]">
+            {destLabel}
           </h1>
           <div className="grid gap-1.5">
             <PlacePicker
@@ -324,7 +330,7 @@ export function RoutePlanner({ overlay, initial }: { overlay: NavOverlay; initia
           <ProfileSelect value={profileChoice} onChange={chooseProfile} />
         </div>
 
-        <div className="grid content-start gap-4 p-4 lg:flex-1 lg:overflow-y-auto">
+        <div className="grid min-h-0 content-start gap-4 overflow-y-auto p-4 pb-[88px]">
           {outside ? (
             <p role="alert" className="rounded-lg bg-warning p-3 text-sm font-semibold text-warning-foreground">
               {t("route.outsidePilot")}
@@ -336,15 +342,13 @@ export function RoutePlanner({ overlay, initial }: { overlay: NavOverlay; initia
           ) : (
             <div aria-live="polite" className="grid gap-2">
               <p className="flex items-baseline gap-3">
-                <RollingText text={t("common.minutes", { n: current.minutes })} className="font-heading text-3xl font-extrabold" />
-                <RollingText text={formatDistance(current.stats.lengthM, lang)} className="text-muted-foreground" />
+                <RollingText text={t("common.minutes", { n: current.minutes })} className="font-heading text-[56px] leading-none tracking-[-0.03em]" />
+                <RollingText text={`${formatDistance(current.stats.lengthM, lang)} · ${t("tours.stops", { n: current.plan.via.pointIds.length + 1 })}`} className="text-muted-foreground" />
               </p>
               <ul className="flex flex-wrap gap-1.5 text-xs font-semibold">
-                <li className={cn("rounded-lg px-2.5 py-1", current.stats.stairs === 0 ? "bg-success text-success-foreground" : "bg-warning text-warning-foreground")}>
-                  {current.stats.stairs === 0 ? t("route.stepFree") : t("route.stairs", { n: current.stats.stairs })}
-                </li>
-                {current.stats.busyM > 0 ? <li className="rounded-lg bg-secondary px-2.5 py-1">{t("route.busyM", { m: current.stats.busyM })}</li> : null}
-                {current.stats.cobbleM > 0 ? <li className="rounded-lg bg-secondary px-2.5 py-1">{t("route.cobbleM", { m: current.stats.cobbleM })}</li> : null}
+                <li><Tag tone={current.stats.stairs === 0 ? "ok" : "warn"}>{current.stats.stairs === 0 ? t("route.stepFree") : t("route.stairs", { n: current.stats.stairs })}</Tag></li>
+                {current.stats.busyM > 0 ? <li><Tag tone="neutral">{t("route.busyM", { m: current.stats.busyM })}</Tag></li> : null}
+                {current.stats.cobbleM > 0 ? <li><Tag tone="neutral">{t("route.cobbleM", { m: current.stats.cobbleM })}</Tag></li> : null}
               </ul>
             </div>
           )}
@@ -408,9 +412,9 @@ export function RoutePlanner({ overlay, initial }: { overlay: NavOverlay; initia
 
           {current ? (
             <>
-              <ViaList plan={current.plan} pointsById={pointsById} workPoints={overlay.works} activeLeg={activeLeg} onSelectLeg={setActiveLeg} />
+              <ViaList plan={current.plan} pointsById={pointsById} workPoints={overlay.works} activeLeg={activeLeg} onSelectLeg={setActiveLeg} speed={walkingSpeed(profile)} />
               <section aria-labelledby="route-steps">
-                <h2 id="route-steps" className="font-heading text-sm font-bold">
+                <h2 id="route-steps" className="font-bold text-sm">
                   {t("route.steps")}
                 </h2>
                 <StepList steps={current.plan.steps} />
@@ -418,7 +422,9 @@ export function RoutePlanner({ overlay, initial }: { overlay: NavOverlay; initia
             </>
           ) : null}
         </div>
-      </section>
+        {current ? <div className="absolute inset-x-0 bottom-0 bg-[var(--glass-light)] p-4"><Button arrow className="w-full" onClick={() => document.getElementById("route-steps")?.scrollIntoView({ behavior: "smooth", block: "start" })}>{t("route.startWalking")}</Button></div> : null}
+      </Glass>
+      </div>
     </div>
   );
 }

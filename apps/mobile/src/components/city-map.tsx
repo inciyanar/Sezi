@@ -87,5 +87,5 @@ const s = StyleSheet.create({
   pin: { position: 'absolute', minHeight: 48, marginTop: -24, flexDirection: 'row', alignItems: 'center' },
   target: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   dot: { width: 14, height: 14, borderRadius: 7, borderWidth: 2 },
-  label: { marginLeft: -space.sm, paddingHorizontal: space.xs, paddingVertical: space.xs, borderRadius: radius.sm },
+  label: { marginLeft: -space.sm, paddingHorizontal: space.xs, paddingVertical: space.xs, borderRadius: radius.pill },
 });

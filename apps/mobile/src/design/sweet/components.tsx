@@ -17,9 +17,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { scheduleOnRN } from 'react-native-worklets';
 
+import { CategoryArt, hasCategoryArt } from '@/design/category-art';
 import { CloseIcon } from '@/design/icons';
 import { radius, space, type } from '@/design/type';
-import { WorkGlyphInline } from '@/design/work-glyph';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useSweetTheme } from '@/hooks/use-sweet-theme';
 import { useT, type Lang, type Translate } from '@/lib/i18n';
@@ -29,12 +29,15 @@ import { duration, ease, pressScale, pressScaleLarge, selectSpring, stagger } fr
 /** Yalnız yüzen öğeler için (sekme çubuğu, pilot kartı): çok hafif, dağınık gölge. Yüksek kontrastta 2 dp çerçeve. */
 export function sweetShadow(t: SweetTheme): ViewStyle {
   if (t.outlined) return { borderWidth: 2, borderColor: t.border };
-  return { shadowColor: t.shadow, shadowOpacity: 0.08, shadowRadius: 24, shadowOffset: { width: 0, height: 8 }, elevation: 4 };
+  return { borderWidth: 0, borderColor: 'transparent', shadowColor: t.shadow, shadowOpacity: 0.08, shadowRadius: 24, shadowOffset: { width: 0, height: 8 }, elevation: 4 };
 }
 
-/** Yüksek kontrastta dolgusuz yüzeyleri ayıran çerçeve; diğer temalarda boş. */
-export function outline(t: SweetTheme): { borderWidth: number; borderColor: string } | null {
-  return t.outlined ? { borderWidth: 2, borderColor: t.border } : null;
+/**
+ * Yüksek kontrastta dolgusuz yüzeyleri ayıran çerçeve; diğer temalarda sıfır çerçeve. `null` dönülmez: Android'de
+ * çerçeve stili kaldırılınca (yüksek kontrast kapatılınca) köşesi yuvarlak, taşması kesik görünümün içi boş çiziliyordu.
+ */
+export function outline(t: SweetTheme): { borderWidth: number; borderColor: string } {
+  return t.outlined ? { borderWidth: 2, borderColor: t.border } : { borderWidth: 0, borderColor: 'transparent' };
 }
 
 /** Erişilebilirlik etiketi: görülen her şey ve konum durumu (kartta yazı olarak gösterilmez). */
@@ -141,9 +144,9 @@ export function TypeTile({
     scale.set(reduced ? 1 : withSpring(selected ? 1.05 : 1, selectSpring));
   }, [selected, reduced, scale]);
   const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-  // Seçili kutucuk koyu firuzeye dolar: diğer pastel kutucuklardan dolgu zıtlığıyla ayrılır.
-  const fill = selected ? t.primaryText : tone.fill;
-  const ink = selected ? t.background : tone.ink;
+  // Seçim, renk yanında dolgu ve kalın yazıyla da ayırt edilir. Renkli çizimler kendi zeminini taşır.
+  const fill = selected ? t.primary.fill : slug && hasCategoryArt(slug) ? 'transparent' : tone.fill;
+  const ink = selected ? t.primary.ink : tone.ink;
   return (
     <SoftPressable
       onPress={() => {
@@ -155,7 +158,7 @@ export function TypeTile({
       accessibilityState={{ selected }}
       style={s.tile}>
       <Animated.View style={[s.tileBox, { backgroundColor: fill }, !selected && outline(t), animated]}>
-        {slug ? <WorkGlyphInline slug={slug} color={ink} size={28} /> : <DotsGlyph color={ink} size={24} />}
+        {slug ? <CategoryArt slug={slug} color={ink} /> : <DotsGlyph color={ink} size={24} />}
       </Animated.View>
       <Text style={[type.bubble, selected && { fontFamily: type.button.fontFamily }, { color: selected ? t.text : t.textMuted, textAlign: 'center' }]} numberOfLines={1}>
         {label}
@@ -200,8 +203,8 @@ export function PopIn({ play, children, style }: { play: boolean; children: Reac
   return <Animated.View style={[style, animated]}>{children}</Animated.View>;
 }
 
-/** Yükleniyor iskeleti: nefes alan gri blok. */
-export function Skeleton({ width, height, corner = radius.lg }: { width: number; height: number; corner?: number }) {
+/** Yükleniyor iskeleti: nefes alan gri blok. Fotoğraf/koyu cam üstünde `color` ile cam tonunda çizilir. */
+export function Skeleton({ width, height, corner = radius.xl, color }: { width: number | `${number}%`; height: number; corner?: number; color?: string }) {
   const t = useSweetTheme();
   const reduced = useReducedMotion();
   const opacity = useSharedValue(0.7);
@@ -209,7 +212,7 @@ export function Skeleton({ width, height, corner = radius.lg }: { width: number;
     opacity.set(reduced ? 0.7 : withRepeat(withTiming(0.45, { duration: 900, easing: ease.inOut }), -1, true));
   }, [reduced, opacity]);
   const animated = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  return <Animated.View accessible={false} style={[{ width, height, borderRadius: corner, borderCurve: 'continuous', backgroundColor: t.soft }, outline(t), animated]} />;
+  return <Animated.View accessible={false} style={[{ width, height, borderRadius: corner, borderCurve: 'continuous', backgroundColor: color ?? t.soft }, outline(t), animated]} />;
 }
 
 /** Alt panel: aşağıdan kayar (ease-drawer), daha hızlı kapanır. Reduce motion: yalnız opacity. */
@@ -274,7 +277,7 @@ export function SweetSheet({ visible, onClose, title, children }: { visible: boo
 const s = StyleSheet.create({
   iconBubble: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   tile: { width: 72, alignItems: 'center', gap: space.sm },
-  tileBox: { width: 64, height: 64, borderRadius: 20, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center' },
+  tileBox: { width: 64, height: 64, borderRadius: radius.xl, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center' },
   sheetRoot: { flex: 1, justifyContent: 'flex-end' },
   sheet: { borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, borderCurve: 'continuous', paddingTop: space.sm, maxHeight: '85%' },
   grabber: { alignSelf: 'center', width: 36, height: 5, borderRadius: 3, marginBottom: space.md },

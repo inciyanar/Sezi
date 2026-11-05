@@ -2,10 +2,11 @@ import type { NavPoint } from '@sezi/shared';
 import { router } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
+import { useGlassInk } from '@/components/glass';
 import { LynchLine, type LynchStop } from '@/components/lynch-line';
 import { ScenarioPanel } from '@/components/scenario-panel';
 import { Text } from '@/components/text';
-import { Button, Chip, Segmented } from '@/components/ui';
+import { Button, Chip, Eyebrow, Segmented } from '@/components/ui';
 import { MapIcon, PinIcon, PlayIcon, StopIcon } from '@/design/icons';
 import { space, type } from '@/design/type';
 import { useSweetTheme } from '@/hooks/use-sweet-theme';
@@ -33,6 +34,7 @@ export function DevPlanTools({
   setPicking: (v: boolean) => void;
 }) {
   const t = useSweetTheme();
+  const glassInk = useGlassInk();
   const { t: tr, lang } = useT();
   const plan = state.plan;
   // Konum pilot alan dışındaysa rota varsayılan başlangıçtan (ilk başlangıç noktası) çizilir.
@@ -46,11 +48,11 @@ export function DevPlanTools({
         : (starts.find((p) => state.start.kind === 'point' && p.id === state.start.id)?.name[lang] ?? tr('nav.from'));
   return (
     <View style={styles.block}>
-      <Text style={[type.heading, { color: t.text }]} accessibilityRole="header">
+      <Text style={[type.heading, { color: glassInk?.text ?? t.text }]} accessibilityRole="header">
         {tr('nav.devTools')}
       </Text>
       <View style={{ gap: space.sm }}>
-        <Text style={[type.eyebrow, { color: t.textMuted }]}>{tr('nav.from')}</Text>
+        <Eyebrow text={tr('nav.from')} />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.chipScroll}>
           <Chip label={tr('nav.here')} selected={state.start.kind === 'here'} onPress={() => navigation.setStart({ kind: 'here' })} icon={(c) => <PinIcon color={c} size={18} />} />
           <Chip label={state.start.kind === 'pick' ? tr('nav.picked') : tr('nav.pickOnMap')} selected={state.start.kind === 'pick' || picking} onPress={() => setPicking(!picking)} icon={(c) => <MapIcon color={c} size={18} />} />
@@ -68,10 +70,11 @@ export function DevPlanTools({
 /** Yürüyüş: sanal yürüyüşte duraklatma, hız ve jüri senaryoları. */
 export function DevWalkTools({ state }: { state: NavState }) {
   const t = useSweetTheme();
+  const glassInk = useGlassInk();
   const { t: tr } = useT();
   return (
     <View style={styles.block}>
-      <Text style={[type.heading, { color: t.text }]} accessibilityRole="header">
+      <Text style={[type.heading, { color: glassInk?.text ?? t.text }]} accessibilityRole="header">
         {tr('nav.devTools')}
       </Text>
       <Button
@@ -88,7 +91,6 @@ export function DevWalkTools({ state }: { state: NavState }) {
 
 /** Yer işaretleri ve anlatım durakları rota üzerindeki gerçek mesafeye göre sıralanır. */
 function ViaList({ plan, points, order, fired, startTitle }: { plan: PlannedRoute; points: NavPoint[]; order: Map<string, number>; fired: string[]; startTitle: string }) {
-  const t = useSweetTheme();
   const { t: tr, lang } = useT();
   const items: { atM: number; stop: LynchStop }[] = [];
   const viaPoints = plan.via.pointIds.flatMap((id) => points.filter((p) => p.id === id));
@@ -125,7 +127,7 @@ function ViaList({ plan, points, order, fired, startTitle }: { plan: PlannedRout
   ];
   return (
     <View style={{ gap: space.sm }}>
-      <Text style={[type.eyebrow, { color: t.textMuted }]}>{tr('nav.onTheWay')}</Text>
+      <Eyebrow text={tr('nav.onTheWay')} />
       <LynchLine stops={stops} />
     </View>
   );

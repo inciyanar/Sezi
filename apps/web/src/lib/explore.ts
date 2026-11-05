@@ -4,8 +4,8 @@ import type { WorkListItem } from "./data";
 import type { Lang } from "./i18n";
 
 /**
- * Ana sayfadaki keşif (arama + filtre + liste/harita): süzme tarayıcıda, yazarken anında yapılır.
- * Durum adreste tutulur (`/?q=&il=&tur=&ilce=&foto=1&kesin=1&gorunum=harita`); bağlantı paylaşılabilir, geri tuşu çalışır.
+ * Eserler sayfasındaki keşif (arama + filtre + liste/harita): süzme tarayıcıda, yazarken anında yapılır.
+ * Durum adreste tutulur (`/eserler?q=&il=&tur=&ilce=&foto=1&kesin=1&gorunum=harita`); bağlantı paylaşılabilir, geri tuşu çalışır.
  */
 export type ExploreItem = Pick<
   WorkListItem,

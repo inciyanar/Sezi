@@ -3,52 +3,54 @@ import {
   AtkinsonHyperlegibleNext_600SemiBold,
   AtkinsonHyperlegibleNext_700Bold,
 } from '@expo-google-fonts/atkinson-hyperlegible-next';
-import { Nunito_700Bold, Nunito_800ExtraBold } from '@expo-google-fonts/nunito';
+import { Fraunces_400Regular, Fraunces_400Regular_Italic } from '@expo-google-fonts/fraunces';
 import type { TextStyle } from 'react-native';
 
 /**
  * İki yazı tipi:
- * - Nunito (yuvarlak): ekran, eser ve tur başlıkları, kart adı, düğme ve etiketler.
- * - Atkinson Hyperlegible Next (Braille Institute): az gören okurlar için tasarlandı; okuma metni, yardımcı bilgi
- *   ve yön talimatları (`display`). Yön talimatına yuvarlak başlık yazısı taşınmaz.
+ * - Fraunces (serif, 400): ekran, eser ve tur başlıkları, kart adı; italik hâli başlık vurgusu (`RichTitle`).
+ *   Tasarımdaki 300 ağırlık az görenler için ince; 400 kullanılır.
+ * - Atkinson Hyperlegible Next (Braille Institute): az gören okurlar için tasarlandı; okuma metni, düğme, etiket
+ *   ve yön talimatları (`display`). Yön talimatına serif başlık yazısı taşınmaz.
  */
 export const fontAssets = {
   AtkinsonHyperlegibleNext_400Regular,
   AtkinsonHyperlegibleNext_600SemiBold,
   AtkinsonHyperlegibleNext_700Bold,
-  Nunito_700Bold,
-  Nunito_800ExtraBold,
+  Fraunces_400Regular,
+  Fraunces_400Regular_Italic,
 };
 
 export const font = {
   body: 'AtkinsonHyperlegibleNext_400Regular',
   bodySemi: 'AtkinsonHyperlegibleNext_600SemiBold',
   bodyBold: 'AtkinsonHyperlegibleNext_700Bold',
-  round: 'Nunito_700Bold',
-  roundHeavy: 'Nunito_800ExtraBold',
+  serif: 'Fraunces_400Regular',
+  serifItalic: 'Fraunces_400Regular_Italic',
 } as const;
 
-/** Tipografi ölçeği. Okuma metni 17/26'nın altına inmez. */
+/** Tipografi ölçeği. Okuma metni 17/26'nın altına inmez; en küçük etiket 12. */
 export const type = {
-  /** Ana sayfadaki şehir adı. */
-  hero: { fontFamily: font.roundHeavy, fontSize: 34, lineHeight: 40, letterSpacing: -0.8 },
-  /** Sekme ekranı başlığı (Turlar, Profil…). */
-  screenTitle: { fontFamily: font.roundHeavy, fontSize: 30, lineHeight: 36, letterSpacing: -0.6 },
+  /** Açılış ve fotoğraflı başlıklar. */
+  hero: { fontFamily: font.serif, fontSize: 44, lineHeight: 46, letterSpacing: -1.4 },
+  /** Sekme ekranı başlığı (Pasaport, Sezilenler…). */
+  screenTitle: { fontFamily: font.serif, fontSize: 34, lineHeight: 36, letterSpacing: -1 },
   /** Eser ve tur sayfasındaki büyük ad. */
-  editorial: { fontFamily: font.roundHeavy, fontSize: 28, lineHeight: 34, letterSpacing: -0.5 },
+  editorial: { fontFamily: font.serif, fontSize: 32, lineHeight: 34, letterSpacing: -0.9 },
   /** Yön talimatı: Atkinson, büyük ve kalın (okunabilirlik önce). */
   display: { fontFamily: font.bodyBold, fontSize: 32, lineHeight: 40, letterSpacing: -0.3 },
-  title: { fontFamily: font.roundHeavy, fontSize: 22, lineHeight: 28, letterSpacing: -0.3 },
-  heading: { fontFamily: font.roundHeavy, fontSize: 19, lineHeight: 24, letterSpacing: -0.2 },
-  itemTitle: { fontFamily: font.round, fontSize: 17, lineHeight: 22 },
-  cardTitle: { fontFamily: font.round, fontSize: 16, lineHeight: 21 },
+  title: { fontFamily: font.serif, fontSize: 24, lineHeight: 28, letterSpacing: -0.6 },
+  heading: { fontFamily: font.serif, fontSize: 20, lineHeight: 24, letterSpacing: -0.4 },
+  itemTitle: { fontFamily: font.bodyBold, fontSize: 17, lineHeight: 22 },
+  cardTitle: { fontFamily: font.serif, fontSize: 20, lineHeight: 22, letterSpacing: -0.3 },
   body: { fontFamily: font.body, fontSize: 17, lineHeight: 26 },
   lead: { fontFamily: font.body, fontSize: 19, lineHeight: 28 },
   meta: { fontFamily: font.body, fontSize: 15, lineHeight: 21 },
-  eyebrow: { fontFamily: font.bodySemi, fontSize: 15, lineHeight: 21 },
-  button: { fontFamily: font.roundHeavy, fontSize: 17, lineHeight: 22 },
-  bubble: { fontFamily: font.round, fontSize: 14, lineHeight: 18 },
-  tab: { fontFamily: font.round, fontSize: 12, lineHeight: 16 },
+  /** Üst etiket: `upper()` ile büyük harf yazılır. */
+  eyebrow: { fontFamily: font.bodyBold, fontSize: 13, lineHeight: 18, letterSpacing: 1.8 },
+  button: { fontFamily: font.bodyBold, fontSize: 17, lineHeight: 22 },
+  bubble: { fontFamily: font.bodyBold, fontSize: 14, lineHeight: 18 },
+  tab: { fontFamily: font.bodyBold, fontSize: 12, lineHeight: 16 },
 } satisfies Record<string, TextStyle>;
 
 /** Türkçe kurallarına uygun büyük harf (i→İ, ı→I); üst etiketler için. */

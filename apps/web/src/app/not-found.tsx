@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Atkinson_Hyperlegible_Next, Nunito } from "next/font/google";
+import { Atkinson_Hyperlegible_Next, Fraunces } from "next/font/google";
 
 import { NotFoundScreen } from "@/components/not-found-screen";
 import { Providers } from "@/components/providers";
@@ -10,8 +10,8 @@ import { themeCss } from "@/lib/theme";
 import "./globals.css";
 
 // Yazı tipleri önceden çekilmez: kapak fotoğrafı ilk bağlantıları paylaşmasın.
-const heading = Nunito({ subsets: ["latin", "latin-ext"], weight: ["700", "800"], variable: "--font-nunito", display: "swap", preload: false });
-const body = Atkinson_Hyperlegible_Next({ subsets: ["latin", "latin-ext"], weight: ["400", "600", "700"], variable: "--font-atkinson", display: "swap", preload: false });
+const heading = Fraunces({ subsets: ["latin", "latin-ext"], style: ["normal", "italic"], variable: "--font-fraunces", display: "swap", preload: false });
+const body = Atkinson_Hyperlegible_Next({ subsets: ["latin", "latin-ext"], variable: "--font-atkinson", display: "swap", preload: false, adjustFontFallback: false });
 
 export const metadata: Metadata = { title: "Sayfa bulunamadı · Page not found" };
 
@@ -27,7 +27,7 @@ export default function NotFound() {
       <head>
         <style dangerouslySetInnerHTML={{ __html: themeCss() }} />
       </head>
-      <body className="flex min-h-dvh flex-col pb-[calc(4.25rem+env(safe-area-inset-bottom))] lg:pb-0">
+      <body className="flex min-h-dvh flex-col pb-[calc(5.5rem+env(safe-area-inset-bottom))] min-[1200px]:pb-0">
         <Providers lang="tr">
           <SiteHeader />
           <main id="icerik" tabIndex={-1} className="flex-1 outline-none">

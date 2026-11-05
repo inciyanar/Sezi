@@ -62,7 +62,7 @@ export function AccountField({
 
   return (
     <Field data-invalid={!!error || undefined} className={className}>
-      <FieldLabel htmlFor={id} className="font-heading text-sm font-bold">
+      <FieldLabel htmlFor={id} className="font-bold text-sm">
         {label}
       </FieldLabel>
       <div className="relative flex items-center">

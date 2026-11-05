@@ -51,7 +51,6 @@ export function ProfileSelect({ value, onChange }: { value: ProfileChoice; onCha
   const beforeSnap = useRef<string | null>(null);
   const effective: ProfileChoice = value === "benim" && !saved ? "walker" : value;
   const choices: ProfileChoice[] = saved ? ["benim", ...PROFILE_KEYS] : [...PROFILE_KEYS];
-  const activeIndex = Math.max(0, choices.indexOf(effective));
 
   const handleOpenChange = (open: boolean) => {
     setDialogOpen(open);
@@ -77,8 +76,7 @@ export function ProfileSelect({ value, onChange }: { value: ProfileChoice; onCha
       <div
         role="radiogroup"
         aria-label={t("route.profile")}
-        className="relative grid flex-1 gap-1"
-        style={{ gridTemplateColumns: `repeat(${choices.length}, minmax(0, 1fr))` }}
+        className="flex flex-1 flex-wrap gap-2"
         onKeyDown={(e) => {
           if (e.key === "ArrowRight" || e.key === "ArrowDown") {
             e.preventDefault();
@@ -89,11 +87,6 @@ export function ProfileSelect({ value, onChange }: { value: ProfileChoice; onCha
           }
         }}
       >
-        <span
-          aria-hidden
-          className="absolute inset-y-0 left-0 rounded-lg bg-primary transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] contrast:outline-2 contrast:outline-foreground"
-          style={{ width: `calc((100% - ${choices.length - 1} * 0.25rem) / ${choices.length})`, transform: `translateX(calc(${activeIndex} * (100% + 0.25rem)))` }}
-        />
         {choices.map((k) => {
           const on = k === effective;
           return (
@@ -106,8 +99,8 @@ export function ProfileSelect({ value, onChange }: { value: ProfileChoice; onCha
               tabIndex={on ? 0 : -1}
               onClick={() => onChange(k)}
               className={cn(
-                "relative flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg px-1 py-1.5 text-center text-[0.6875rem] leading-tight transition-[color,transform] duration-300 ease-out active:scale-[0.97]",
-                on ? "font-bold text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                "relative flex min-h-12 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm leading-tight transition-colors",
+                on ? "bg-primary font-bold text-primary-foreground" : "bg-secondary text-foreground hover:bg-muted",
               )}
             >
               {PROFILE_ICON[k]}
@@ -116,7 +109,7 @@ export function ProfileSelect({ value, onChange }: { value: ProfileChoice; onCha
           );
         })}
       </div>
-      <Button type="button" variant="ghost" size="icon" aria-label={t("route.profileSettings")} onClick={() => handleOpenChange(true)} className="mt-2">
+      <Button type="button" variant="ghost" size="icon" aria-label={t("route.profileSettings")} onClick={() => handleOpenChange(true)}>
         <SlidersHorizontalIcon aria-hidden />
       </Button>
       <ProfileDialog open={dialogOpen} onOpenChange={handleOpenChange} />

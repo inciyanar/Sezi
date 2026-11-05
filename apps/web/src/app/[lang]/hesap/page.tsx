@@ -58,7 +58,7 @@ export default function AccountPage() {
         <div className="grid gap-6">
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border bg-card p-4">
             <div className="grid gap-0.5">
-              <h2 className="font-heading text-sm font-bold">{t("profile.title")}</h2>
+              <h2 className="font-bold text-sm">{t("profile.title")}</h2>
               <p className="text-xs text-muted-foreground">{profileSummary}</p>
             </div>
             <Button variant="outline" size="sm" onClick={() => setProfileOpen(true)}>
@@ -111,7 +111,7 @@ export default function AccountPage() {
           >
             <Avatar identity={identity} src={avatar} size={64} />
             <span aria-hidden className="grid min-w-0 flex-1 gap-0.5">
-              <span className="truncate font-heading text-xl font-extrabold">{name}</span>
+              <span className="truncate font-heading font-normal tracking-[-0.02em] text-xl">{name}</span>
               <span className="truncate text-sm text-muted-foreground">
                 {identity?.username ? `@${identity.username}` : user.email}
               </span>
@@ -131,7 +131,7 @@ export default function AccountPage() {
             <div className="flex items-center gap-3">
               <UserCheckIcon className="size-5 shrink-0 text-muted-foreground" aria-hidden />
               <div className="grid gap-0.5">
-                <h2 className="font-heading text-sm font-bold">{t("profile.title")}</h2>
+                <h2 className="font-bold text-sm">{t("profile.title")}</h2>
                 <p className="text-xs text-muted-foreground">{profileSummary}</p>
               </div>
             </div>
@@ -145,7 +145,7 @@ export default function AccountPage() {
               href={href(lang, "/hesap/sifre?mod=degistir")}
               className="flex min-h-12 items-center justify-between gap-3 rounded-lg px-3 py-2 hover:bg-muted"
             >
-              <span className="flex items-center gap-3 font-heading text-sm font-bold">
+              <span className="flex items-center gap-3 font-bold text-sm">
                 <KeyRoundIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
                 {t("account.changePassword")}
               </span>
@@ -155,7 +155,7 @@ export default function AccountPage() {
               href={href(lang, "/hesap/sil")}
               className="flex min-h-12 items-center justify-between gap-3 rounded-lg px-3 py-2 text-destructive hover:bg-destructive/5"
             >
-              <span className="flex items-center gap-3 font-heading text-sm font-bold">
+              <span className="flex items-center gap-3 font-bold text-sm">
                 <Trash2Icon className="size-4 shrink-0" aria-hidden />
                 {t("account.delete")}
               </span>

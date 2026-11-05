@@ -44,7 +44,7 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
 
       {/* 1. Amaç ve Lynch Yaklaşımı */}
       <section aria-labelledby="about-lynch-heading" className="grid gap-2">
-        <h2 id="about-lynch-heading" className="font-heading text-lg font-bold text-foreground">
+        <h2 id="about-lynch-heading" className="font-heading font-normal tracking-[-0.02em] text-lg text-foreground">
           {t(lang, "about.lynch.title")}
         </h2>
         <p className="text-sm leading-relaxed text-muted-foreground">{t(lang, "about.lynch.p1")}</p>
@@ -52,7 +52,7 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
 
       {/* 2. Erişilebilirlik */}
       <section aria-labelledby="about-a11y-heading" className="grid gap-2 border-t pt-6">
-        <h2 id="about-a11y-heading" className="font-heading text-lg font-bold text-foreground">
+        <h2 id="about-a11y-heading" className="font-heading font-normal tracking-[-0.02em] text-lg text-foreground">
           {t(lang, "about.a11y.title")}
         </h2>
         <p className="text-sm leading-relaxed text-muted-foreground">{t(lang, "about.a11y.p1")}</p>
@@ -61,7 +61,7 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
 
       {/* 3. Ekip & Hackathon */}
       <section aria-labelledby="about-team-heading" className="grid gap-3 border-t pt-6">
-        <h2 id="about-team-heading" className="font-heading text-lg font-bold text-foreground">
+        <h2 id="about-team-heading" className="font-heading font-normal tracking-[-0.02em] text-lg text-foreground">
           {t(lang, "about.team.title")}
         </h2>
         <p className="text-sm text-muted-foreground">
@@ -83,7 +83,7 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
 
       {/* 4. Telif ve Veri Politikası (tek satır) */}
       <section aria-labelledby="about-copyright-heading" className="grid gap-2 border-t pt-6">
-        <h2 id="about-copyright-heading" className="font-heading text-lg font-bold text-foreground">
+        <h2 id="about-copyright-heading" className="font-heading font-normal tracking-[-0.02em] text-lg text-foreground">
           {t(lang, "about.copyright.title")}
         </h2>
         <p className="text-sm leading-relaxed text-muted-foreground">
@@ -93,7 +93,7 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
 
       {/* 5. Kaynaklar Listesi */}
       <section aria-labelledby="about-sources-heading" className="grid gap-3 border-t pt-6">
-        <h2 id="about-sources-heading" className="font-heading text-lg font-bold text-foreground">
+        <h2 id="about-sources-heading" className="font-heading font-normal tracking-[-0.02em] text-lg text-foreground">
           {t(lang, "about.sources.title")}
         </h2>
         <ul className="grid gap-2 text-sm text-muted-foreground">

@@ -10,6 +10,9 @@ export { boundsOf, choiceOptions, formatDistance, walkingSpeed, type OverrideTyp
 
 export const planner = createPlanner(raw);
 
+/** Pilot yaya ağı: kurulumdaki mini harita yolları ve gerçek basamak işaretleri aynı veriden çizilir. */
+export const pilotStreets = raw.segments;
+
 export const {
   area: PILOT_AREA,
   pilotWorks,

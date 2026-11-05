@@ -70,7 +70,8 @@
           "cameraPermission": "Sezi, profil fotoğrafı çekmek için kameranızı kullanır.",
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true,

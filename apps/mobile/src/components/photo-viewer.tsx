@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CloseIcon } from '@/design/icons';
 import { formatPhotoCredit, PhotoSourceTag } from '@/components/photo-source';
 import { space, type } from '@/design/type';
+import { useSweetTheme } from '@/hooks/use-sweet-theme';
 import { useT } from '@/lib/i18n';
 import { photoUrl } from '@/lib/works';
 
@@ -17,6 +18,7 @@ import { photoUrl } from '@/lib/works';
  */
 export function PhotoViewer({ photos, start, onClose }: { photos: WorkPhoto[]; start: number | null; onClose: () => void }) {
   const { width, height } = useWindowDimensions();
+  const t = useSweetTheme();
   const insets = useSafeAreaInsets();
   const { t: tr, lang } = useT();
   const [index, setIndex] = useState(start ?? 0);
@@ -26,7 +28,7 @@ export function PhotoViewer({ photos, start, onClose }: { photos: WorkPhoto[]; s
 
   return (
     <Modal visible={start !== null} animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-      <View style={styles.screen}>
+      <View style={[styles.screen, { backgroundColor: t.glass.dark.tint }]}>
         <FlatList
           data={photos}
           horizontal
@@ -50,8 +52,8 @@ export function PhotoViewer({ photos, start, onClose }: { photos: WorkPhoto[]; s
           onPress={onClose}
           accessibilityRole="button"
           accessibilityLabel={tr('work.viewerClose')}
-          style={[styles.close, { top: insets.top + space.sm }]}>
-          <CloseIcon color="#FFFFFF" />
+          style={[styles.close, { top: insets.top + space.sm, backgroundColor: t.glass.dark.tint }]}>
+          <CloseIcon color={t.glass.dark.text} />
         </Pressable>
         {current ? (
           <>
@@ -61,10 +63,10 @@ export function PhotoViewer({ photos, start, onClose }: { photos: WorkPhoto[]; s
             />
             <View
               onLayout={(e) => setCaptionH(e.nativeEvent.layout.height)}
-              style={[styles.caption, { paddingBottom: insets.bottom + space.lg }]}
+              style={[styles.caption, { paddingBottom: insets.bottom + space.lg, backgroundColor: t.glass.dark.tint }]}
               accessibilityLiveRegion="polite">
-              <Text style={[type.body, styles.light]}>{loc(current.alt, lang)}</Text>
-              <Text style={[type.meta, styles.dim]}>
+              <Text style={[type.body, { color: t.glass.dark.text }]}>{loc(current.alt, lang)}</Text>
+              <Text style={[type.meta, { color: t.glass.dark.muted }]}>
                 {[photos.length > 1 ? tr('work.viewerPos', { i: index + 1, n: photos.length }) : null, credit].filter(Boolean).join(' · ')}
               </Text>
             </View>
@@ -76,9 +78,7 @@ export function PhotoViewer({ photos, start, onClose }: { photos: WorkPhoto[]; s
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#0E0C0B' },
-  close: { position: 'absolute', right: space.lg, width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.45)' },
-  caption: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: space.xl, paddingTop: space.lg, gap: 4, backgroundColor: 'rgba(14,12,11,0.72)' },
-  light: { color: '#FFFFFF' },
-  dim: { color: 'rgba(255,255,255,0.78)' },
+  screen: { flex: 1 },
+  close: { position: 'absolute', right: space.lg, width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  caption: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: space.xl, paddingTop: space.lg, gap: 4 },
 });

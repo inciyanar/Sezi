@@ -6,32 +6,35 @@ import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withSpring
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
+import { Glass } from '@/components/glass';
 import { SoftPressable, sweetShadow } from '@/design/sweet/components';
 import { radius, space } from '@/design/type';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
-import { useSweetTheme } from '@/hooks/use-sweet-theme';
+import { useIsDark, useSweetTheme } from '@/hooks/use-sweet-theme';
 import { useT } from '@/lib/i18n';
 
 /** Haritayla aynı ekranda kalan iki duraklı panel; kaydırma yalnız tutamaçtan başlar. */
 export function NavSheet({ phase, popup, children, onHeightChange }: { phase: 'plan' | 'active' | 'arrived'; popup: boolean; children: ReactNode; onHeightChange?: (height: number) => void }) {
   const t = useSweetTheme();
+  const dark = useIsDark();
+  const tone = dark && !t.outlined ? 'dark' : 'light';
   const { t: tr } = useT();
   const reduced = useReducedMotion();
   const insets = useSafeAreaInsets();
   const { height, fontScale } = useWindowDimensions();
   // Uzun durak içeriğe göre: içerik kısaysa panel haritayı boşuna örtmez; en fazla ekranın üstüne kadar.
   const [contentHeight, setContentHeight] = useState(0);
-  const [handleHeight, setHandleHeight] = useState(56);
+  const [handleHeight, setHandleHeight] = useState(40);
   const maxHeight = Math.max(160, height - insets.top - 76);
-  const shortCap = Math.min(maxHeight, Math.max(height * 0.36, 120 + 170 * fontScale + insets.bottom));
-  const chrome = handleHeight + space.sm + space.xl + insets.bottom;
+  const shortCap = Math.min(maxHeight, Math.max(height * 0.44, 160 + 185 * fontScale + insets.bottom));
+  const chrome = handleHeight + space.xs + space.lg + insets.bottom;
   const panelHeight = contentHeight > 0 ? Math.min(maxHeight, Math.max(shortCap, contentHeight + chrome)) : maxHeight;
   const shortHeight = Math.min(panelHeight, shortCap);
   const travel = panelHeight - shortHeight;
-  const [expanded, setExpanded] = useState(phase !== 'active');
-  const offset = useSharedValue(phase === 'active' ? travel : 0);
+  const [expanded, setExpanded] = useState(phase === 'arrived');
+  const offset = useSharedValue(phase === 'arrived' ? 0 : travel);
   const origin = useSharedValue(0);
-  const detent = useSharedValue(phase !== 'active');
+  const detent = useSharedValue(phase === 'arrived');
   const scrollRef = useRef<ScrollView>(null);
   useEffect(() => {
     onHeightChange?.(expanded ? panelHeight : shortHeight);
@@ -41,12 +44,12 @@ export function NavSheet({ phase, popup, children, onHeightChange }: { phase: 'p
   const [seenPhase, setSeenPhase] = useState(phase);
   if (seenPhase !== phase) {
     setSeenPhase(phase);
-    setExpanded(phase !== 'active');
+    setExpanded(phase === 'arrived');
   }
 
   useEffect(() => {
     cancelAnimation(offset);
-    detent.set(phase !== 'active');
+    detent.set(phase === 'arrived');
     scrollRef.current?.scrollTo({ y: 0, animated: false });
   }, [phase, detent, offset, scrollRef]);
 
@@ -96,7 +99,8 @@ export function NavSheet({ phase, popup, children, onHeightChange }: { phase: 'p
 
   const animated = useAnimatedStyle(() => ({ transform: [{ translateY: offset.get() }] }));
   return (
-    <Animated.View style={[styles.panel, { height: panelHeight, backgroundColor: t.background }, sweetShadow(t), animated]}>
+    <Animated.View style={[styles.panel, { height: panelHeight }, sweetShadow(t), animated]}>
+      <Glass tone={tone} style={styles.glass}>
       <GestureDetector gesture={pan}>
         <View collapsable={false} onLayout={(e) => setHandleHeight(Math.ceil(e.nativeEvent.layout.height))}>
           <SoftPressable
@@ -104,9 +108,10 @@ export function NavSheet({ phase, popup, children, onHeightChange }: { phase: 'p
             accessibilityLabel={tr(expanded ? 'nav.sheetCollapse' : 'nav.sheetExpand')}
             accessibilityHint={tr('nav.sheetHint')}
             accessibilityState={{ expanded }}
+            hitSlop={8}
             onPress={toggle}
             style={styles.handleButton}>
-            <View accessible={false} style={[styles.handle, { backgroundColor: t.textMuted }]} />
+            <View accessible={false} style={[styles.handle, { backgroundColor: t.glass[tone].muted }]} />
           </SoftPressable>
         </View>
       </GestureDetector>
@@ -119,15 +124,17 @@ export function NavSheet({ phase, popup, children, onHeightChange }: { phase: 'p
           {children}
         </View>
       </ScrollView>
+      </Glass>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   panel: { position: 'absolute', bottom: 0, left: 0, right: 0, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden' },
-  handleButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: space.xs, padding: space.sm },
+  glass: { flex: 1 },
+  handleButton: { minHeight: 36, alignItems: 'center', justifyContent: 'center', paddingVertical: space.sm },
   handle: { width: 40, height: 4, borderRadius: 2 },
   scroll: { flex: 1 },
-  body: { paddingHorizontal: space.xl, paddingTop: space.sm },
-  content: { gap: space.lg },
+  body: { paddingHorizontal: 16, paddingTop: 2 },
+  content: { gap: space.md },
 });

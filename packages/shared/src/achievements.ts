@@ -1,8 +1,8 @@
 import { mergeVisits } from "./passport";
 import type { Contributions, PassportTour, PassportWork, Visit } from "./passport";
-import type { LocalizedText } from "./schemas";
+import type { LocalizedText, ProfileInterest } from "./schemas";
 
-export type AchievementKind = "first_stamp" | "stamps" | "types" | "cities" | "walker" | "complex" | "tour" | "reporter" | "photographer" | "sharer" | "companion";
+export type AchievementKind = "welcome" | "first_stamp" | "stamps" | "types" | "cities" | "walker" | "complex" | "tour" | "reporter" | "photographer" | "sharer" | "companion";
 
 export interface Achievement {
   id: string;
@@ -17,6 +17,7 @@ export interface Achievement {
 
 /** Külliye ve tur eşikleri içerikteki ziyaret edilebilir duraklardan hesaplanır. */
 export const THRESHOLDS = {
+  welcome: [1],
   first_stamp: [1],
   stamps: [5, 15, 40],
   types: [3, 6],
@@ -57,8 +58,12 @@ export function achievements(input: {
   works: PassportWork[];
   tours: PassportTour[];
   contributions: Contributions;
+  /** Kurulum (algısal profil) tamamlandıysa zamanı; eski profillerde zaman yoksa `null`. Kurulmamışsa alan verilmez. */
+  welcomedAt?: string | null;
 }): Achievement[] {
   const { visits, works, tours, contributions } = input;
+  const welcome = progress("welcome", THRESHOLDS.welcome);
+  if (input.welcomedAt !== undefined) advance(welcome, 1, input.welcomedAt);
   const bySlug = new Map(works.map((work) => [work.slug, work]));
   const groups = new Map<string, { subject: NonNullable<Achievement["subject"]>; stops: Set<string> }>();
   for (const work of works) {
@@ -120,7 +125,7 @@ export function achievements(input: {
   advance(photographer, contributions.photos_archived, null);
   advance(sharer, contributions.photos_public, null);
   advance(companion, contributions.friends, null);
-  return [first, stamps, types, cities, walker, ...complexes, ...tourItems, reporter, photographer, sharer, companion]
+  return [welcome, first, stamps, types, cities, walker, ...complexes, ...tourItems, reporter, photographer, sharer, companion]
     .map((item) => item.achievement);
 }
 
@@ -148,11 +153,13 @@ export const BADGE_IDS = [
   "12-arsiv-gozu",
   "13-ilk-kare",
   "14-yol-arkadasi",
+  "15-hos-geldin",
 ] as const;
 
 export type BadgeId = (typeof BADGE_IDS)[number];
 
 const KIND_BADGE = {
+  welcome: "15-hos-geldin",
   first_stamp: "01-ilk-damga",
   stamps: "02-vakif-kasifi",
   types: "03-uslup-avcisi",
@@ -163,6 +170,26 @@ const KIND_BADGE = {
   sharer: "13-ilk-kare",
   companion: "14-yol-arkadasi",
 } as const satisfies Record<Exclude<AchievementKind, "tour" | "complex">, BadgeId>;
+
+/**
+ * Kurulumdaki ilgi alanı → hedef damga. Seçilen ilgilerin damgaları kurulumda "ilk hedeflerin" olarak renklenir
+ * ve Pasaport'taki "sıradaki hedef" önce bunlar arasından seçilir. Eşleme damganın gerçek koşuluna göredir.
+ */
+export const INTEREST_BADGES: Readonly<Record<ProfileInterest, BadgeId>> = {
+  cami: "09-sessiz-minareler",
+  turbe: "10-kubbeler-altinda",
+  han: "07-kervan-yolcusu",
+  uslup: "03-uslup-avcisi",
+  foto: "13-ilk-kare",
+  yol: "05-ilk-kilometre",
+};
+
+/** İlgi alanı → eser türü (Keşfet'te tür karoları bu sırayla öne alınır). Tür dışı ilgiler (üslup, fotoğraf, yol) yok. */
+export const INTEREST_TYPES: Readonly<Partial<Record<ProfileInterest, string>>> = {
+  cami: "cami",
+  turbe: "turbe",
+  han: "han",
+};
 
 /** Tur slug → rozet. Tabloda olmayan turlar kervan yolcusuna düşer. */
 export const TOUR_BADGES: Readonly<Record<string, BadgeId>> = {

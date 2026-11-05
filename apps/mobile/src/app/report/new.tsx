@@ -7,7 +7,7 @@ import { Text } from '@/components/text';
 import { Button, Card, EmptyState, Field, Note } from '@/components/ui';
 import { CheckIcon, InfoIcon } from '@/design/icons';
 import { outline, SoftPressable } from '@/design/sweet/components';
-import { font, radius, space, type } from '@/design/type';
+import { radius, space, type } from '@/design/type';
 import { WorkGlyphInline } from '@/design/work-glyph';
 import { useSweetTheme } from '@/hooks/use-sweet-theme';
 import { useT, type MessageKey } from '@/lib/i18n';
@@ -105,7 +105,7 @@ export default function NewReport() {
                     ]}>
                     {on ? <CheckIcon color={t.primary.fill} size={14} /> : null}
                   </View>
-                  <Text style={[type.itemTitle, { color: fg, fontSize: 16, flex: 1 }, on && { fontFamily: font.roundHeavy }]}>
+                  <Text style={[type.itemTitle, { color: fg, fontSize: 16, flex: 1 }]}>
                     {tr(`report.type.${k}` as MessageKey)}
                   </Text>
                 </SoftPressable>
@@ -141,6 +141,6 @@ const makeStyles = (t: SweetTheme) =>
     where: { flexDirection: 'row', alignItems: 'center', gap: space.md },
     glyph: { width: 40, height: 40, borderRadius: radius.sm, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center' },
     grid: { gap: space.sm },
-    option: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 56, paddingHorizontal: space.lg, borderRadius: radius.md, borderCurve: 'continuous' },
+    option: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 56, paddingHorizontal: space.lg, borderRadius: radius.xl, borderCurve: 'continuous' },
     radio: { width: 24, height: 24, borderRadius: 12, borderCurve: 'continuous', borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   });

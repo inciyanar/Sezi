@@ -50,7 +50,7 @@ export function CodeField({
 
   return (
     <Field data-invalid={!!error || undefined}>
-      <FieldLabel htmlFor={id} className="font-heading text-sm font-bold">
+      <FieldLabel htmlFor={id} className="font-bold text-sm">
         {t("account.code")}
       </FieldLabel>
       <Input
@@ -69,7 +69,7 @@ export function CodeField({
           onChange(digits);
           if (digits.length === CODE_LENGTH) onComplete?.(digits);
         }}
-        className="num h-14 text-center font-heading text-2xl font-extrabold tracking-[0.4em]"
+        className="num h-14 text-center font-bold text-2xl tracking-[0.4em]"
       />
       <FieldDescription id={helpId}>{t("account.codeHelp", { n: CODE_LENGTH })}</FieldDescription>
       {error ? <FieldError id={errorId}>{error}</FieldError> : null}

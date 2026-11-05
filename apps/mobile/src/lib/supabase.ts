@@ -14,11 +14,29 @@ const apiKey: string = key;
 export const SESSION_KEY = `sb-${new URL(url).hostname.split('.')[0]}-auth-token`;
 
 /**
+ * Okuma isteklerine süre sınırı. Zayıf bağlantıda takılan bağlantı hiç sonuçlanmıyor, Keşfet sonsuza dek iskelette
+ * kalıyordu (emülatörde GSM hızında başlayan istek, ağ düzelince de dönmedi). Süre dolunca istek hata verir; sorgu
+ * bir kez yeniden dener, sonra "Tekrar dene" görünür. Yazmalar (yükleme dahil) sınırlanmaz.
+ */
+const READ_TIMEOUT_MS = 30_000;
+function timedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const method = (init?.method ?? 'GET').toUpperCase();
+  if (method !== 'GET' && method !== 'HEAD') return fetch(input, init);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), READ_TIMEOUT_MS);
+  const outer = init?.signal;
+  if (outer?.aborted) controller.abort();
+  else outer?.addEventListener('abort', () => controller.abort(), { once: true });
+  return fetch(input, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
+/**
  * Keşif hesapsız (anon) çalışır. Hesap isteğe bağlıdır: oturum cihazda (kv-store) saklanır, uygulama
  * öndeyken anahtar yenilenir. E-posta akışları kodla yürüdüğü için URL'den oturum okunmaz.
  */
 export const supabase = createClient(url, key, {
   auth: { storage: Storage, storageKey: SESSION_KEY, persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, lock: processLock },
+  global: { fetch: timedFetch },
 });
 
 // Arka planda yenileme durur (React Native'de zamanlayıcı güvenilmez); öne gelince sürer.

@@ -7,6 +7,7 @@ export const revalidate = 600;
 
 const STATIC_PATHS = [
   "",
+  "/eserler",
   "/rota",
   "/turlar",
   "/sergiler",

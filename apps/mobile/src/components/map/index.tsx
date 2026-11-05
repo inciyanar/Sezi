@@ -20,13 +20,8 @@ void Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? null);
 /** Harita yazı tipi (Mapbox glif servisi). */
 const FONT = ['DIN Pro Medium', 'Arial Unicode MS Regular'];
 
-// Mapbox Standard açık tema harita katmanı için doğal arazi sabitleri (yol, park, su); arayüz yüzey token'ı değildir.
-const MAP_ROADS = '#E8DFD3';
-const MAP_GREEN = '#DDE8D3';
-const MAP_WATER = '#BFDCDD';
-
 /**
- * Mapbox Standard: dükkân etiketleri kapalı; kara zemini sayfa zeminiyle (`t.background`) uyumlu.
+ * Mapbox Standard: dükkân etiketleri kapalı; zemin renkleri Standard temasına bırakılır.
  * 3B binalar açık (Standard'ın kendi verisi); pilot alanın yer işaretleri ayrıca vurgulanır (`PilotLandmarks`).
  * Koyu temada gece ışığı; az gören profilinde ve yüksek kontrastta tek renkli, düz harita (3B yok:
  * gölgeli cepheler kontrastı düşürür).
@@ -44,8 +39,9 @@ function useStandardConfig() {
     showTransitLabels: true,
     showPlaceLabels: true,
     showRoadLabels: true,
+    // Renkleri yalnız açık temada ayarlayıp sonra çıkarmak native stilin eski değerleri tutmasına yol açabilir.
+    // Gece ve tek renkli temalar dahil, zemin paletini Standard yönetsin.
     showPedestrianRoads: true,
-    ...(dark || plain ? {} : { colorLand: t.background, colorRoads: MAP_ROADS, colorGreenspaces: MAP_GREEN, colorWater: MAP_WATER }),
   } as const;
 }
 
@@ -168,14 +164,16 @@ export const SeziMap = forwardRef<SeziMapHandle, SeziMapProps>(function SeziMap(
 
 /** Harita resim adı: tema değişince yeni ad, eski resim önbellekte kalmaz. Simgesi olmayan tür `diger`. */
 const iconName = (slug: string, theme: string) => `type-${theme}-${glyphType(slug)}`;
-const ICON_SIZE = 30;
+const ICON_SIZE = 36;
 const ROUTE_WIDTH = 6;
 const ARROW_SIZE = 16;
 const arrowName = (theme: string) => `route-arrow-${theme}`;
+// Standard'ın gece ışığı navigasyon işaretlerini karartmasın.
+const OVERLAY_EMISSIVE = 1;
 
 /**
- * Eser türü simgeleri: yüzey renginde yuvarlak, kenarı ve glifi tür mürekkebinde. Siluet türü anlatır,
- * renk tek başına anlam taşımaz. Native taraf her görünümü bir kez resme çevirir.
+ * Eser türü simgeleri: karşıt renkli dış kasa, yüzey dolgusu ve tür mürekkebinde glif.
+ * Siluet türü anlatır; renk tek başına anlam taşımaz. Native taraf her görünümü bir kez resme çevirir.
  */
 function TypeIcons() {
   const t = useSweetTheme();
@@ -193,15 +191,19 @@ function TypeIcons() {
         return (
           <MapImage key={slug} name={iconName(slug, theme)}>
             {/* collapsable={false}: düzleştirilirse SVG ikinci çocuk olur, native taraf yalnız tek görünümü resme çevirir. */}
-            <View collapsable={false} style={{ width: ICON_SIZE, height: ICON_SIZE, borderRadius: ICON_SIZE / 2, backgroundColor: t.surface, borderWidth: 2.5, borderColor: ink, alignItems: 'center', justifyContent: 'center' }}>
-              <WorkGlyphInline slug={slug} color={ink} size={ICON_SIZE * 0.62} />
+            <View collapsable={false} style={{ width: ICON_SIZE, height: ICON_SIZE, borderRadius: ICON_SIZE / 2, backgroundColor: t.surface, borderWidth: 2.5, borderColor: t.text, alignItems: 'center', justifyContent: 'center' }}>
+              <View style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: ink, alignItems: 'center', justifyContent: 'center' }}>
+                <WorkGlyphInline slug={slug} color={ink} size={19} />
+              </View>
             </View>
           </MapImage>
         );
       })}
       {DOT_KEYS.map((key) => (
         <MapImage key={`dot-${key}`} name={dotName(key, theme)}>
-          <View collapsable={false} style={{ width: DOT_SIZE, height: DOT_SIZE, borderRadius: DOT_SIZE / 2, backgroundColor: dotColor(t, key), borderWidth: 2.5, borderColor: t.surface }} />
+          <View collapsable={false} style={{ width: DOT_SIZE, height: DOT_SIZE, borderRadius: DOT_SIZE / 2, backgroundColor: t.text, padding: 2 }}>
+            <View style={{ flex: 1, borderRadius: DOT_SIZE / 2, backgroundColor: dotColor(t, key), borderWidth: 2, borderColor: t.surface }} />
+          </View>
         </MapImage>
       ))}
     </Images>
@@ -218,12 +220,12 @@ function useThemeKey() {
  * Nokta tabanları da resim (simge) olarak çizilir: daire katmanının aksine simgeler 3B bina arkasında
  * soluklaşmaz (`iconOcclusionOpacity`). Boyut `iconSize` ile (yarıçap / 12).
  */
-const DOT_KEYS = ['accent', 'text', 'primary', 'muted'] as const;
+const DOT_KEYS = ['accent', 'text', 'primary', 'muted', 'stop', 'activeStop'] as const;
 type DotKey = (typeof DOT_KEYS)[number];
-const DOT_SIZE = 29; // 12 px yarıçap + 2,5 px kenar, iki yanda
+const DOT_SIZE = 32; // Dış mürekkep kasası ve iç yüzey kenarı harita zemininden ayırır.
 const dotName = (key: DotKey, theme: string) => `dot-${theme}-${key}`;
 function dotColor(t: ReturnType<typeof useSweetTheme>, key: DotKey) {
-  return key === 'accent' ? t.accentText : key === 'text' ? t.text : key === 'primary' ? t.primaryText : t.textMuted;
+  return key === 'stop' ? t.glass.dark.tint : key === 'activeStop' ? t.gold.fill : key === 'accent' ? t.accentText : key === 'text' ? t.text : key === 'primary' ? t.primaryText : t.textMuted;
 }
 
 /** Veri hattının ürettiği pilot alan binaları (`data/build_buildings.py`); uygulamaya gömülü. */
@@ -331,12 +333,12 @@ export function RouteLine({ id = 'route', pieces, activeLeg = null, walked, anim
   return (
     <>
       <ShapeSource id={`${id}-src`} shape={shape}>
-        <LineLayer id={`${id}-casing`} slot="middle" style={{ lineCap: 'round', lineJoin: 'round', lineColor: t.surface, lineWidth: 11, lineOffset: ['get', 'offset'], lineOpacity: opacity }} />
-        <LineLayer id={`${id}-line`} slot="middle" style={{ lineCap: 'round', lineJoin: 'round', lineColor: t.outlined ? t.primaryText : ['interpolate', ['linear'], ['get', 'progress'], 0, t.primaryText, 1, t.accentText], lineWidth: ROUTE_WIDTH, lineOffset: ['get', 'offset'], lineOpacity: opacity }} />
+        <LineLayer id={`${id}-casing`} slot="middle" style={{ lineCap: 'round', lineJoin: 'round', lineColor: t.surface, lineWidth: 11, lineOffset: ['get', 'offset'], lineOpacity: opacity, lineEmissiveStrength: OVERLAY_EMISSIVE }} />
+        <LineLayer id={`${id}-line`} slot="middle" style={{ lineCap: 'round', lineJoin: 'round', lineColor: t.outlined ? t.primaryText : ['interpolate', ['linear'], ['get', 'progress'], 0, t.primaryText, 1, t.accentText], lineWidth: ROUTE_WIDTH, lineOffset: ['get', 'offset'], lineOpacity: opacity, lineEmissiveStrength: OVERLAY_EMISSIVE }} />
       </ShapeSource>
       {walkedShape.features.length ? (
         <ShapeSource id={`${id}-walked-src`} shape={walkedShape}>
-          <LineLayer id={`${id}-walked`} slot="middle" style={{ lineCap: 'round', lineJoin: 'round', lineColor: t.textMuted, lineWidth: ROUTE_WIDTH, lineOffset: ['get', 'offset'], lineOpacity: ['*', opacity, 0.7] }} />
+          <LineLayer id={`${id}-walked`} slot="middle" style={{ lineCap: 'round', lineJoin: 'round', lineColor: t.textMuted, lineWidth: ROUTE_WIDTH, lineOffset: ['get', 'offset'], lineOpacity: ['*', opacity, 0.7], lineEmissiveStrength: OVERLAY_EMISSIVE }} />
         </ShapeSource>
       ) : null}
       <ShapeSource id={`${id}-runs-src`} shape={runShape}>
@@ -345,13 +347,13 @@ export function RouteLine({ id = 'route', pieces, activeLeg = null, walked, anim
             id={`${id}-flow`}
             slot="middle"
             filter={activeLeg === null ? ['has', 'leg'] : ['==', ['get', 'leg'], activeLeg]}
-            style={{ lineColor: t.surface, lineWidth: ROUTE_WIDTH * 0.4, lineOffset: ['get', 'offset'], lineOpacity: 0.6, lineDasharray: [...ROUTE_FLOW_DASHES[flowStep]!] }}
+            style={{ lineColor: t.surface, lineWidth: ROUTE_WIDTH * 0.4, lineOffset: ['get', 'offset'], lineOpacity: 0.6, lineDasharray: [...ROUTE_FLOW_DASHES[flowStep]!], lineEmissiveStrength: OVERLAY_EMISSIVE }}
           />
         ) : <></>}
         <SymbolLayer
           id={`${id}-arrows`}
           slot="middle"
-          style={{ symbolPlacement: 'line', symbolSpacing: ROUTE_ARROW_SPACING_PX, iconImage: arrowName(theme), iconSize: 1, iconRotationAlignment: 'map', iconKeepUpright: false, iconOffset: ['get', 'arrowOffset'], iconOpacity: opacity, iconAllowOverlap: true, iconIgnorePlacement: true, iconOcclusionOpacity: 1 }}
+          style={{ symbolPlacement: 'line', symbolSpacing: ROUTE_ARROW_SPACING_PX, iconImage: arrowName(theme), iconSize: 1, iconRotationAlignment: 'map', iconKeepUpright: false, iconOffset: ['get', 'arrowOffset'], iconOpacity: opacity, iconAllowOverlap: true, iconIgnorePlacement: true, iconOcclusionOpacity: 1, iconEmissiveStrength: OVERLAY_EMISSIVE }}
         />
       </ShapeSource>
     </>
@@ -377,8 +379,8 @@ export function AltLines({ lines, onPress }: { lines: { id: string; line: LngLat
         const hit = e.features[0]?.properties?.id;
         if (typeof hit === 'string') onPress(hit);
       }}>
-      <LineLayer id="alt-routes-casing" slot="middle" style={{ lineCap: 'round', lineJoin: 'round', lineColor: t.surface, lineWidth: ROUTE_WIDTH + 4 }} />
-      <LineLayer id="alt-routes-line" slot="middle" style={{ lineCap: 'round', lineJoin: 'round', lineColor: t.textMuted, lineWidth: ROUTE_WIDTH }} />
+      <LineLayer id="alt-routes-casing" slot="middle" style={{ lineCap: 'round', lineJoin: 'round', lineColor: t.surface, lineWidth: ROUTE_WIDTH + 4, lineEmissiveStrength: OVERLAY_EMISSIVE }} />
+      <LineLayer id="alt-routes-line" slot="middle" style={{ lineCap: 'round', lineJoin: 'round', lineColor: t.textMuted, lineWidth: ROUTE_WIDTH, lineEmissiveStrength: OVERLAY_EMISSIVE }} />
     </ShapeSource>
   );
 }
@@ -390,7 +392,7 @@ export function ExtraLines({ id, data, color, width = 5, dashed, opacity = 1 }: 
       <LineLayer
         id={`${id}-line`}
         slot="middle"
-        style={{ lineCap: dashed ? 'butt' : 'round', lineJoin: 'round', lineColor: color, lineWidth: width, lineOpacity: opacity, ...(dashed ? { lineDasharray: [1.4, 1] } : {}) }}
+        style={{ lineCap: dashed ? 'butt' : 'round', lineJoin: 'round', lineColor: color, lineWidth: width, lineOpacity: opacity, lineEmissiveStrength: OVERLAY_EMISSIVE, ...(dashed ? { lineDasharray: [1.4, 1] } : {}) }}
       />
     </ShapeSource>
   );
@@ -425,7 +427,7 @@ export function StopBadges({ id = 'stops', stops, onPress }: { id?: string; stop
   return (
     <>
       <ShapeSource id={`${id}-connectors-src`} shape={connectors}>
-        <LineLayer id={`${id}-connectors`} slot="middle" style={{ lineColor: t.textMuted, lineWidth: 1.5, lineDasharray: [2, 2] }} />
+        <LineLayer id={`${id}-connectors`} slot="middle" style={{ lineColor: t.textMuted, lineWidth: 1.5, lineDasharray: [2, 2], lineEmissiveStrength: OVERLAY_EMISSIVE }} />
       </ShapeSource>
       <PointsLayer id={id} points={stops.map((stop) => ({ ...stop, location: stop.onLine }))} onPress={onPress} />
     </>
@@ -447,14 +449,15 @@ export function PointsLayer({ id = 'points', points, onPress }: { id?: string; p
       type: 'Feature',
       properties: {
         id: p.id,
-        dot: dotName(p.done ? 'muted' : dotOf[p.kind], theme),
-        // Yarıçap 12'ye göre ölçek: numaralı 12, yer işareti / eser 5, diğerleri 8; seçili +3.
-        dotScale: ((p.order ? 12 : p.kind === 'landmark' || p.kind === 'work' ? 5 : 8) + (p.selected ? 3 : 0)) / 12,
+        dot: dotName(p.order ? (p.selected ? 'activeStop' : 'stop') : p.done ? 'muted' : dotOf[p.kind], theme),
+        // Yarıçap 12'ye göre ölçek: numaralı 12, diğerleri en az 8; seçili +3.
+        dotScale: ((p.order ? 12 : 8) + (p.selected ? 3 : 0)) / 12,
         order: p.order ? String(p.order) : '',
         label: p.label ?? '',
         icon: p.typeSlug && !p.order ? iconName(p.typeSlug, theme) : '',
         scale: p.selected ? ICON_SCALE_SELECTED : ICON_SCALE,
         done: p.done ? 1 : 0,
+        selected: p.selected ? 1 : 0,
       },
       geometry: { type: 'Point', coordinates: p.location },
     })),
@@ -463,7 +466,7 @@ export function PointsLayer({ id = 'points', points, onPress }: { id?: string; p
     <ShapeSource
       id={`${id}-src`}
       shape={shape}
-      hitbox={{ width: 24, height: 24 }}
+      hitbox={{ width: 48, height: 48 }}
       onPress={
         onPress
           ? (e) => {
@@ -476,21 +479,21 @@ export function PointsLayer({ id = 'points', points, onPress }: { id?: string; p
         id={`${id}-icon`}
         slot="top"
         filter={['!=', ['get', 'icon'], '']}
-        style={{ iconImage: ['get', 'icon'], iconSize: ['get', 'scale'], iconOpacity: ['case', ['==', ['get', 'done'], 1], 0.5, 1], iconAllowOverlap: true, iconIgnorePlacement: true, iconOcclusionOpacity: 1 }}
+        style={{ iconImage: ['get', 'icon'], iconSize: ['get', 'scale'], iconOpacity: ['case', ['==', ['get', 'done'], 1], 0.75, 1], iconAllowOverlap: true, iconIgnorePlacement: true, iconOcclusionOpacity: 1, iconEmissiveStrength: OVERLAY_EMISSIVE }}
       />
       {/* Sıra: tür simgeleri < nokta tabanları < numara; rota sırası (numaralı durak) her zaman üstte. */}
       <SymbolLayer
         id={`${id}-dot`}
         slot="top"
         filter={['==', ['get', 'icon'], '']}
-        style={{ iconImage: ['get', 'dot'], iconSize: ['get', 'dotScale'], iconAllowOverlap: true, iconIgnorePlacement: true, iconOcclusionOpacity: 1 }}
+        style={{ iconImage: ['get', 'dot'], iconSize: ['get', 'dotScale'], iconAllowOverlap: true, iconIgnorePlacement: true, iconOcclusionOpacity: 1, iconEmissiveStrength: OVERLAY_EMISSIVE }}
       />
-      <SymbolLayer id={`${id}-order`} slot="top" style={{ textField: ['get', 'order'], textFont: FONT, textSize: 13, textColor: t.surface, textAllowOverlap: true, textIgnorePlacement: true, textOcclusionOpacity: 1 }} />
+      <SymbolLayer id={`${id}-order`} slot="top" style={{ textField: ['get', 'order'], textFont: FONT, textSize: 13, textColor: ['case', ['==', ['get', 'selected'], 1], t.gold.ink, t.onPhoto.text], textAllowOverlap: true, textIgnorePlacement: true, textOcclusionOpacity: 1, textEmissiveStrength: OVERLAY_EMISSIVE }} />
       <SymbolLayer
         id={`${id}-label`}
         slot="top"
         minZoomLevel={14.5}
-        style={{ textField: ['get', 'label'], textFont: FONT, textSize: 12, textOffset: [0, 1.5], textAnchor: 'top', textMaxWidth: 9, textOptional: true, textColor: t.text, textHaloColor: t.surface, textHaloWidth: 1.5 }}
+        style={{ textField: ['get', 'label'], textFont: FONT, textSize: 12, textOffset: [0, 1.5], textAnchor: 'top', textMaxWidth: 9, textOptional: true, textColor: t.text, textHaloColor: t.surface, textHaloWidth: 1.5, textEmissiveStrength: OVERLAY_EMISSIVE }}
       />
     </ShapeSource>
   );
@@ -520,15 +523,15 @@ export function WorkClusters({ works, selected, onPress }: { works: { slug: stri
         const slug = e.features[0]?.properties?.slug;
         if (typeof slug === 'string') onPress(slug);
       }}>
-      <CircleLayer id="works-clusters" slot="top" filter={['has', 'point_count']} style={{ circleRadius: ['step', ['get', 'point_count'], 18, 10, 22, 40, 28], circleColor: t.primary.fill, circleStrokeWidth: 3, circleStrokeColor: t.surface }} />
-      <SymbolLayer id="works-cluster-label" slot="top" filter={['has', 'point_count']} style={{ textField: ['get', 'point_count_abbreviated'], textSize: 14, textFont: FONT, textColor: t.primary.ink, textAllowOverlap: true }} />
+      <CircleLayer id="works-clusters" slot="top" filter={['has', 'point_count']} style={{ circleRadius: ['step', ['get', 'point_count'], 18, 10, 22, 40, 28], circleColor: t.primary.fill, circleStrokeWidth: 3, circleStrokeColor: t.surface, circleEmissiveStrength: OVERLAY_EMISSIVE }} />
+      <SymbolLayer id="works-cluster-label" slot="top" filter={['has', 'point_count']} style={{ textField: ['get', 'point_count_abbreviated'], textSize: 14, textFont: FONT, textColor: t.primary.ink, textAllowOverlap: true, textEmissiveStrength: OVERLAY_EMISSIVE }} />
       {/* Seçili eser: simgenin altında vurgu halkası (renk dışında boyutla da ayrılır). */}
-      <CircleLayer id="works-selected" slot="top" filter={['==', ['get', 'slug'], selected ?? '']} style={{ circleRadius: 22, circleColor: t.accentText, circleOpacity: 0.22, circleStrokeWidth: 2.5, circleStrokeColor: t.accentText }} />
+      <CircleLayer id="works-selected" slot="top" filter={['==', ['get', 'slug'], selected ?? '']} style={{ circleRadius: 22, circleColor: t.accentText, circleOpacity: 0.22, circleStrokeWidth: 2.5, circleStrokeColor: t.accentText, circleEmissiveStrength: OVERLAY_EMISSIVE }} />
       <SymbolLayer
         id="works-icon"
         slot="top"
         filter={['!', ['has', 'point_count']]}
-        style={{ iconImage: ['get', 'icon'], iconSize: ['get', 'scale'], iconAllowOverlap: true, iconIgnorePlacement: true, iconOcclusionOpacity: 1, symbolSortKey: ['case', ['==', ['get', 'slug'], selected ?? ''], 1, 0] }}
+        style={{ iconImage: ['get', 'icon'], iconSize: ['get', 'scale'], iconAllowOverlap: true, iconIgnorePlacement: true, iconOcclusionOpacity: 1, iconEmissiveStrength: OVERLAY_EMISSIVE, symbolSortKey: ['case', ['==', ['get', 'slug'], selected ?? ''], 1, 0] }}
       />
     </ShapeSource>
   );
@@ -540,13 +543,13 @@ export function WorkPin({ location, approximate, typeSlug }: { location: LngLat;
   const theme = useThemeKey();
   return (
     <ShapeSource id="work-src" shape={{ type: 'Point', coordinates: location }}>
-      {approximate ? <CircleLayer id="work-area" slot="top" style={{ circleRadius: 46, circleColor: t.primaryText, circleOpacity: 0.14, circleStrokeWidth: 2, circleStrokeColor: t.primaryText }} /> : <></>}
+      {approximate ? <CircleLayer id="work-area" slot="top" style={{ circleRadius: 46, circleColor: t.primaryText, circleOpacity: 0.14, circleStrokeWidth: 2, circleStrokeColor: t.primaryText, circleEmissiveStrength: OVERLAY_EMISSIVE }} /> : <></>}
       {typeSlug ? (
-        <SymbolLayer id="work-icon" slot="top" style={{ iconImage: iconName(typeSlug, theme), iconSize: ICON_SCALE_SELECTED, iconAllowOverlap: true, iconIgnorePlacement: true, iconOcclusionOpacity: 1 }} />
+        <SymbolLayer id="work-icon" slot="top" style={{ iconImage: iconName(typeSlug, theme), iconSize: ICON_SCALE_SELECTED, iconAllowOverlap: true, iconIgnorePlacement: true, iconOcclusionOpacity: 1, iconEmissiveStrength: OVERLAY_EMISSIVE }} />
       ) : (
         <>
-          <CircleLayer id="work-halo" slot="top" style={{ circleRadius: 16, circleColor: t.surface }} />
-          <CircleLayer id="work-circle" slot="top" style={{ circleRadius: 9, circleColor: t.accentText, circleStrokeWidth: 3, circleStrokeColor: t.surface }} />
+          <CircleLayer id="work-halo" slot="top" style={{ circleRadius: 16, circleColor: t.surface, circleEmissiveStrength: OVERLAY_EMISSIVE }} />
+          <CircleLayer id="work-circle" slot="top" style={{ circleRadius: 9, circleColor: t.accentText, circleStrokeWidth: 3, circleStrokeColor: t.surface, circleEmissiveStrength: OVERLAY_EMISSIVE }} />
         </>
       )}
     </ShapeSource>
@@ -558,8 +561,8 @@ export function UserDot({ location }: { location: LngLat }) {
   const t = useSweetTheme();
   return (
     <ShapeSource id="me-src" shape={{ type: 'Point', coordinates: location }}>
-      <CircleLayer id="me-halo" slot="top" style={{ circleRadius: 18, circleColor: t.primaryText, circleOpacity: 0.18 }} />
-      <CircleLayer id="me-dot" slot="top" style={{ circleRadius: 8, circleColor: t.primaryText, circleStrokeWidth: 3, circleStrokeColor: t.surface }} />
+      <CircleLayer id="me-halo" slot="top" style={{ circleRadius: 18, circleColor: t.primaryText, circleOpacity: 0.18, circleEmissiveStrength: OVERLAY_EMISSIVE }} />
+      <CircleLayer id="me-dot" slot="top" style={{ circleRadius: 8, circleColor: t.primaryText, circleStrokeWidth: 3, circleStrokeColor: t.surface, circleEmissiveStrength: OVERLAY_EMISSIVE }} />
     </ShapeSource>
   );
 }
@@ -571,7 +574,7 @@ export function EndPin({ id, location, kind }: { id: string; location: LngLat; k
   const stroke = kind === 'end' ? t.surface : t.primaryText;
   return (
     <ShapeSource id={`${id}-src`} shape={{ type: 'Point', coordinates: location }}>
-      <CircleLayer id={`${id}-pin`} slot="top" style={{ circleRadius: kind === 'end' ? 10 : 8, circleColor: fill, circleStrokeWidth: 3.5, circleStrokeColor: stroke }} />
+      <CircleLayer id={`${id}-pin`} slot="top" style={{ circleRadius: kind === 'end' ? 10 : 8, circleColor: fill, circleStrokeWidth: 3.5, circleStrokeColor: stroke, circleEmissiveStrength: OVERLAY_EMISSIVE }} />
     </ShapeSource>
   );
 }

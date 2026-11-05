@@ -3,9 +3,10 @@
 @import "shadcn/tailwind.css";
 
 /*
- * Sezi web: mobil ve admin ile aynı "Çini 2" token'ları. Renk değerleri burada değil, `src/lib/theme.ts`
+ * Sezi web: mobil ile aynı "Sezi kâğıt" token'ları. Renk değerleri burada değil, `src/lib/theme.ts`
  * içinde ortak temadan üretilip <head>'e basılır (:root açık tema, [data-contrast="high"] yüksek kontrast).
- * Kartlar gölgesiz; yüksek kontrastta her yüzey 2 px çerçeveyle ayrılır.
+ * Kartlar gölgesiz; yalnız yüzen öğeler (üst menü, cam paneller) hafif gölge alır. Yüksek kontrastta
+ * cam opaktır ve her yüzey 2 px çerçeveyle ayrılır.
  */
 
 @custom-variant contrast (&:where([data-contrast="high"], [data-contrast="high"] *));
@@ -13,7 +14,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
-  --font-heading: var(--font-nunito), "Segoe UI", system-ui, sans-serif;
+  --font-heading: var(--font-fraunces), Georgia, "Times New Roman", serif;
   --font-sans: var(--font-atkinson), "Segoe UI", system-ui, sans-serif;
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
@@ -43,6 +44,11 @@
   --color-highlight: var(--highlight);
   --color-highlight-foreground: var(--highlight-foreground);
   --color-accent-text: var(--accent-text);
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-on-photo: var(--on-photo);
+  --color-on-photo-muted: var(--on-photo-muted);
+  --color-on-photo-accent: var(--on-photo-accent);
   /* Durum tonları (Badge): renk tek başına anlam taşımaz, yanında hep metin olur. */
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
@@ -85,13 +91,47 @@
 
 :root {
   --radius: 0.5rem;
-  /* Logodaki koyu kahve. Üst çubuk zemini (#F6F4F0) üzerinde kontrast 10.8:1. */
-  --brand-mark: #562b1d;
+  /* İtalik başlık vurgusu (RichTitle): düz zeminde bağlantı kahvesi, fotoğraf ve koyu bantta altın. */
+  --title-accent: var(--link);
 }
 
-/* Yüksek kontrastta işaret düz metin rengini alır. */
-[data-contrast="high"] {
-  --brand-mark: var(--foreground);
+[data-surface="photo"] {
+  --title-accent: var(--on-photo-accent);
+}
+
+/* Cam yüzeyindeki ince kâğıt dokusu (Glass grain). Yüksek kontrastta çizilmez. */
+.grain {
+  isolation: isolate;
+}
+.grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--grain-opacity, 0.5);
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+[data-contrast="high"] .grain::before {
+  display: none;
+}
+
+/* İçerik JS olmadan da görünür; yalnız gözlemci kurulduktan sonra giriş hareketi etkinleşir. */
+.rv {
+  transition:
+    opacity 600ms ease-out,
+    transform 600ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.rv[data-pending]:not([data-shown]) {
+  opacity: 0;
+  transform: translateY(24px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .rv[data-pending]:not([data-shown]) {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* Yazı büyütme (görünüm menüsü): rem tabanlı her ölçü birlikte büyür. */
@@ -218,7 +258,37 @@ html[data-text="xl"] {
   }
 }
 
-/* Kenar dalları (SideVines) içerik sütununun (70rem) dışındaki boşluğa sığar, içeriğin altına girmez. */
-.side-vines {
-  --vine-w: max(0px, calc((100vw - 70rem) / 2 - 0.5rem));
+/* Bant olmayan sayfalarda sabit menü içeriği örtmez. */
+body:not(:has([data-band])) #icerik,
+body:has([data-band="solid"]) #icerik { padding-top: 6rem; }
+body:has([data-route-map]) #icerik { padding-top: 0; }
+
+html { scroll-padding-top: 104px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .home-hero-image { animation: home-hero-drift 24s ease-in-out infinite alternate; }
+  @keyframes home-hero-drift {
+    from { transform: scale(1.04); }
+    to { transform: scale(1.1) translateY(-1.5%); }
+  }
 }
+
+/* Rota paneli ve harita araçları menünün altında yüzer. */
+.route-floating-panel {
+  position: absolute;
+  z-index: 10;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  height: 52%;
+}
+@media (min-width: 900px) {
+  .route-floating-panel {
+    top: 92px;
+    right: auto;
+    width: 390px;
+    height: auto;
+  }
+}
+.route-map-controls { top: 92px; right: 14px; }
+.tour-placeholder { align-items: start; justify-items: end; padding: 8rem 2rem 0 0; }

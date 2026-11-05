@@ -33,7 +33,7 @@ export function PhotoOptions({
   return (
     <div className="grid gap-4">
       <div className="grid gap-2">
-        <p id={`${id}-vis`} className="font-heading text-sm font-bold">
+        <p id={`${id}-vis`} className="font-bold text-sm">
           {t("photos.visibility")}
         </p>
         <VisibilityChoice

@@ -40,7 +40,7 @@ export function PhotoGallery({
     return (
       <div
         aria-hidden
-        className={cn("grid h-60 w-full place-items-center overflow-hidden rounded-2xl pb-10 sm:h-72", toneClass(typeSlug))}
+        className={cn("grid h-full min-h-80 w-full place-items-center overflow-hidden", toneClass(typeSlug))}
       >
         <LandmarkIcon className="size-24" strokeWidth={1.5} />
       </div>
@@ -60,10 +60,10 @@ export function PhotoGallery({
   const activeCreditLine = activePhoto ? photoCreditLine(activePhoto, t) : null;
 
   return (
-    <div role="group" aria-label={t("works.detail.photosTitle")}>
-      <figure className="relative">
+    <div role="group" aria-label={t("works.detail.photosTitle")} className="h-full">
+      <figure className="relative h-full [&>div]:h-full">
         <Lens src={photoUrl(currentPhoto, "full")}>
-          <div className="relative aspect-[4/3] max-h-[600px] w-full overflow-hidden rounded-2xl bg-muted md:aspect-[16/9]">
+          <div className="relative h-full min-h-80 w-full overflow-hidden bg-muted">
             <button
               type="button"
               onClick={() => setActiveIndex(0)}
@@ -88,17 +88,16 @@ export function PhotoGallery({
             </button>
           </div>
         </Lens>
-        {/* Atıf ve sayı, kartın bindiği 40 px'lik şeridin üstünde durur. */}
-        <div className="pointer-events-none absolute inset-x-3 bottom-[3.25rem] flex items-end justify-between gap-3 sm:inset-x-5 sm:bottom-[3.75rem]">
+        <div className="pointer-events-none absolute inset-x-4 bottom-4 flex items-end justify-end gap-3">
           {currentCreditLine ? (
-            <figcaption className="pointer-events-auto inline-flex min-h-8 min-w-0 max-w-[80%] items-center gap-x-2 rounded-full bg-card px-3 py-1 text-sm text-foreground contrast:outline-2 contrast:outline-border">
+            <figcaption className="pointer-events-auto inline-flex min-h-12 min-w-0 max-w-[80%] items-center gap-x-2 rounded-full bg-[var(--glass-dark)] px-4 py-1 text-sm text-[var(--glass-dark-fg)] backdrop-blur-md contrast:outline-2 contrast:outline-current">
               <span className="min-w-0 truncate">{t("works.detail.photoCreditLine", { credit: currentCreditLine })}</span>
               {currentPhoto.source_url ? (
                 <a
                   href={currentPhoto.source_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="relative shrink-0 font-semibold text-link underline before:absolute before:-inset-3 before:content-['']"
+                  className="relative shrink-0 font-semibold underline before:absolute before:-inset-3 before:content-['']"
                 >
                   {t("works.detail.openSourceUrl")}
                 </a>

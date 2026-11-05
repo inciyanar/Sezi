@@ -16,7 +16,7 @@ export const tr = {
   "about.a11y.wcag":
     "Web ve mobil arayüzde WCAG 2.2 AA kontrast standardı, az gören kullanıcılar için yüksek kontrast (AAA) modu, ölçeklenebilir yazı boyutu ve en az 48×48 px dokunma hedefleri uygulanır; renk hiçbir zaman tek başına bilgi taşımaz.",
   "about.privacyBody":
-    "Erişilebilirlik profiliniz cihazda saklanır. Hesap açarsanız pasaportunuz (hangi eseri hangi gün ziyaret ettiğiniz) hesabınızla eşitlenir ve gizlilik ayarınıza göre görünür. Konumunuz hiçbir zaman sunucuya gönderilmez.",
+    "Erişilebilirlik profilin cihazda saklanır. Hesap açarsan pasaportun (hangi eseri hangi gün ziyaret ettiğin) hesabınla eşitlenir ve gizlilik ayarına göre görünür. Konumun hiçbir zaman sunucuya gönderilmez.",
 
   // Ekip ve Hackathon
   "about.team.title": "Ekip: LAHMACUN",

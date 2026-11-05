@@ -61,15 +61,6 @@ export function createMap(
     fadeDuration: 0,
   });
   if (!look.pitched) m.touchPitch.disable();
-  const navigation = new mapboxgl.NavigationControl({ showCompass: false });
-  m.addControl(navigation, "top-right");
-  if (options.miniMap) {
-    const container = m.getContainer();
-    const zoomIn = container.querySelector<HTMLButtonElement>(".mapboxgl-ctrl-zoom-in");
-    const zoomOut = container.querySelector<HTMLButtonElement>(".mapboxgl-ctrl-zoom-out");
-    if (zoomIn) zoomIn.setAttribute("aria-label", options.zoomInLabel);
-    if (zoomOut) zoomOut.setAttribute("aria-label", options.zoomOutLabel);
-  }
   return m;
 }
 

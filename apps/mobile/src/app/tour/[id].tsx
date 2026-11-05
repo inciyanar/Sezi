@@ -111,5 +111,5 @@ const s = StyleSheet.create({
   body: { padding: space.xl, gap: space.xl },
   cover: { minHeight: 280, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   stats: { flexWrap: 'wrap', flexDirection: 'row', gap: space.sm },
-  stat: { flexGrow: 1, flexBasis: 100, paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.md, borderCurve: 'continuous', gap: space.xs },
+  stat: { flexGrow: 1, flexBasis: 100, paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.xl, borderCurve: 'continuous', gap: space.xs },
 });

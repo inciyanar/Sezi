@@ -6,7 +6,7 @@ import { Text } from '@/components/text';
 import { Button, Card, ListRow } from '@/components/ui';
 import { ExternalIcon } from '@/design/icons';
 import { outline, SweetSheet } from '@/design/sweet/components';
-import { font, radius, space } from '@/design/type';
+import { font, space } from '@/design/type';
 import { useSweetTheme } from '@/hooks/use-sweet-theme';
 import { useT } from '@/lib/i18n';
 
@@ -27,8 +27,9 @@ export interface PhotoSourceTagProps {
 }
 
 /**
- * Fotoğrafların köşesinde yer alan kaynak etiketi (≥ 48 dp dokunma alanı).
- * Commons ve yönetici yüklemelerinin yazar, lisans ve kaynak ayrıntılarını açar.
+ * Fotoğrafların köşesindeki kaynak işareti: küçük © dairesi (görünen 26 dp, dokunma alanı hitSlop ile 48 dp).
+ * Uzun "Wikimedia Commons" hapı kartları kapatıyordu; atıf (yazar, lisans, kaynak) dokununca açılan sayfadadır,
+ * ekran okuyucu etiketi ne olduğunu söyler.
  */
 export function PhotoSourceTag({ photo, style, position = 'bottom-right' }: PhotoSourceTagProps) {
   const [open, setOpen] = useState(false);
@@ -37,7 +38,9 @@ export function PhotoSourceTag({ photo, style, position = 'bottom-right' }: Phot
 
   if (!photo || !isAttributed(photo)) return null;
 
-  const bg = t.outlined ? t.background : `${t.background}D9`;
+  // Fotoğraf üstünde koyu cam hap; yüksek kontrastta opak zemin ve çerçeve.
+  const bg = t.outlined ? t.background : `${t.glass.dark.tint}CC`;
+  const fg = t.outlined ? t.text : t.glass.dark.text;
   const authorText = photo.author?.trim() || tr('commons.authorMissing');
   const modText = loc(photo.modifications, lang);
 
@@ -49,10 +52,10 @@ export function PhotoSourceTag({ photo, style, position = 'bottom-right' }: Phot
           setOpen(true);
         }}
         accessibilityRole="button"
-        accessibilityLabel={tr('commons.tagLabel')}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        accessibilityLabel={`${tr('commons.tagLabel')}: ${isCommons(photo) ? tr('commons.tag') : tr('commons.photoBy', { author: authorText })}`}
+        hitSlop={11}
         style={[styles.tag, posStyle[position], { backgroundColor: bg }, outline(t), style]}>
-        <Text numberOfLines={1} style={[styles.tagText, { color: t.text }]}>{isCommons(photo) ? tr('commons.tag') : tr('commons.photoBy', { author: authorText })}</Text>
+        <Text style={[styles.tagText, { color: fg }]}>©</Text>
       </Pressable>
 
       <SweetSheet visible={open} onClose={() => setOpen(false)} title={tr(isCommons(photo) ? 'commons.sheetTitle' : 'photo.sourceTitle')}>
@@ -83,20 +86,18 @@ export function PhotoSourceTag({ photo, style, position = 'bottom-right' }: Phot
   );
 }
 
-/**
- * Küçük listeleme küçük resimlerinde (< ~120 dp) gösterilen tıklanamayan küçük etiket.
- */
+/** Küçük listeleme resimlerinde (< ~120 dp) tıklanamayan © işareti; atıf eser sayfasındaki işaretten açılır. */
 export function PhotoSourceThumbTag({ photo, style }: { photo: WorkPhoto | undefined; style?: StyleProp<ViewStyle> }) {
   const t = useSweetTheme();
-  const { t: tr } = useT();
 
   if (!photo || !isAttributed(photo)) return null;
 
-  const bg = t.outlined ? t.background : `${t.background}D9`;
+  const bg = t.outlined ? t.background : `${t.glass.dark.tint}B3`;
+  const fg = t.outlined ? t.text : t.glass.dark.text;
 
   return (
     <View pointerEvents="none" accessible={false} style={[styles.thumbTag, { backgroundColor: bg }, outline(t), style]}>
-      <Text numberOfLines={1} style={[styles.thumbTagText, { color: t.text }]}>{isCommons(photo) ? tr('commons.thumbTag') : tr('commons.photoBy', { author: photo.author?.trim() || tr('commons.authorMissing') })}</Text>
+      <Text style={[styles.thumbTagText, { color: fg }]}>©</Text>
     </View>
   );
 }
@@ -111,37 +112,31 @@ const posStyle = {
 const styles = StyleSheet.create({
   tag: {
     position: 'absolute',
-    minWidth: 48,
-    minHeight: 48,
-    maxWidth: '60%',
-    paddingHorizontal: space.sm,
-    paddingVertical: 4,
-    borderRadius: radius.sm,
-    borderCurve: 'continuous',
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   },
   tagText: {
-    fontFamily: font.round,
-    fontSize: 12,
-    lineHeight: 16,
+    fontFamily: font.bodyBold,
+    fontSize: 14,
+    lineHeight: 17,
   },
   thumbTag: {
     position: 'absolute',
     bottom: space.xs,
-    maxWidth: '90%',
     right: space.xs,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
-    borderCurve: 'continuous',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   thumbTagText: {
-    fontFamily: font.round,
-    fontSize: 10,
-    lineHeight: 13,
+    fontFamily: font.bodyBold,
+    fontSize: 12,
+    lineHeight: 14,
   },
   sheetContent: {
     paddingHorizontal: space.xl,

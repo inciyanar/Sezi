@@ -1,11 +1,16 @@
 import { sweetThemes, type SweetTheme, type SweetToneName } from "@sezi/shared";
 
 /**
- * Web teması mobil "Çini 2" token'larından üretilir (packages/shared/src/sweet-theme.ts); sabit renk kodu yazılmaz.
+ * Web teması mobil "Sezi kâğıt" token'larından üretilir (packages/shared/src/sweet-theme.ts); sabit renk kodu yazılmaz.
  * `:root` açık tema, `[data-contrast="high"]` yüksek kontrast. Değişken adları admin `index.css` ile aynı (shadcn).
- * Eylem rengi: masaüstünde beyaz zeminde silik kalmasın diye koyu firuze dolgu + beyaz yazı (admin ile aynı karar);
- * açık temada bu `tones.teal.ink`, yüksek kontrastta `primary.fill`. Kontrastı `sweet-theme.test.ts` korur.
+ * Eylem rengi temanın ana eylemidir: açık temada mürekkep hap, yüksek kontrastta siyah. Kontrastı `sweet-theme.test.ts` korur.
  */
+
+/** `#RRGGBB` rengini saydamlıkla CSS `rgb()` değerine çevirir (cam yüzeyleri). */
+function rgba(hex: string, alpha: number): string {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  return `rgb(${r} ${g} ${b} / ${alpha})`;
+}
 
 const TONES: SweetToneName[] = ["cobalt", "teal", "coral", "saffron", "sage", "plum"];
 
@@ -42,6 +47,20 @@ function vars(t: SweetTheme, action: { fill: string; ink: string }): string {
     ["chart-3", t.tones.coral.ink],
     ["chart-4", t.tones.cobalt.ink],
     ["chart-5", t.tones.saffron.ink],
+    ["gold", t.gold.fill],
+    ["gold-foreground", t.gold.ink],
+    ["on-photo", t.onPhoto.text],
+    ["on-photo-muted", t.onPhoto.muted],
+    ["on-photo-accent", t.onPhoto.accent],
+    ["glass-light", rgba(t.glass.light.tint, t.glass.light.alpha)],
+    ["glass-light-fg", t.glass.light.text],
+    ["glass-light-muted", t.glass.light.muted],
+    ["glass-dark", rgba(t.glass.dark.tint, t.glass.dark.alpha)],
+    ["glass-dark-fg", t.glass.dark.text],
+    ["glass-dark-muted", t.glass.dark.muted],
+    ["nav-active", t.nav.activeBackground],
+    // Logo kahvesi; yüksek kontrastta düz metin rengi.
+    ["brand-mark", t.outlined ? t.text : t.primaryText],
     ...TONES.flatMap((n): [string, string][] => [
       [`tone-${n}-fill`, t.tones[n].fill],
       [`tone-${n}-ink`, t.tones[n].ink],
@@ -55,7 +74,7 @@ const high = sweetThemes.highContrast;
 
 /** Eylem dolgusu ve üstündeki yazı (tema başına). */
 export const ACTION = {
-  light: { fill: light.tones.teal.ink, ink: light.surface },
+  light: { fill: light.primary.fill, ink: light.primary.ink },
   high: { fill: high.primary.fill, ink: high.primary.ink },
 } as const;
 

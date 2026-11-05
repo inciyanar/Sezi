@@ -4,7 +4,7 @@ import { contrastRatio } from "./theme";
 
 const allThemes: [string, SweetTheme][] = [...Object.entries(sweetThemes), ...Object.entries(colorSafeThemes).map(([name, t]): [string, SweetTheme] => [`colorSafe.${name}`, t])];
 
-describe("Çini 2 kontrastı (WCAG AA ≥ 4.5)", () => {
+describe("Sezi kâğıt kontrastı (WCAG AA ≥ 4.5)", () => {
   for (const [name, t] of allThemes) {
     it(`${name}: metin, ton, düğme ve sekme çubuğu çiftleri AA'yı geçer`, () => {
       const pairs: [string, string, string][] = [
@@ -42,12 +42,27 @@ describe("Çini 2 kontrastı (WCAG AA ≥ 4.5)", () => {
     });
   }
 
-  // Web ve admin eylem rengi: açık temada koyu firuze dolgu (`tones.teal.ink`) üstünde yüzey rengi yazı (apps/web/src/lib/theme.ts).
-  it("web eylem dolgusu (tones.teal.ink) üstünde yüzey rengi yazı AA'yı geçer", () => {
-    const t = sweetThemes.light;
-    expect(contrastRatio(t.surface, t.tones.teal.ink)).toBeGreaterThanOrEqual(4.5);
-    expect(contrastRatio(t.tones.teal.ink, t.background)).toBeGreaterThanOrEqual(3);
+  // Web eylem rengi temanın ana eylemidir (apps/web/src/lib/theme.ts `ACTION`): dolgu zeminden de seçilir.
+  it("ana eylem dolgusu zeminden ayırt edilir (≥ 3)", () => {
+    for (const [name, t] of allThemes) {
+      expect(contrastRatio(t.primary.fill, t.background), name).toBeGreaterThanOrEqual(3);
+    }
   });
+
+  for (const [name, t] of allThemes) {
+    // Cam en kötü fotoğrafta da okunmalı: açık cam siyah, koyu cam beyaz fotoğrafın üstünde.
+    it(`${name}: altın, fotoğraf üstü yazı ve buzlu cam okunur`, () => {
+      const lightGlass = blend(t.glass.light.tint, t.glass.light.alpha, "#000000");
+      const darkGlass = blend(t.glass.dark.tint, t.glass.dark.alpha, "#FFFFFF");
+      expect(contrastRatio(t.gold.ink, t.gold.fill), "gold").toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(t.onPhoto.text, darkGlass), "onPhoto.text").toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(t.onPhoto.accent, darkGlass), "onPhoto.accent").toBeGreaterThanOrEqual(3);
+      expect(contrastRatio(t.glass.light.text, lightGlass), "glass.light.text").toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(t.glass.light.muted, lightGlass), "glass.light.muted").toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(t.glass.dark.text, darkGlass), "glass.dark.text").toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(t.glass.dark.muted, darkGlass), "glass.dark.muted").toBeGreaterThanOrEqual(4.5);
+    });
+  }
 
   it("yüksek kontrast çerçeveli çizilir ve AAA (≥ 7) metin sağlar", () => {
     const t = sweetThemes.highContrast;
@@ -55,6 +70,14 @@ describe("Çini 2 kontrastı (WCAG AA ≥ 4.5)", () => {
     expect(contrastRatio(t.text, t.background)).toBeGreaterThanOrEqual(7);
   });
 });
+
+/** `fg` rengini `alpha` opaklıkla `bg` üstüne karıştırır (cam katmanı). */
+function blend(fg: string, alpha: number, bg: string): string {
+  const channel = (hex: string, i: number) => parseInt(hex.slice(i, i + 2), 16);
+  return `#${[1, 3, 5]
+    .map((i) => Math.round(channel(fg, i) * alpha + channel(bg, i) * (1 - alpha)).toString(16).padStart(2, "0"))
+    .join("")}`;
+}
 
 // Machado vd. (2009) tam şiddet benzetim matrisleri, doğrusal sRGB üzerinde.
 const CVD: Record<string, number[][]> = {

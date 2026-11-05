@@ -111,7 +111,7 @@ function PhotoDetail({ photo }: { photo: UserPhoto }) {
           width: '100%',
           aspectRatio: photo.width / photo.height,
           maxHeight: 520,
-          borderRadius: radius.lg,
+          borderRadius: radius.xl,
           backgroundColor: theme.soft,
         }}
       />

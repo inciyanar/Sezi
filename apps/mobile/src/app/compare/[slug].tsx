@@ -6,7 +6,7 @@ import { Text } from '@/components/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EndPin, ExtraLines, PointsLayer, SeziMap, type SeziMapHandle } from '@/components/map';
-import { Badge, Chip, Note } from '@/components/ui';
+import { Badge, Chip, Eyebrow, Note } from '@/components/ui';
 import { CheckIcon, CloseIcon, MapIcon } from '@/design/icons';
 import { SoftPressable, sweetShadow } from '@/design/sweet/components';
 import { radius, space, type } from '@/design/type';
@@ -121,7 +121,7 @@ export default function Compare() {
       <View style={s.panel}>
         <ScrollView contentContainerStyle={[s.body, { paddingBottom: insets.bottom + space.xl }]}>
           <View style={{ gap: space.xs }}>
-            <Text style={[type.eyebrow, { color: t.primaryText }]}>{tr('compare.title')}</Text>
+            <Eyebrow text={tr('compare.title')} />
             <Text style={[type.title, { color: t.text }]} accessibilityRole="header">
               {endName}
             </Text>
@@ -129,7 +129,7 @@ export default function Compare() {
           </View>
 
           <View style={{ gap: space.sm }}>
-            <Text style={s.label}>{tr('nav.from')}</Text>
+            <Eyebrow text={tr('nav.from')} />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips} style={s.chipScroll}>
               <Chip label={start?.kind === 'pick' ? tr('nav.picked') : tr('nav.pickOnMap')} selected={start?.kind === 'pick' || picking} onPress={() => setPicking(!picking)} icon={(c) => <MapIcon color={c} size={18} />} />
               {starts.map((p) => (
@@ -138,7 +138,7 @@ export default function Compare() {
             </ScrollView>
           </View>
           <View style={{ gap: space.sm }}>
-            <Text style={s.label}>{tr('nav.to')}</Text>
+            <Eyebrow text={tr('nav.to')} />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips} style={s.chipScroll}>
               {DESTINATIONS.map((n) => (
                 <Chip key={n.id} label={n.name?.[lang] ?? n.name?.tr ?? ''} selected={dest === n.workSlug} onPress={() => setDest(n.workSlug!)} />
@@ -249,7 +249,7 @@ function ProfileCard({
 }
 
 const cardStyles = StyleSheet.create({
-  card: { gap: space.sm, padding: space.lg, borderRadius: radius.lg, borderCurve: 'continuous', borderWidth: 2 },
+  card: { gap: space.sm, padding: space.lg, borderRadius: radius.xl, borderCurve: 'continuous', borderWidth: 2 },
   head: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   swatch: { width: 40, alignItems: 'center', justifyContent: 'center' },
   check: { width: 28, height: 28, borderRadius: radius.pill, borderCurve: 'continuous', borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
@@ -265,7 +265,6 @@ const makeStyles = (t: SweetTheme) =>
     pickBanner: { position: 'absolute', alignSelf: 'center', backgroundColor: t.primary.fill, paddingHorizontal: space.lg, paddingVertical: space.sm, borderRadius: radius.pill, borderCurve: 'continuous' },
     panel: { flex: 1, marginTop: -radius.xl, backgroundColor: t.background, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, borderCurve: 'continuous' },
     body: { paddingHorizontal: space.xl, paddingTop: space.xl, gap: space.lg },
-    label: { ...type.eyebrow, color: t.textMuted },
     chips: { gap: space.sm, paddingHorizontal: space.xl },
     chipScroll: { marginHorizontal: -space.xl },
   });

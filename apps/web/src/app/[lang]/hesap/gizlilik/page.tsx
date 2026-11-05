@@ -63,7 +63,7 @@ export default function PrivacyPage() {
         {identity ? (
           <>
             <section aria-labelledby="privacy-who" className="grid gap-3">
-              <h2 id="privacy-who" className="font-heading text-lg font-bold">
+              <h2 id="privacy-who" className="font-heading font-normal tracking-[-0.02em] text-lg">
                 {t("privacy.who")}
               </h2>
               <VisibilityChoice
@@ -92,7 +92,7 @@ export default function PrivacyPage() {
               />
             </div>
             <section aria-labelledby="privacy-photos" className="grid gap-3">
-              <h2 id="privacy-photos" className="font-heading text-lg font-bold">
+              <h2 id="privacy-photos" className="font-heading font-normal tracking-[-0.02em] text-lg">
                 {t("privacy.photoDefault")}
               </h2>
               <VisibilityChoice
@@ -106,7 +106,7 @@ export default function PrivacyPage() {
           </>
         ) : null}
         <section aria-labelledby="blocked-title" className="grid gap-3">
-          <h2 id="blocked-title" className="font-heading text-lg font-bold">
+          <h2 id="blocked-title" className="font-heading font-normal tracking-[-0.02em] text-lg">
             {t("privacy.blocked")}
           </h2>
           {blocked.data?.length ? (

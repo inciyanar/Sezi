@@ -2,9 +2,8 @@ import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Text } from '@/components/text';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useTabBarSpace } from '@/components/app-tabs';
 import { ScreenHeader } from '@/components/screen-header';
 import { EmptyState } from '@/components/ui';
 import { PhotoCard } from '@/components/photo-card';
@@ -25,7 +24,7 @@ export default function Tours() {
   const t = useSweetTheme();
   const { t: tr, lang } = useT();
   const { profile } = useProfile();
-  const tabSpace = useTabBarSpace();
+  const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const cardWidth = Math.min(width - space.xl * 2, 360);
   const { data: works } = useWorks('bursa');
@@ -59,8 +58,8 @@ export default function Tours() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.background }} edges={['top']}>
-      <ScrollView contentContainerStyle={[s.body, { paddingBottom: tabSpace }]}>
-        <ScreenHeader title={tr('tours.title')} subtitle={tr('design.pilotSubtitle')} />
+      <ScrollView contentContainerStyle={[s.body, { paddingBottom: insets.bottom + space.xl }]}>
+        <ScreenHeader title={tr('tours.title')} subtitle={tr('design.pilotSubtitle')} onBack={() => router.back()} />
         {/* Canlı yürüyüş: anlatım noktaları her ilde çalışır; tur kartlarıyla aynı kapaksız düzen. */}
         <SoftPressable
           onPress={() => router.push({ pathname: '/navigate', params: { stroll: '1' } })}

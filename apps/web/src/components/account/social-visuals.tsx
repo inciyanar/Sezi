@@ -40,6 +40,8 @@ import { formatDate, href, type Lang, type MessageKey } from "@/lib/i18n";
 import { useT } from "@/lib/i18n-client";
 import { cn } from "@/lib/utils";
 
+import { BadgeArt } from "./badge-art";
+
 type Translate = (key: MessageKey, vars?: Record<string, string | number>) => string;
 
 const TONE_CLASS = {
@@ -139,7 +141,7 @@ export function EmptyInvite({ art, text, action }: { art: ReactNode; text: strin
   return (
     <div className="grid justify-items-center gap-4 py-8 text-center">
       {art}
-      <p className="font-heading text-lg font-bold">{text}</p>
+      <p className="font-heading font-normal tracking-[-0.02em] text-lg">{text}</p>
       {action}
     </div>
   );
@@ -156,7 +158,7 @@ export function StatStrip({ items }: { items: { icon: LucideIcon; value: string;
         >
           <Icon aria-hidden className="size-5 shrink-0 text-link" />
           <div className="mt-auto grid gap-0.5">
-            <dd className="font-heading text-2xl font-extrabold leading-tight tabular-nums">{value}</dd>
+            <dd className="font-heading font-normal tracking-[-0.02em] text-2xl leading-tight tabular-nums">{value}</dd>
             <dt className="truncate text-sm font-medium text-muted-foreground">{label}</dt>
           </div>
         </div>
@@ -182,6 +184,7 @@ export const BADGE_NAME = {
   "12-arsiv-gozu": "badge.12-arsiv-gozu.name",
   "13-ilk-kare": "badge.13-ilk-kare.name",
   "14-yol-arkadasi": "badge.14-yol-arkadasi.name",
+  "15-hos-geldin": "badge.15-hos-geldin.name",
 } as const satisfies Record<BadgeId, MessageKey>;
 
 export function achievementTitle(a: Achievement, t: Translate, lang: Lang) {
@@ -201,36 +204,24 @@ export function achievementLabel(a: Achievement, t: Translate, lang: Lang) {
   return `${title}. ${t("ach.locked")}, ${a.current} / ${achievementTarget(a)}`;
 }
 
-/** Başarım karosu: kazanılanda firuze dolgu + köşede tik, kilitlide soluk dolgu + köşede kilit. Dekoratif. */
+/** Damga: kazanılanda renkli + köşede tik, kilitlide gri + köşede kilit (durum yalnız renkle verilmez). Dekoratif. */
 export function AchievementIcon({ achievement: a, size = "md" }: { achievement: Achievement; size?: "sm" | "md" | "lg" }) {
   const earned = a.level > 0;
-  const badge = badgeFor(a);
   const Mark = earned ? Check : Lock;
-  const box = { sm: "size-14 rounded-xl", md: "size-[4.5rem] rounded-2xl", lg: "size-24 rounded-3xl" }[size];
+  const px = { sm: 56, md: 84, lg: 132 }[size];
   return (
     <span aria-hidden className="relative inline-block shrink-0">
+      <BadgeArt id={badgeFor(a)} size={px} locked={!earned} />
       <span
         className={cn(
-          "grid place-items-center overflow-hidden bg-muted contrast:bg-card contrast:outline-2 contrast:outline-border",
-          box,
-        )}
-      >
-        <img
-          src={`/badges/${badge}.${badge === "08-kuzey-ruzgari" ? "webp" : "svg"}`}
-          alt=""
-          className={cn("size-full object-cover", !earned && "grayscale opacity-50")}
-        />
-      </span>
-      <span
-        className={cn(
-          "absolute -right-1.5 -top-1.5 grid size-6 place-items-center rounded-full border-2",
-          earned ? "border-card bg-link text-background" : "border-border bg-card text-muted-foreground",
+          "absolute -right-0.5 -top-0.5 grid size-6 place-items-center rounded-full border-2",
+          earned ? "border-card bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground",
         )}
       >
         <Mark className="size-3.5" strokeWidth={3} />
       </span>
       {earned && a.level > 1 ? (
-        <span className="absolute -bottom-1.5 -left-1.5 rounded-full border bg-card px-1.5 text-xs font-bold">×{a.level}</span>
+        <span className="absolute -bottom-1 -left-1 rounded-full border bg-card px-1.5 text-xs font-bold">×{a.level}</span>
       ) : null}
     </span>
   );
@@ -242,7 +233,7 @@ export function AchievementGrid({ list }: { list: Achievement[] }) {
   const [open, setOpen] = useState<Achievement | null>(null);
   return (
     <>
-      <ul className="grid grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))] gap-4">
+      <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {list.map((a) => {
           const title = achievementTitle(a, t, lang);
           const badge = t(BADGE_NAME[badgeFor(a)]);
@@ -255,7 +246,7 @@ export function AchievementGrid({ list }: { list: Achievement[] }) {
                 onClick={() => setOpen(a)}
                 aria-label={achievementLabel(a, t, lang)}
                 aria-haspopup="dialog"
-                className="group flex h-full min-h-12 w-full flex-col items-center gap-2.5 rounded-2xl border bg-card p-3.5 text-center transition-colors outline-none hover:border-link hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring contrast:border-2 contrast:border-border"
+                className="group flex h-full min-h-12 w-full flex-col items-center gap-3 rounded-[24px] border bg-card p-5 text-center transition-colors outline-none hover:border-link focus-visible:ring-3 focus-visible:ring-ring contrast:border-2 contrast:border-border"
               >
                 <AchievementIcon achievement={a} />
                 <span aria-hidden className="flex min-h-10 w-full flex-col items-center justify-center gap-0.5">
@@ -283,7 +274,7 @@ export function AchievementGrid({ list }: { list: Achievement[] }) {
                       />
                     </span>
                     <span className="text-xs font-medium tabular-nums text-muted-foreground">
-                      {a.current}/{target}
+                      {a.current}/{target} · {t(`ach.unit.${a.kind}`)}
                     </span>
                   </span>
                 ) : (

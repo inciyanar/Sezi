@@ -89,7 +89,7 @@ export function WorksMapView({
         />
         <div className="grid gap-4" aria-live="polite">
           <div>
-            <h3 className="font-heading text-base font-bold">{t(lang, "works.map.selectedTitle")}</h3>
+            <h3 className="font-heading font-normal tracking-[-0.02em] text-base">{t(lang, "works.map.selectedTitle")}</h3>
             <p className="text-xs text-muted-foreground">{t(lang, "works.map.selectHint")}</p>
           </div>
           {activeWork ? <WorkCard work={activeWork} lang={lang} /> : null}

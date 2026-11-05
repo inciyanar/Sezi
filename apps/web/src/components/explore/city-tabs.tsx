@@ -14,10 +14,10 @@ export interface CityTab {
 }
 
 /**
- * İl seçimi (Tümü / Hatay / Konya / Bursa): tek zemin üstünde sekmeler, seçim dolgusu yeni sekmeye kayar
- * (Turlar'daki profil seçiciyle aynı dil). Sekme genişlikleri farklı olduğu için dolgunun yeri ve genişliği
- * ölçülür; yazı boyutu ya da pencere değişince yeniden ölçülür. Radyo grubu: oklarla gezilir.
- * Seçili sekme ayrıca kalın yazılır (renk tek başına değil); hareket azaltmada dolgu anında yer değiştirir.
+ * İl seçimi (Tümü / Hatay / Konya / Bursa): tek zemin üstünde sekmeler, seçim dolgusu yeni sekmenin yerini alır.
+ * Dolgu seçim geçişi sırasında kısa süre açık metni açık zeminde bırakmamak için animasyonsuzdur.
+ * Sekme genişlikleri farklı olduğu için dolgunun yeri ve genişliği ölçülür; yazı boyutu ya da pencere değişince
+ * yeniden ölçülür. Radyo grubu: oklarla gezilir. Seçili sekme ayrıca kalın yazılır (renk tek başına değil).
  */
 export function CityTabs({ tabs, value, onChange }: { tabs: CityTab[]; value: string; onChange: (value: string) => void }) {
   const { t, lang } = useT();
@@ -51,7 +51,7 @@ export function CityTabs({ tabs, value, onChange }: { tabs: CityTab[]; value: st
       {box ? (
         <span
           aria-hidden
-          className="absolute inset-y-0 left-0 rounded-lg bg-primary transition-[transform,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          className="absolute inset-y-0 left-0 rounded-lg bg-primary"
           style={{ width: box.width, transform: `translateX(${box.left}px)` }}
         />
       ) : null}

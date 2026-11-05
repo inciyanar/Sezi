@@ -141,7 +141,7 @@ export function LockedArt() {
   const t = useSweetTheme();
   return (
     <View style={s.art} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-      <View style={[s.circle, { width: 88, height: 88, borderRadius: 44, backgroundColor: t.soft, borderColor: t.soft }, outline(t)]}>
+      <View style={[s.circle, { width: 88, height: 88, borderRadius: 44, backgroundColor: t.soft, borderWidth: t.outlined ? 2 : 3, borderColor: t.outlined ? t.border : t.soft }]}>
         <LockIcon color={t.textMuted} size={36} />
       </View>
     </View>
@@ -199,6 +199,7 @@ const BADGE_NAME = {
   '12-arsiv-gozu': 'badge.12-arsiv-gozu.name',
   '13-ilk-kare': 'badge.13-ilk-kare.name',
   '14-yol-arkadasi': 'badge.14-yol-arkadasi.name',
+  '15-hos-geldin': 'badge.15-hos-geldin.name',
 } as const satisfies Record<BadgeId, MessageKey>;
 
 /** Statik require: Metro dinamik yolu çözemez. */
@@ -217,7 +218,26 @@ const BADGE_SOURCES: Record<BadgeId, number> = {
   '12-arsiv-gozu': require('../../assets/badges/12-arsiv-gozu.webp'),
   '13-ilk-kare': require('../../assets/badges/13-ilk-kare.webp'),
   '14-yol-arkadasi': require('../../assets/badges/14-yol-arkadasi.webp'),
+  '15-hos-geldin': require('../../assets/badges/15-hos-geldin.png'),
 };
+
+/** Damganın adı (çeviri anahtarı üzerinden). */
+export function badgeName(id: BadgeId, tr: Translate): string {
+  return tr(BADGE_NAME[id]);
+}
+
+/**
+ * Damga çizimi. Kilitliyken soluk; durum yanındaki yazıyla da söylenir (renk tek başına anlam taşımaz).
+ * Dekoratif: erişilebilir adı çevresindeki düğme ya da metin verir.
+ */
+export function BadgeArt({ id, size, locked = false }: { id: BadgeId; size: number; locked?: boolean }) {
+  // Soluklaştırma kapta yapılır: expo-image stilindeki opaklık her platformda uygulanmıyor.
+  return (
+    <View style={{ width: size, height: size, opacity: locked ? 0.35 : 1 }}>
+      <Image accessible={false} source={BADGE_SOURCES[id]} style={{ width: size, height: size }} contentFit="contain" />
+    </View>
+  );
+}
 
 export function achievementTitle(a: Achievement, tr: Translate, lang: Lang) {
   const badge = tr(BADGE_NAME[badgeFor(a)]);
@@ -473,7 +493,7 @@ const s = StyleSheet.create({
   circle: { alignItems: 'center', justifyContent: 'center', borderWidth: 3, overflow: 'hidden' },
   invite: { alignItems: 'center', gap: space.lg, paddingVertical: space.xl, paddingHorizontal: space.lg },
   strip: { flexDirection: 'row', gap: space.sm },
-  stat: { flex: 1, minWidth: 0, alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, padding: space.md, borderRadius: radius.md, borderCurve: 'continuous' },
+  stat: { flex: 1, minWidth: 0, alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, padding: space.md, borderRadius: radius.xl, borderCurve: 'continuous' },
   statValue: { fontFamily: type.screenTitle.fontFamily, fontSize: 26, lineHeight: 32 },
   tile: {
     flex: 1,
@@ -482,7 +502,7 @@ const s = StyleSheet.create({
     minHeight: 156,
     paddingVertical: space.md,
     paddingHorizontal: space.sm,
-    borderRadius: radius.md,
+    borderRadius: radius.xl,
     borderCurve: 'continuous',
   },
   tileTitleBox: {
@@ -498,7 +518,7 @@ const s = StyleSheet.create({
     gap: 4,
     paddingTop: 2,
   },
-  tileBox: { borderRadius: radius.lg, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  tileBox: { borderRadius: radius.xl, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   corner: {
     position: 'absolute',
     right: -4,
@@ -510,7 +530,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  levelPill: { position: 'absolute', left: -4, bottom: -4, paddingHorizontal: 6, borderRadius: 10, borderWidth: 1 },
+  levelPill: { position: 'absolute', left: -4, bottom: -4, paddingHorizontal: 6, borderRadius: radius.pill, borderWidth: 1 },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   dots: { position: 'absolute', top: 6, right: 6, flexDirection: 'row', gap: 4 },
   dot: { width: 26, height: 26, borderRadius: 13, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
@@ -522,7 +542,7 @@ const s = StyleSheet.create({
     minHeight: 76,
     paddingVertical: space.md,
     paddingHorizontal: space.xs,
-    borderRadius: radius.md,
+    borderRadius: radius.xl,
     borderCurve: 'continuous',
   },
   choiceStack: {
@@ -531,7 +551,7 @@ const s = StyleSheet.create({
     gap: space.md,
     minHeight: 60,
     paddingHorizontal: space.lg,
-    borderRadius: radius.md,
+    borderRadius: radius.xl,
     borderCurve: 'continuous',
   },
   choiceCheck: { position: 'absolute', top: 6, right: 6 },

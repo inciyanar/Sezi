@@ -61,9 +61,17 @@ describe("achievements", () => {
       contributions: EMPTY_CONTRIBUTIONS,
     });
     expect(list.map((item) => item.id)).toEqual([
-      "first_stamp", "stamps", "types", "cities", "walker", "complex:Çarşı", "complex:Şehir", "tour:c", "tour:s", "reporter", "photographer", "sharer", "companion",
+      "welcome", "first_stamp", "stamps", "types", "cities", "walker", "complex:Çarşı", "complex:Şehir", "tour:c", "tour:s", "reporter", "photographer", "sharer", "companion",
     ]);
     expect(list.every((item) => item.level === 0 && item.earnedAt === null)).toBe(true);
+  });
+
+  it("hoş geldin damgası yalnız kurulum tamamlanınca kazanılır; eski profilde tarihsiz", () => {
+    const base = { visits: [], works: [], tours: [], contributions: EMPTY_CONTRIBUTIONS };
+    const welcome = (input: Parameters<typeof achievements>[0]) => achievements(input).find((item) => item.kind === "welcome");
+    expect(welcome(base)).toMatchObject({ level: 0, earnedAt: null });
+    expect(welcome({ ...base, welcomedAt: "2026-11-05T10:00:00Z" })).toMatchObject({ level: 1, earnedAt: "2026-11-05T10:00:00Z" });
+    expect(welcome({ ...base, welcomedAt: null })).toMatchObject({ level: 1, earnedAt: null });
   });
 });
 

@@ -1,15 +1,15 @@
 import { askFailure, loc, searchAskWorks, type AskCitation, type AskFailure, type AskHistoryMessage, type SweetTheme, type WorkRow } from '@sezi/shared';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AccessibilityInfo, FlatList, KeyboardAvoidingView, Linking, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Text } from '@/components/text';
 import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useTabBarSpace } from '@/components/app-tabs';
 import { ScreenHeader } from '@/components/screen-header';
 import { Button, Eyebrow, Note } from '@/components/ui';
-import { ChatIcon, ChevronIcon, InfoIcon, PlayIcon, PlusIcon, StopIcon, TurnIcon } from '@/design/icons';
+import { ChevronIcon, InfoIcon, PlayIcon, PlusIcon, StopIcon, TurnIcon } from '@/design/icons';
 import { FadeInItem, IconBubble, outline, SoftPressable, SweetSheet } from '@/design/sweet/components';
 import { duration, ease, stagger } from '@/design/sweet/motion';
 import { radius, space, type } from '@/design/type';
@@ -43,7 +43,7 @@ export default function Ask() {
   const { settings } = useSettings();
   const { profile } = useProfile();
   const canHear = profile?.hearing !== 'deaf';
-  const tabSpace = useTabBarSpace();
+  const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [sheet, setSheet] = useState<'privacy' | 'reset' | null>(null);
@@ -154,7 +154,9 @@ export default function Ask() {
 
   const header = (
     <View style={s.welcome}>
-      <View style={[s.welcomeMark, outline(t)]}><ChatIcon color={t.primary.ink} size={32} /></View>
+      <View style={[s.welcomeMark, outline(t)]}>
+        <Image source={require('../../assets/images/sezi-cat.webp')} style={s.welcomeCat} contentFit="contain" accessible={false} />
+      </View>
       <Text accessibilityRole="header" style={[type.editorial, { color: t.text }]}>{tr('ask.welcome')}</Text>
       <Text style={[type.body, { color: t.textMuted }]}>{tr('ask.welcomeBody')}</Text>
       <View style={s.suggestions}>
@@ -177,7 +179,7 @@ export default function Ask() {
   return (
     <SafeAreaView style={s.screen} edges={['top']}>
       <View style={s.topBar}>
-        <ScreenHeader title={tr('ask.title')} action={
+        <ScreenHeader title={tr('ask.title')} onBack={() => router.back()} action={
           <View style={{ flexDirection: 'row', gap: space.xs }}>
             {/* Boş ekranda "Nasıl çalışır?" yazı alanının üstünde; sohbet başlayınca yalnız buradan açılır. */}
             {messages.length > 0 ? <IconBubble label={tr('ask.howTitle')} icon={c => <InfoIcon color={c} />} onPress={() => setSheet('privacy')} /> : null}
@@ -206,8 +208,8 @@ export default function Ask() {
           renderItem={({ item }) => <MessageReveal id={item.id} eligible={item.id >= nextId.current - 2} animatedIds={animatedIds.current}>{item.role === 'user' ? <UserBubble text={item.text} t={t} label={tr('ask.you')} /> : SeziAnswer({ msg: item, t })}</MessageReveal>}
         />
         {awayFromBottom && messages.length > 0 ? <Button compact label={tr('ask.latest')} variant="secondary" style={{ alignSelf: 'center', marginVertical: space.xs }} onPress={() => { followBottom.current = true; setAwayFromBottom(false); listRef.current?.scrollToEnd({ animated: !reducedMotion }); }} /> : null}
-        {/* Yazı alanı yüzen sekme çubuğunun üstünde durur; klavye açıkken çubuk gizli, boşluk küçülür. */}
-        <View style={{ marginBottom: Math.max(0, tabSpace - space.lg) }}>
+        {/* Yazı alanı alttaki güvenli alanın üstünde durur. */}
+        <View style={{ marginBottom: insets.bottom }}>
         {messages.length === 0 ? <SoftPressable accessibilityRole="button" accessibilityLabel={tr('ask.privacyShort')} onPress={() => setSheet('privacy')} style={s.privacyLink}>
           <InfoIcon color={t.textMuted} size={16} /><Text style={[type.meta, { color: t.textMuted, flexShrink: 1 }]}>{tr('ask.privacyShort')}</Text>
         </SoftPressable> : null}
@@ -369,16 +371,17 @@ const makeStyles = (t: SweetTheme) =>
     screen: { flex: 1, backgroundColor: t.background },
     topBar: { paddingHorizontal: space.xl, paddingBottom: space.sm },
     welcome: { gap: space.md, paddingTop: space.md, paddingBottom: space.lg },
-    welcomeMark: { width: 48, height: 48, borderRadius: radius.md, backgroundColor: t.primary.fill, alignItems: 'center', justifyContent: 'center', marginBottom: space.sm },
-    suggestion: { flexDirection: 'row', alignItems: 'center', gap: space.md, backgroundColor: t.surface, borderRadius: radius.lg, padding: space.lg, minHeight: 88 },
+    welcomeMark: { width: 56, height: 48, borderRadius: radius.md, backgroundColor: t.soft, alignItems: 'center', justifyContent: 'center', marginBottom: space.sm, overflow: 'hidden' },
+    welcomeCat: { width: 62, height: 48 },
+    suggestion: { flexDirection: 'row', alignItems: 'center', gap: space.md, backgroundColor: t.surface, borderRadius: radius.xl, padding: space.lg, minHeight: 88 },
     privacyLink: { minHeight: 48, paddingHorizontal: space.xl, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm },
-    sourceCard: { padding: space.lg, gap: space.sm, backgroundColor: t.soft, borderRadius: radius.md },
+    sourceCard: { padding: space.lg, gap: space.sm, backgroundColor: t.soft, borderRadius: radius.xl },
     list: { paddingHorizontal: space.xl, paddingBottom: space.lg, gap: space.lg },
     suggestions: { gap: space.md, paddingTop: space.sm },
     answer: {
       gap: space.sm,
       padding: space.lg,
-      borderRadius: radius.lg,
+      borderRadius: radius.xl,
       borderBottomLeftRadius: radius.sm,
       borderCurve: 'continuous',
       backgroundColor: t.surface,
@@ -419,7 +422,7 @@ const makeStyles = (t: SweetTheme) =>
     sendBtn: {
       width: 54,
       height: 54,
-      borderRadius: radius.md,
+      borderRadius: radius.pill,
       borderCurve: 'continuous',
       backgroundColor: t.primary.fill,
       alignItems: 'center',

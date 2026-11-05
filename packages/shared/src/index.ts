@@ -29,3 +29,4 @@ export * from "./ask-conversation";
 export * from "./verbatim";
 export * from "./passport";
 export * from "./achievements";
+export * from "./accent";

@@ -258,8 +258,8 @@ const styles = StyleSheet.create({
   rule: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 24 },
   dot: { width: 14, height: 14, borderRadius: 7, borderWidth: 2, marginHorizontal: 2 },
   codeRow: { flexDirection: 'row', gap: space.sm },
-  codeBox: { flex: 1, height: 60, borderRadius: radius.md, borderCurve: 'continuous', borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  formError: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg, borderRadius: radius.md, borderCurve: 'continuous', borderWidth: 2 },
+  codeBox: { flex: 1, height: 60, borderRadius: radius.xl, borderCurve: 'continuous', borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  formError: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg, borderRadius: radius.xl, borderCurve: 'continuous', borderWidth: 2 },
   // Görünmez ama dokunulabilir ve odaklanabilir (Android otomatik doldurma görünür alan ister).
   codeInput: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.02, color: 'transparent' },
 });

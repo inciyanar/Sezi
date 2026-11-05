@@ -33,7 +33,7 @@ export function ChoiceGroup<V extends string>({
   const id = useId();
   return (
     <div className={cn("grid gap-2", className)}>
-      <p id={`${id}-legend`} className={cn("font-heading text-sm font-bold", legendHidden && "sr-only")}>
+      <p id={`${id}-legend`} className={cn("font-bold text-sm", legendHidden && "sr-only")}>
         {legend}
       </p>
       <RadioGroup

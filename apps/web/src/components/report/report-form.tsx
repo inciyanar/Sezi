@@ -9,7 +9,7 @@ import { ChoiceGroup, type Choice } from "@/components/choice-group";
 import { PlacePicker } from "@/components/route/place-picker";
 import { SeziMap, type MapMarker } from "@/components/map";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "@/components/ui/tag";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { NavOverlay } from "@/lib/data";
@@ -251,7 +251,7 @@ export function ReportForm({
         <div className="flex items-start gap-3">
           <CheckCircle2 aria-hidden="true" className="mt-0.5 size-6 shrink-0 text-primary" />
           <div className="grid gap-1">
-            <h2 className="font-heading text-xl font-extrabold">{t("report.sent")}</h2>
+            <h2 className="font-heading font-normal tracking-[-0.02em] text-xl">{t("report.sent")}</h2>
             <p className="text-sm text-muted-foreground">{t("report.sentBody")}</p>
           </div>
         </div>
@@ -269,7 +269,7 @@ export function ReportForm({
       {/* Adım 1: Konum (Where) */}
       <section aria-labelledby="step-where-heading" className="grid gap-3">
         <div className="flex items-baseline justify-between gap-2">
-          <h2 id="step-where-heading" className="font-heading text-base font-bold text-foreground">
+          <h2 id="step-where-heading" className="font-heading font-normal tracking-[-0.02em] text-base text-foreground">
             1. {t("report.where")}
           </h2>
           {segmentKey ? (
@@ -308,7 +308,7 @@ export function ReportForm({
 
         {segmentKey ? (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Badge variant="outline">{t("report.segmentLabel", { segment: segmentKey })}</Badge>
+            <Tag tone="line">{t("report.segmentLabel", { segment: segmentKey })}</Tag>
           </div>
         ) : null}
 
@@ -322,7 +322,7 @@ export function ReportForm({
 
       {/* Adım 2: Engel Türü (What) */}
       <section aria-labelledby="step-what-heading" className="grid gap-3 border-t pt-6">
-        <h2 id="step-what-heading" className="font-heading text-base font-bold text-foreground">
+        <h2 id="step-what-heading" className="font-heading font-normal tracking-[-0.02em] text-base text-foreground">
           2. {t("report.type")}
         </h2>
         <ChoiceGroup
@@ -340,7 +340,7 @@ export function ReportForm({
       {/* Adım 3: Açıklama (Note) */}
       <section aria-labelledby="step-note-heading" className="grid gap-3 border-t pt-6">
         <div className="flex items-center justify-between gap-2">
-          <h2 id="step-note-heading" className="font-heading text-base font-bold text-foreground">
+          <h2 id="step-note-heading" className="font-heading font-normal tracking-[-0.02em] text-base text-foreground">
             3. {t("report.note")}
           </h2>
           <span className="text-xs text-muted-foreground num" aria-live="off">

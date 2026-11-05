@@ -149,7 +149,7 @@ function NewPhoto() {
                     <span aria-hidden className="grid size-16 place-items-center rounded-full bg-highlight text-highlight-foreground">
                       <ImagePlus className="size-8" />
                     </span>
-                    <span className="font-heading font-bold">{t("photos.file")}</span>
+                    <span className="font-bold">{t("photos.file")}</span>
                   </span>
                 )}
                 <input

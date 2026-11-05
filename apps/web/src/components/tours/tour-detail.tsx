@@ -24,7 +24,8 @@ import {
   resolveUserProfile,
   type ProfileChoice,
 } from "@/components/route/profile-select";
-import { Badge } from "@/components/ui/badge";
+import { TourStampGoal } from "@/components/tours/tour-stamp-goal";
+import { Tag } from "@/components/ui/tag";
 import { Button } from "@/components/ui/button";
 import { WorkThumb } from "@/components/work-thumb";
 import type { NavOverlay, WorkListItem } from "@/lib/data";
@@ -194,10 +195,10 @@ export function TourDetail({
           {/* 2. Rota özeti tek satır */}
           <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-4">
             <div className="flex flex-wrap items-center gap-2 num text-xs text-muted-foreground">
-              <Badge variant="secondary">
+              <Tag tone="neutral">
                 <MapPinIcon className="size-3" aria-hidden />
                 {t("tours.stops", { n: plan.stops.length })}
-              </Badge>
+              </Tag>
               <span>·</span>
               <span>{formatDistance(plan.lengthM, lang)}</span>
               <span>·</span>
@@ -205,12 +206,12 @@ export function TourDetail({
               {plan.stairs === 0 ? (
                 <>
                   <span aria-hidden>·</span>
-                  <Badge variant="success">{t("tours.stepFree")}</Badge>
+                  <Tag tone="ok">{t("tours.stepFree")}</Tag>
                 </>
               ) : (
                 <>
                   <span aria-hidden>·</span>
-                  <Badge variant="warning">{t("tours.stairs", { n: plan.stairs })}</Badge>
+                  <Tag tone="warn">{t("tours.stairs", { n: plan.stairs })}</Tag>
                 </>
               )}
             </div>
@@ -229,9 +230,11 @@ export function TourDetail({
             ) : null}
           </div>
 
+          <TourStampGoal tourSlug={tour.slug} />
+
           {/* 3. Numaralı durak listesi */}
           <section aria-label={t("tours.stopsTitle")} className="flex flex-col gap-3">
-            <h2 className="font-heading text-lg font-bold text-foreground">
+            <h2 className="font-heading font-normal tracking-[-0.02em] text-lg text-foreground">
               {t("tours.stopsTitle")}
             </h2>
             <div role="group" aria-label={t("route.legSelect")} className="flex flex-wrap gap-2">
@@ -262,7 +265,7 @@ export function TourDetail({
                   >
                     <div className="flex items-center gap-3">
                       <span
-                        className="num inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-primary font-heading text-xs font-bold text-primary-foreground"
+                        className="num inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-primary font-heading font-normal tracking-[-0.02em] text-xs text-primary-foreground"
                         aria-hidden
                       >
                         {leg.index}
@@ -278,7 +281,7 @@ export function TourDetail({
                       <div className="grid gap-0.5">
                         <Link
                           href={workUrl}
-                          className="font-heading text-base font-bold text-foreground hover:underline"
+                          className="font-heading font-normal tracking-[-0.02em] text-base text-foreground hover:underline"
                         >
                           {name}
                         </Link>
@@ -289,9 +292,9 @@ export function TourDetail({
                           {leg.stop.legStairs === 0 ? (
                             <>
                               <span aria-hidden>·</span>
-                              <Badge variant="success" className="text-[10px] py-0">
+                              <Tag tone="ok" className="py-0">
                                 {t("tours.stepFree")}
-                              </Badge>
+                              </Tag>
                             </>
                           ) : null}
                         </div>

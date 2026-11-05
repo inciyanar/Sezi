@@ -57,7 +57,7 @@ export function ExhibitionCard({ exhibition: e }: { exhibition: ExhibitionRow })
 }
 
 const styles = StyleSheet.create({
-  card: { gap: space.sm, padding: space.lg, borderRadius: radius.lg, borderCurve: 'continuous' },
+  card: { gap: space.sm, padding: space.lg, borderRadius: radius.xl, borderCurve: 'continuous' },
   head: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },
   link: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: space.xs },
 });

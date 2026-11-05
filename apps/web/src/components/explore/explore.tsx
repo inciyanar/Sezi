@@ -1,9 +1,8 @@
 "use client";
 
 import { loc } from "@sezi/shared";
-import { CheckIcon, ListIcon, MapIcon, RouteIcon } from "lucide-react";
-import Link from "next/link";
-import { useDeferredValue, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { CheckIcon, ListIcon, MapIcon } from "lucide-react";
+import { useDeferredValue, useEffect, useMemo, useState, useSyncExternalStore, type CSSProperties } from "react";
 
 import { CityMap } from "@/components/explore/city-map";
 import { FilterSelect, type FilterOption } from "@/components/explore/filter-select";
@@ -13,12 +12,32 @@ import { Button } from "@/components/ui/button";
 import { WorkCard } from "@/components/works/work-card";
 import { WorksMapView } from "@/components/works/works-map-view";
 import { applyFilters, EMPTY_FILTERS, filtersToQuery, hasActiveFilters, parseFilters, type ExploreFilters, type ExploreItem } from "@/lib/explore";
-import { formatNumber, href } from "@/lib/i18n";
+import { formatNumber } from "@/lib/i18n";
 import { useT } from "@/lib/i18n-client";
 import type { TurkeyMapData } from "@/lib/turkey-map";
 import { cn } from "@/lib/utils";
 
 const PAGE = 24;
+
+type BentoStyle = CSSProperties & Record<"--bento-sm-col" | "--bento-sm-row" | "--bento-lg-col" | "--bento-lg-row", string>;
+
+/** Her beşlinin vitrini masaüstü ve tablette sırayla sola / sağa geçer; satırlar açıkça verilir, yoğun akış yok. */
+function bentoStyle(index: number, total: number): BentoStyle {
+  const group = Math.floor(index / 5);
+  const slot = index % 5;
+  const lead = slot === 0;
+  const reverse = group % 2 === 1;
+  const smRow = group * 3 + 1 + (lead ? 0 : slot >= 3 ? 2 : slot - 1);
+  const lgRow = group * 2 + 1 + (lead ? 0 : slot >= 3 ? 1 : 0);
+  const smCol = lead ? (reverse ? 2 : 1) : slot <= 2 ? (reverse ? 1 : 3) : reverse ? slot - 1 : slot - 2;
+  const lgCol = lead ? (total === 1 ? 2 : reverse ? 3 : 1) : reverse ? (slot % 2 === 1 ? 1 : 2) : slot % 2 === 1 ? 3 : 4;
+  return {
+    "--bento-sm-col": lead ? `${smCol} / span 2` : `${smCol}`,
+    "--bento-sm-row": lead ? `${smRow} / span 2` : `${smRow}`,
+    "--bento-lg-col": lead ? `${lgCol} / span 2` : `${lgCol}`,
+    "--bento-lg-row": lead ? `${lgRow} / span 2` : `${lgRow}`,
+  };
+}
 
 // Adres çubuğundaki filtreler: sunucu çiziminde boş (sayfa ISR ile önbellekte kalır), tarayıcıda adresten okunur.
 const listeners = new Set<() => void>();
@@ -45,11 +64,11 @@ const chipOff = "bg-secondary font-semibold text-secondary-foreground hover:bg-m
 const chipOn = "bg-primary font-bold text-primary-foreground";
 
 /**
- * Ana sayfa keşfi: üstte başlık + arama kutusu, yanında il seçen büyük noktalı Türkiye haritası; altında il sekmeleri
+ * Eser keşfi: üstte başlık + arama kutusu, yanında il seçen büyük noktalı Türkiye haritası; altında il sekmeleri
  * (kayan seçim dolgusu), tür / ilçe seçimi, fotoğraflı / kesin konum anahtarları ve sonuçlar.
  * Süzme yazarken anında (form gönderme yok); sonuçlar 24'erli açılır, harita görünümü aynı süzülmüş listeyi gösterir.
  */
-export function Explore({ title, items, cityOrder, map }: { title: string; items: ExploreItem[]; cityOrder: string[]; map: TurkeyMapData }) {
+export function Explore({ items, cityOrder, map }: { items: ExploreItem[]; cityOrder: string[]; map: TurkeyMapData }) {
   const { t, lang } = useT();
   const search = useSyncExternalStore(subscribe, readSearch, () => "");
   const filters = useMemo(() => (search ? parseFilters(search) : EMPTY_FILTERS), [search]);
@@ -137,7 +156,6 @@ export function Explore({ title, items, cityOrder, map }: { title: string; items
     <div className="grid gap-6">
       <div className="grid items-center gap-x-10 gap-y-6 lg:grid-cols-2">
         <div className="grid gap-5">
-          <h1 className="text-3xl font-extrabold tracking-tight text-balance sm:text-5xl">{title}</h1>
           <SearchField
             value={q}
             onChange={(v) => {
@@ -154,8 +172,10 @@ export function Explore({ title, items, cityOrder, map }: { title: string; items
         <CityMap data={map} cities={cities} value={filters.il} onChange={(il) => set({ il })} />
       </div>
 
-      <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
-        <CityTabs tabs={[{ value: "", label: t("works.filter.cityAll"), count: items.length }, ...cities]} value={filters.il} onChange={(il) => set({ il })} />
+      <div className="-mx-4 flex min-w-0 flex-wrap items-center gap-2 px-4 pb-1 sm:mx-0 sm:px-0">
+        <div className="max-w-full overflow-x-auto [scrollbar-width:none]">
+          <CityTabs tabs={[{ value: "", label: t("works.filter.cityAll"), count: items.length }, ...cities]} value={filters.il} onChange={(il) => set({ il })} />
+        </div>
         <span className="mx-1 hidden h-6 w-px bg-border sm:block" aria-hidden />
         <FilterSelect label={t("works.filter.typeLabel")} allLabel={t("works.filter.typeAll")} value={filters.tur} options={types} onChange={(v) => set({ tur: v })} searchable />
         {filters.il ? (
@@ -213,23 +233,9 @@ export function Explore({ title, items, cityOrder, map }: { title: string; items
         </div>
       </div>
 
-      {!anyFilter && !filters.harita ? (
-        <Link
-          href={href(lang, "/rota")}
-          className="flex min-h-14 items-center gap-4 rounded-lg bg-highlight px-5 py-3 text-highlight-foreground hover:brightness-[0.98] contrast:outline-2 contrast:outline-border"
-        >
-          <RouteIcon className="size-6 shrink-0" aria-hidden />
-          <span className="grid flex-1 leading-tight">
-            <span className="font-heading font-extrabold">{t("home.routeTitle")}</span>
-            <span className="text-sm">{t("home.routeBody")}</span>
-          </span>
-          <span className="hidden font-heading text-sm font-bold underline sm:inline">{t("home.routeCta")}</span>
-        </Link>
-      ) : null}
-
       {results.length === 0 ? (
         <div role="status" className="grid justify-items-start gap-2 rounded-lg bg-secondary p-6">
-          <p className="font-heading font-bold">{t("works.results.emptyTitle")}</p>
+          <p className="font-heading font-normal tracking-[-0.02em]">{t("works.results.emptyTitle")}</p>
           <Button
             variant="outline"
             onClick={() => {
@@ -244,12 +250,24 @@ export function Explore({ title, items, cityOrder, map }: { title: string; items
         <WorksMapView works={results} lang={lang} />
       ) : (
         <>
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
-            {results.slice(0, shown).map((w, i) => (
-              <li key={w.slug}>
-                <WorkCard work={w} lang={lang} priority={i < 4} />
-              </li>
-            ))}
+          {/* Beş kartlık kapalı bento ritmi: 2×2 vitrin + dört eş karo. Yoğun akış yok;
+              DOM, klavye ve görsel okuma sırası aynı kalır. */}
+          <ul className="grid auto-rows-[10rem] grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:auto-rows-[11rem] lg:grid-cols-4">
+            {results.slice(0, shown).map((w, i) => {
+              const lead = i % 5 === 0;
+              return (
+                <li
+                  key={w.slug}
+                  className={cn(
+                    "min-w-0 sm:[grid-column:var(--bento-sm-col)] sm:[grid-row:var(--bento-sm-row)] lg:[grid-column:var(--bento-lg-col)] lg:[grid-row:var(--bento-lg-row)]",
+                    lead && "col-span-2 row-span-2",
+                  )}
+                  style={bentoStyle(i, results.length)}
+                >
+                  <WorkCard work={w} lang={lang} priority={i < 5} variant={lead ? "bentoLead" : "bento"} />
+                </li>
+              );
+            })}
           </ul>
           {results.length > shown ? (
             <div className="flex justify-center">

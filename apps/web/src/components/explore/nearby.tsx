@@ -62,7 +62,7 @@ export function Nearby({ items }: { items: ExploreItem[] }) {
 
   return (
     <section aria-labelledby="nearby-title" className="grid min-w-0 content-start gap-3">
-      <h2 id="nearby-title" className="font-heading text-xl font-extrabold">
+      <h2 id="nearby-title" className="font-heading font-normal tracking-[-0.02em] text-xl">
         {t("home.nearTitle")}
       </h2>
 
@@ -75,7 +75,7 @@ export function Nearby({ items }: { items: ExploreItem[] }) {
               <Link key={work.slug} href={href(lang, `/eser/${work.slug}`)} className="group grid gap-2 rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background">
                 <WorkThumb photo={cover} typeSlug={work.type_slug} alt={cover ? loc(cover.alt, lang) || name : ""} sizes="208px" className="aspect-[4/3] w-full rounded-lg contrast:outline-2 contrast:outline-border" sourceTag />
                 <span className="grid gap-0.5 px-0.5">
-                  <span className="line-clamp-2 font-heading text-sm font-bold leading-snug group-hover:underline">{name}</span>
+                  <span className="line-clamp-2 font-heading font-normal tracking-[-0.02em] text-sm leading-snug group-hover:underline">{name}</span>
                   <span className="num text-sm text-muted-foreground">{t("home.nearDistance", { d: formatDistance(m, lang) })}</span>
                 </span>
               </Link>

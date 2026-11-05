@@ -5,7 +5,7 @@ import {
   type UserPhoto,
   type Visibility,
 } from '@sezi/shared';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { z } from 'zod';
 
@@ -72,6 +72,59 @@ export function useWorkCommunityPhotos(slug: string) {
   });
 }
 
+export type FeedScope = 'all' | 'friends';
+
+/** Herkese açık onaylı fotoğraflar veya kabul edilmiş arkadaşların görünür fotoğrafları. */
+export function usePublicFeed(scope: FeedScope) {
+  const { user } = useAccount();
+  return useInfiniteQuery({
+    queryKey: ['photos', 'feed', scope, user?.id ?? 'guest'],
+    enabled: scope === 'all' || !!user,
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }) => {
+      let friendIds: string[] = [];
+      if (scope === 'friends' && user) {
+        const { data, error } = await supabase.from('friendships').select('requester, addressee').eq('status', 'accepted').or(`requester.eq.${user.id},addressee.eq.${user.id}`);
+        if (error) throw error;
+        friendIds = (data ?? []).map((row) => row.requester === user.id ? row.addressee : row.requester);
+        if (!friendIds.length) return [];
+      }
+      let query = supabase.from('user_photos').select('*');
+      query = scope === 'friends'
+        ? query.in('user_id', friendIds).in('visibility', ['public', 'friends'])
+        : query.eq('visibility', 'public').eq('review', 'approved');
+      const { data, error } = await query.order('created_at', { ascending: false }).order('id', { ascending: false }).range(pageParam, pageParam + 19);
+      if (error) throw error;
+      return Photos.parse(data);
+    },
+    getNextPageParam: (last, pages) => last.length === 20 ? pages.length * 20 : undefined,
+  });
+}
+
+export interface FeedAuthor {
+  user_id: string;
+  display_name: string | null;
+  username: string | null;
+}
+
+/**
+ * Akıştaki fotoğrafların yazarları: yalnız profili herkese açık olanlar (RLS ne verirse). Girişsiz okunmaz;
+ * adı gelmeyen yazar ekranda "Sezi gezgini" olarak yazılır.
+ */
+export function useFeedAuthors(userIds: string[]) {
+  const { user } = useAccount();
+  const ids = [...new Set(userIds)].sort();
+  return useQuery({
+    queryKey: ['feed-authors', user?.id ?? 'guest', ids],
+    enabled: !!user && ids.length > 0,
+    queryFn: async (): Promise<Map<string, FeedAuthor>> => {
+      const { data, error } = await supabase.from('profiles').select('user_id, display_name, username, visibility').in('user_id', ids);
+      if (error) throw error;
+      return new Map((data ?? []).filter((p) => p.visibility === 'public').map((p) => [p.user_id, p]));
+    },
+  });
+}
+
 export function usePhoto(id: string) {
   const { user } = useAccount();
   return useQuery({
@@ -98,7 +151,6 @@ export function usePhotoUrls(paths: string[]) {
       if (error) throw error;
       const urls: Record<string, string> = {};
       for (const row of data ?? []) {
-        if (row.error) throw new Error(row.error);
         if (row.path && row.signedUrl) urls[row.path] = row.signedUrl;
       }
       return urls;

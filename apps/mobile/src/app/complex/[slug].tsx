@@ -115,7 +115,7 @@ const makeStyles = (t: SweetTheme) =>
     body: { padding: space.xl, gap: space.xl, paddingBottom: 56 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: t.background },
     hero: { flexDirection: 'row', gap: space.lg, alignItems: 'center' },
-    map: { height: 240, borderRadius: radius.lg, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: t.soft },
+    map: { height: 240, borderRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: t.soft },
     groupHead: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
     groupDot: { width: 10, height: 10, borderRadius: 5 },
     glyphBox: { width: 40, height: 40, borderRadius: radius.sm, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center' },

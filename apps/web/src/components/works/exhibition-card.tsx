@@ -1,6 +1,6 @@
 import { loc, type ExhibitionRow } from "@sezi/shared";
 
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "@/components/ui/tag";
 import { formatDate, t, type Lang } from "@/lib/i18n";
 
 /** Sergi kartı: başlık, mekân, tarih aralığı, "Sürüyor" rozeti. */
@@ -31,14 +31,14 @@ export function ExhibitionCard({ exhibition, lang }: { exhibition: ExhibitionRow
               href={exhibition.source_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-heading text-base font-bold text-foreground hover:underline"
+              className="font-heading font-normal tracking-[-0.02em] text-base text-foreground hover:underline"
             >
               {title}
             </a>
           ) : (
-            <h2 className="font-heading text-base font-bold text-foreground">{title}</h2>
+            <h2 className="font-heading font-normal tracking-[-0.02em] text-base text-foreground">{title}</h2>
           )}
-          {ongoing ? <Badge variant="success">{t(lang, "works.exhibitions.ongoing")}</Badge> : null}
+          {ongoing ? <Tag tone="ok">{t(lang, "works.exhibitions.ongoing")}</Tag> : null}
         </div>
         <p className="text-sm text-muted-foreground">{venue}</p>
       </div>

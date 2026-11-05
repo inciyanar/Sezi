@@ -20,7 +20,7 @@ import { photoUrl } from '@/lib/works';
 
 /** Fotoğrafın koyu örtüsünde okunacak açık tema rengi. */
 export function photoOverlayInk(t: SweetTheme): string {
-  return t.text === t.shadow ? t.surface : t.text;
+  return t.onPhoto.text;
 }
 
 export interface PhotoScrimProps { height?: DimensionValue }
@@ -34,9 +34,27 @@ export function PhotoScrim({ height = '60%' }: PhotoScrimProps) {
     <View pointerEvents="none" accessible={false} style={[s.scrim, { height }]}>
       <Svg width="100%" height="100%" accessible={false}>
         <Defs><LinearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={t.shadow} stopOpacity={0} />
-          <Stop offset="0.45" stopColor={t.shadow} stopOpacity={0.7} />
-          <Stop offset="1" stopColor={t.shadow} stopOpacity={0.97} />
+          <Stop offset="0" stopColor={t.glass.dark.tint} stopOpacity={0} />
+          <Stop offset="0.45" stopColor={t.glass.dark.tint} stopOpacity={0.8} />
+          <Stop offset="1" stopColor={t.glass.dark.tint} stopOpacity={0.97} />
+        </LinearGradient></Defs>
+        <Rect width="100%" height="100%" fill={`url(#${id})`} />
+      </Svg>
+    </View>
+  );
+}
+
+/** Üst köşedeki etiketlerin açık fotoğrafta da seçilmesini sağlar. */
+function PhotoTopScrim() {
+  const t = useSweetTheme();
+  const id = useId();
+  if (t.outlined) return null;
+  return (
+    <View pointerEvents="none" accessible={false} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 88 }}>
+      <Svg width="100%" height="100%" accessible={false}>
+        <Defs><LinearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={t.glass.dark.tint} stopOpacity={0.8} />
+          <Stop offset="1" stopColor={t.glass.dark.tint} stopOpacity={0} />
         </LinearGradient></Defs>
         <Rect width="100%" height="100%" fill={`url(#${id})`} />
       </Svg>
@@ -90,7 +108,7 @@ export function PhotoCard(props: PhotoCardProps) {
         {photo ? <Image source={{ uri: photoUrl(photo, width < 240 ? 'thumb' : 'full') }} placeholder={width < 240 ? undefined : { uri: photoUrl(photo, 'thumb') }} placeholderContentFit="cover" style={StyleSheet.absoluteFill} contentFit="cover" transition={duration.fade} accessible={false} /> : (
           <View style={s.glyph}><WorkGlyphInline slug={slug} color={tone.ink} size={56} /></View>
         )}
-        {photo ? <PhotoScrim height="75%" /> : null}
+        {photo ? <><PhotoScrim height="75%" /><PhotoTopScrim /></> : null}
         {work?.unesco ? (
           <View style={[s.star, { backgroundColor: t.accent.fill }]} accessible={false}>
             <StarIcon color={t.accent.ink} size={15} />
@@ -128,11 +146,11 @@ export function WorkPreviewSheet({ work, onClose, onOpen }: { work: WorkRow | nu
 }
 
 const s = StyleSheet.create({
-  card: { minHeight: 48, borderRadius: radius.lg, borderCurve: 'continuous', overflow: 'hidden' },
+  card: { minHeight: 48, borderRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden' },
   glyph: { position: 'absolute', top: '14%', left: 0, right: 0, alignItems: 'center' },
   scrim: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   caption: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: space.md, gap: space.xs },
-  kind: { alignSelf: 'flex-start', maxWidth: '100%', flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingHorizontal: space.sm, paddingVertical: space.xs, borderRadius: radius.sm },
+  kind: { alignSelf: 'flex-start', maxWidth: '100%', flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingHorizontal: space.sm, paddingVertical: space.xs, borderRadius: radius.pill },
   preview: { paddingHorizontal: space.xl, paddingBottom: space.lg, gap: space.md },
   star: { position: 'absolute', top: space.sm, left: space.sm, width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
 });

@@ -26,8 +26,8 @@ export type Turn = {
 };
 
 const HINT_KEY = "sezi.web.cat.hint";
-/** Kedi yalnız soru sorulabilecek sayfalarda: rota haritası ve hesap formlarında köşeyi kapatmaz. */
-const HIDDEN = /^\/(?:tr|en)\/(?:rota|hesap)(?:\/|$)/;
+/** Kedi yalnız soru sorulabilecek sayfalarda: rota, hesap formları ve yoğun eser bento ızgarasında içeriği kapatmaz. */
+const HIDDEN = /^\/(?:tr|en)\/(?:rota|hesap|eserler)(?:\/|$)/;
 const WORK = /^\/(?:tr|en)\/eser\/([a-z0-9-]+)/;
 /** Oturan kedinin karedeki yeri (288 x 224 hücrede): düğme yalnız kedinin üstünü kaplar. */
 const HIT = { x: 68, y: 45, width: 140, height: 155 };
@@ -63,7 +63,7 @@ function Cat({ workSlug }: { workSlug: string | null }) {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const wide = matchMedia("(min-width: 1024px)");
+    const wide = matchMedia("(min-width: 1200px)");
     const size = () => {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       canvas.width = Math.round(canvas.clientWidth * dpr);
@@ -154,11 +154,10 @@ function Cat({ workSlug }: { workSlug: string | null }) {
 
   return (
     <Popover open={open} onOpenChange={toggle}>
-      {/* Sahne: kedinin karesi (288 x 224 oranında); boş yerleri tıklamayı geçirir. Karenin sağ ucu (x 246: kalkış
-          kuyruğu, sevilme kalpleri) ekranın içinde kalır: masaüstünde 12, telefonda 8 px. */}
+      {/* Sahne ekranın içinde kalır; dar ekranda alt gezinmenin üstündedir. */}
       <PopoverPrimitive.Anchor asChild>
         <div
-          className="pointer-events-none fixed right-[-1rem] bottom-[calc(4.25rem+env(safe-area-inset-bottom)-0.5rem)] z-40 w-[10.5rem] print:hidden lg:right-[-1.25rem] lg:bottom-[-0.5rem] lg:w-[13.5rem]"
+          className="pointer-events-none fixed right-0 bottom-[calc(5.5rem+env(safe-area-inset-bottom)-0.5rem)] z-40 w-[10.5rem] print:hidden min-[1200px]:bottom-0 min-[1200px]:w-[13.5rem]"
           style={{ aspectRatio: `${CELL_W} / ${CELL_H}` }}
         >
           {hint ? (
@@ -211,7 +210,7 @@ function Cat({ workSlug }: { workSlug: string | null }) {
           e.preventDefault();
         }}
         // Kediden (köşeden) büyüyerek açılır: 200 ms açılış, kapanış daha kısa (150 ms).
-        className="w-[min(24rem,calc(100vw-1.5rem))] gap-0 overflow-hidden rounded-2xl p-0 text-base shadow-lg duration-200 data-closed:duration-150 contrast:shadow-none contrast:ring-2 contrast:ring-foreground"
+        className="w-[min(27rem,calc(100vw-1.5rem))] gap-0 overflow-hidden rounded-[28px] bg-background p-0 text-base shadow-lg duration-200 data-closed:duration-150 contrast:shadow-none contrast:ring-2 contrast:ring-foreground"
       >
         <AskPanel
           turns={turns}

@@ -75,7 +75,7 @@ export function StepList({ steps }: { steps: GuidanceStep[] }) {
 }
 
 /** Yol üstündeki anlatım noktaları ve varış bilgisi; seçilen satır haritadaki geliş bacağını vurgular. */
-export function ViaList({ plan, pointsById, workPoints, activeLeg, onSelectLeg }: { plan: PlannedRoute; pointsById: Record<string, NavPoint>; workPoints: readonly NavPoint[]; activeLeg: number | null; onSelectLeg: (leg: number | null) => void }) {
+export function ViaList({ plan, pointsById, workPoints, activeLeg, onSelectLeg, speed }: { plan: PlannedRoute; pointsById: Record<string, NavPoint>; workPoints: readonly NavPoint[]; activeLeg: number | null; onSelectLeg: (leg: number | null) => void; speed: number }) {
   const { t, lang } = useT();
   // Yol üstündeki eser varış noktası da aynı sırayla: eserin özeti/tarihçesi varsa o (anlatım noktası kendi metniyle kalır).
   const items = plan.via.pointIds.flatMap((id, idx) => {
@@ -88,7 +88,7 @@ export function ViaList({ plan, pointsById, workPoints, activeLeg, onSelectLeg }
   const arrival = arrivalText(plan.end.workSlug, workPoints, plan.arrival);
   if (items.length === 0 && !arrival) return null;
 
-  const row = (key: string, badge: ReactNode, title: string, body: string | undefined, leg: number) => (
+  const row = (key: string, badge: ReactNode, title: string, body: string | undefined, leg: number, atM: number) => (
     <li key={key}>
       <button
         type="button"
@@ -100,8 +100,9 @@ export function ViaList({ plan, pointsById, workPoints, activeLeg, onSelectLeg }
       >
         {badge}
         <span className="grid flex-1 gap-1">
-          <span className="font-semibold">{title}</span>
-          {body ? <span className="text-sm text-muted-foreground">{excerpt(body)}</span> : null}
+          <span className="text-xs font-bold text-muted-foreground">{t("route.stopMinute", { n: Math.ceil(atM / speed / 60) })}</span>
+          <span className={activeLeg === leg ? "font-heading text-xl italic" : "font-semibold"}>{title}</span>
+          {body && activeLeg === leg ? <span className="text-sm text-muted-foreground">{excerpt(body)}</span> : null}
         </span>
       </button>
     </li>
@@ -119,6 +120,7 @@ export function ViaList({ plan, pointsById, workPoints, activeLeg, onSelectLeg }
           loc(point.title, lang),
           point.body ? loc(point.body, lang) : undefined,
           index - 1,
+          plan.via.atM[index - 1] ?? 0,
         ),
       )}
       {arrival
@@ -128,6 +130,7 @@ export function ViaList({ plan, pointsById, workPoints, activeLeg, onSelectLeg }
             loc(arrival.title, lang),
             arrival.body ? loc(arrival.body, lang) : undefined,
             plan.via.pointIds.length,
+            plan.route.lengthM,
           )
         : null}
     </ul>

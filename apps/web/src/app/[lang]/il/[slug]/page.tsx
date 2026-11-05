@@ -5,7 +5,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PageContainer } from "@/components/page";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "@/components/ui/tag";
 import { Button } from "@/components/ui/button";
 import { WorkCard } from "@/components/works/work-card";
 import { WorksMapView } from "@/components/works/works-map-view";
@@ -88,10 +88,10 @@ export default async function CityDetailPage({
   const statusKey = CITY_STATUS_KEYS[city.inventory_status ?? "planned"] ?? "works.city.status.planned";
   const statusVariant =
     city.inventory_status === "published"
-      ? "success"
+      ? "ok"
       : city.inventory_status === "printing"
-        ? "secondary"
-        : "outline";
+        ? "neutral"
+        : "line";
 
   return (
     <PageContainer className="grid gap-8">
@@ -100,7 +100,7 @@ export default async function CityDetailPage({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{cityName}</h1>
           <Button size="sm" asChild>
-            <Link href={href(lang, `/?il=${city.slug}`)}>
+            <Link href={href(lang, `/eserler?il=${city.slug}`)}>
               <CompassIcon aria-hidden />
               <span>{t(lang, "works.city.exploreAll")}</span>
             </Link>
@@ -123,24 +123,24 @@ export default async function CityDetailPage({
             </>
           ) : null}
           <span aria-hidden>·</span>
-          <Badge variant={statusVariant}>{t(lang, statusKey)}</Badge>
+          <Tag tone={statusVariant}>{t(lang, statusKey)}</Tag>
         </div>
       </header>
 
-      {/* Tür çipleri (/?il=&tur=) */}
+      {/* Tür çipleri (/eserler?il=&tur=) */}
       {sortedTypes.length > 0 ? (
         <section aria-label={t(lang, "works.city.byTypeTitle")} className="grid gap-2">
           <div className="flex flex-wrap gap-2">
             {sortedTypes.map(([typeSlug, info]) => (
               <Link
                 key={typeSlug}
-                href={href(lang, `/?il=${city.slug}&tur=${typeSlug}`)}
+                href={href(lang, `/eserler?il=${city.slug}&tur=${typeSlug}`)}
                 className="inline-flex min-h-12 items-center gap-2 rounded-lg border bg-card px-3.5 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
               >
                 <span>{info.label}</span>
-                <Badge variant="secondary" className="num">
+                <Tag tone="neutral" className="num">
                   {formatNumber(lang, info.count)}
-                </Badge>
+                </Tag>
               </Link>
             ))}
           </div>
@@ -159,7 +159,7 @@ export default async function CityDetailPage({
       {/* Harita: isteğe bağlı katlanmış */}
       {cityWorks.length > 0 ? (
         <details className="group rounded-lg border p-4 text-sm">
-          <summary className="cursor-pointer font-heading font-bold text-foreground hover:text-link">
+          <summary className="cursor-pointer font-bold text-foreground hover:text-link">
             {t(lang, "works.city.mapTitle", { city: cityName })}
           </summary>
           <div className="mt-3">
@@ -176,7 +176,7 @@ export default async function CityDetailPage({
       {/* Kitaplar ve sergiler: katlanmış kaynaklar */}
       {cityBooks.length > 0 || cityExhibitions.length > 0 ? (
         <details className="group rounded-lg border p-4 text-sm">
-          <summary className="cursor-pointer font-heading font-bold text-foreground hover:text-link">
+          <summary className="cursor-pointer font-bold text-foreground hover:text-link">
             {t(lang, "works.city.booksTitle")} & {t(lang, "works.city.exhibitionsTitle")}
           </summary>
           <div className="mt-3 grid gap-3 pt-2 text-muted-foreground">

@@ -215,7 +215,7 @@ function Editor({
             />
 
             <div className="grid gap-2">
-              <p id={toneGroupId} className="font-heading text-sm font-bold">
+              <p id={toneGroupId} className="font-bold text-sm">
                 {t("account.tone")}
               </p>
               <div role="radiogroup" aria-labelledby={toneGroupId} className="flex flex-wrap gap-3">

@@ -1,5 +1,5 @@
 import { hasLocation, inventorySource, loc, normalize, toneForType, type SweetTheme, type WorkRow } from '@sezi/shared';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { FlatList, StyleSheet, TextInput, View } from 'react-native';
 import { Text } from '@/components/text';
@@ -22,7 +22,9 @@ export default function Search() {
   const s = useMemo(() => makeStyles(t), [t]);
   const { t: tr, lang } = useT();
   const { data: works } = useWorks();
-  const [q, setQ] = useState('');
+  const { q: routeQuery } = useLocalSearchParams<{ q?: string | string[] }>();
+  const initialQuery = Array.isArray(routeQuery) ? (routeQuery[0] ?? '') : (routeQuery ?? '');
+  const [q, setQ] = useState(initialQuery);
   const [revealedSlots] = useState(() => new Set<number>());
   const changeQuery = (value: string) => {
     if (!value.trim()) revealedSlots.clear();
@@ -36,6 +38,16 @@ export default function Search() {
   // Haritada seçili eser (slug); altında sonuç kartı açılır.
   const [pin, setPin] = useState<string | null>(null);
   const { settings } = useSettings();
+
+  const [lastRouteQuery, setLastRouteQuery] = useState(initialQuery);
+  // Hero'dan aynı arama ekranına yeni sorguyla dönülünce state'i render öncesinde tek adımda eşitle.
+  if (initialQuery !== lastRouteQuery) {
+    setLastRouteQuery(initialQuery);
+    setQ(initialQuery);
+    revealedSlots.clear();
+    setOpen(null);
+    setPin(null);
+  }
 
   const results = useMemo(() => {
     const n = normalize(q).trim();
@@ -61,7 +73,7 @@ export default function Search() {
         <TextInput
           value={q}
           onChangeText={changeQuery}
-          autoFocus
+          autoFocus={!initialQuery}
           placeholder={tr('search.placeholder')}
           placeholderTextColor={t.textMuted}
           accessibilityLabel={tr('search.title')}
@@ -164,13 +176,13 @@ const makeStyles = (t: SweetTheme) =>
     screen: { flex: 1, backgroundColor: t.background },
     searchBar: { paddingHorizontal: space.lg, paddingTop: space.md, paddingBottom: space.md },
     input: { minHeight: 54, paddingHorizontal: space.lg, borderRadius: radius.md, borderCurve: 'continuous', backgroundColor: t.soft, color: t.text },
-    map: { height: 420, borderRadius: radius.lg, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: t.soft, ...outline(t) },
+    map: { height: 420, borderRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: t.soft, ...outline(t) },
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
     list: { paddingHorizontal: space.lg, paddingBottom: space.xxl, gap: space.md },
-    card: { borderRadius: radius.lg, borderCurve: 'continuous', padding: space.md, gap: space.md },
+    card: { borderRadius: radius.xl, borderCurve: 'continuous', padding: space.md, gap: space.md },
     head: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md, minHeight: 104 },
     badges: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs, marginTop: space.xs },
-    typeChip: { alignSelf: 'flex-start', paddingHorizontal: space.sm, paddingVertical: space.xs, borderRadius: radius.sm },
+    typeChip: { alignSelf: 'flex-start', paddingHorizontal: space.sm, paddingVertical: space.xs, borderRadius: radius.pill },
     actions: { flexDirection: 'row', gap: space.sm },
   });
 

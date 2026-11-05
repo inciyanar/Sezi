@@ -122,6 +122,10 @@ export const Instruction = z.object({
 });
 export type Instruction = z.infer<typeof Instruction>;
 
+/** Kurulumdaki ilgi alanı çipleri. Her biri bir eser türüne ya da bir damgaya bağlanır (`INTEREST_BADGES`). */
+export const PROFILE_INTERESTS = ["cami", "turbe", "han", "uslup", "foto", "yol"] as const;
+export type ProfileInterest = (typeof PROFILE_INTERESTS)[number];
+
 // --- Kullanıcı profili ---
 
 export const UserProfile = z.object({
@@ -135,6 +139,10 @@ export const UserProfile = z.object({
     visual: z.boolean(),
   }),
   lang: z.enum(["tr", "en"]),
+  /** Kurulumda seçilen ilgi alanları: Keşfet'te tür sırasını ve Pasaport'ta sıradaki damga hedefini belirler. */
+  interests: z.array(z.enum(PROFILE_INTERESTS)).optional(),
+  /** Kurulumun tamamlandığı an (Hoş Geldin damgası). Bu alandan önceki profillerde yoktur. */
+  onboardedAt: z.string().optional(),
 });
 export type UserProfile = z.infer<typeof UserProfile>;
 

@@ -38,7 +38,7 @@ export function ProfileDialog({ open, onOpenChange }: { open: boolean; onOpenCha
   }
 
   const save = () => {
-    saveProfile({ vision, mobility, hearing, senses: defaultSenses(vision, hearing), lang });
+    saveProfile({ ...base, vision, mobility, hearing, senses: defaultSenses(vision, hearing), lang });
     toast.success(t("profile.saved"));
     onOpenChange(false);
   };

@@ -1,16 +1,16 @@
 /** Hesapsız erişilebilirlik bildirimi metinleri: TR + EN (EN tipi her anahtarı zorunlu kılar). */
 export const tr = {
   "report.title": "Erişilebilirlik bildirimi",
-  "report.lead": "Bildiriminiz moderasyondan geçer; onaylanırsa rotalar bu engelden kaçınacak şekilde güncellenir.",
+  "report.lead": "Bildirimin moderasyondan geçer; onaylanırsa rotalar bu engelden kaçınacak şekilde güncellenir.",
   "report.where": "Konum",
   "report.workLabel": "Hangi eserin yakınında?",
-  "report.workPlaceholder": "Eser seçin (ya da haritadan işaretleyin)",
+  "report.workPlaceholder": "Eser seç (ya da haritadan işaretle)",
   "report.near": "{name} çevresindeki yol",
   "report.pickedOnMap": "Haritada seçilen yol parçası",
   "report.segmentLabel": "Seçilen yol parçası: {segment}",
   "report.mapLabel": "Erişilebilirlik bildirimi haritası",
-  "report.outOfPilot": "Seçilen nokta pilot alanın (Ulu Cami ve Hanlar Bölgesi) dışında. Lütfen pilot alan içinden bir yol seçin.",
-  "report.needLocation": "Lütfen listeden bir eser seçin ya da haritada pilot alan içindeki bir yola tıklayın.",
+  "report.outOfPilot": "Seçilen nokta pilot alanın (Ulu Cami ve Hanlar Bölgesi) dışında. Lütfen pilot alan içinden bir yol seç.",
+  "report.needLocation": "Lütfen listeden bir eser seç ya da haritada pilot alan içindeki bir yola tıkla.",
   "report.type": "Ne tür bir engel?",
   "report.type.stairs": "Basamak var",
   "report.type.ramp_blocked": "Rampa kapalı",
@@ -23,12 +23,12 @@ export const tr = {
   "report.noteCount": "{n} / 500",
   "report.submit": "Bildirimi gönder",
   "report.submitting": "Gönderiliyor…",
-  "report.sent": "Bildiriminiz alındı",
+  "report.sent": "Bildirimin alındı",
   "report.sentBody": "Bildirim alındı; ekip onaylayınca rotalar bu yoldan kaçınır.",
   "report.new": "Yeni bildirim",
-  "report.err.rateLimited": "Saatte en çok 10 bildirim gönderilebilir; biraz sonra tekrar deneyin.",
-  "report.err.network": "Bağlantı hatası. İnternet bağlantınızı kontrol edip yeniden deneyin.",
-  "report.err.generic": "Bildirim gönderilemedi. Lütfen biraz sonra tekrar deneyin.",
+  "report.err.rateLimited": "Saatte en çok 10 bildirim gönderilebilir; biraz sonra tekrar dene.",
+  "report.err.network": "Bağlantı hatası. İnternet bağlantını kontrol edip yeniden dene.",
+  "report.err.generic": "Bildirim gönderilemedi. Lütfen biraz sonra tekrar dene.",
 };
 
 export const en: Record<keyof typeof tr, string> = {

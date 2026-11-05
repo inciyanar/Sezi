@@ -71,5 +71,5 @@ export function ScenarioPanel({
 
 const styles = StyleSheet.create({
   panel: { gap: space.md, padding: space.lg, borderRadius: radius.xl, borderCurve: 'continuous' },
-  item: { gap: 2, minHeight: 56, paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.lg, borderCurve: 'continuous', justifyContent: 'center' },
+  item: { gap: 2, minHeight: 56, paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.xl, borderCurve: 'continuous', justifyContent: 'center' },
 });

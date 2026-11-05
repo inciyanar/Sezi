@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { ImageResponse } from "next/og";
 import { sweetThemes } from "@sezi/shared";
 
-/** Paylaşım görseli. Renkler `sweetThemes.light` (Çini 2); sabit palet yok. */
+/** Paylaşım görseli. Renkler `sweetThemes.light` ("Sezi kâğıt"); başlık Fraunces, alt yazı Atkinson; sabit palet yok. */
 const theme = sweetThemes.light;
 
 export const ogSize = { width: 1200, height: 630 };
@@ -17,16 +17,16 @@ function pngSize(buf: Buffer) {
 }
 
 async function loadAssets() {
-  const [nunito, atkinson, wordmark] = await Promise.all([
-    readFile(path.join(assetsDir, "fonts/Nunito-ExtraBold.ttf")),
+  const [fraunces, atkinson, wordmark] = await Promise.all([
+    readFile(path.join(assetsDir, "fonts/Fraunces-Regular.ttf")),
     readFile(path.join(assetsDir, "fonts/AtkinsonHyperlegibleNext-Regular.ttf")),
     readFile(path.join(assetsDir, "brand/wordmark.png")),
   ]);
-  return { nunito, atkinson, wordmark, ...pngSize(wordmark) };
+  return { fraunces, atkinson, wordmark, ...pngSize(wordmark) };
 }
 
 export async function ogCard(title: string, subtitle?: string) {
-  const { nunito, atkinson, wordmark, width, height } = await loadAssets();
+  const { fraunces, atkinson, wordmark, width, height } = await loadAssets();
   const logoSrc = `data:image/png;base64,${wordmark.toString("base64")}`;
   const titleSize = title.length > 42 ? 52 : title.length > 26 ? 64 : 80;
   const logoWidth = title === "Sezi" ? 520 : 340;
@@ -42,7 +42,7 @@ export async function ogCard(title: string, subtitle?: string) {
         color: theme.text,
       }}
     >
-      <div style={{ width: 28, height: "100%", backgroundColor: theme.primary.fill }} />
+      <div style={{ width: 28, height: "100%", backgroundColor: theme.gold.fill }} />
       <div
         style={{
           display: "flex",
@@ -58,11 +58,11 @@ export async function ogCard(title: string, subtitle?: string) {
           style={{
             display: "flex",
             width: 980,
-            fontFamily: "Nunito",
+            fontFamily: "Fraunces",
             fontSize: titleSize,
-            fontWeight: 800,
+            fontWeight: 400,
             lineHeight: 1.05,
-            letterSpacing: -1,
+            letterSpacing: -1.5,
             color: theme.text,
           }}
         >
@@ -87,7 +87,7 @@ export async function ogCard(title: string, subtitle?: string) {
     {
       ...ogSize,
       fonts: [
-        { name: "Nunito", data: nunito, weight: 800, style: "normal" },
+        { name: "Fraunces", data: fraunces, weight: 400, style: "normal" },
         { name: "Atkinson", data: atkinson, weight: 400, style: "normal" },
       ],
     },

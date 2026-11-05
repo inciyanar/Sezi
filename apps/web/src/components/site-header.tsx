@@ -1,11 +1,10 @@
 "use client";
 
-import { ALargeSmallIcon, CatIcon, ContrastIcon, UserRoundIcon } from "lucide-react";
+import { CatIcon, ContrastIcon, UserRoundIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { Avatar } from "@/components/account/avatar";
@@ -21,30 +20,52 @@ import { useSlidingBox } from "@/lib/use-sliding-box";
 import { cn } from "@/lib/utils";
 
 const LINKS: { path: string; label: MessageKey }[] = [
-  { path: "/rota", label: "nav.route" },
+  { path: "", label: "nav.explore" },
+  { path: "/eserler", label: "nav.works" },
   { path: "/turlar", label: "nav.tours" },
-  { path: "/sergiler", label: "nav.exhibitions" },
+  { path: "/rota", label: "nav.route" },
+  { path: "/hesap/pasaport", label: "nav.passport" },
 ];
 
 function useActive() {
   const pathname = usePathname();
   const rest = pathname.replace(/^\/(tr|en)(?=\/|$)/, "");
-  return { pathname, rest, isActive: (path: string) => rest === path || rest.startsWith(`${path}/`) };
+  return {
+    pathname,
+    rest,
+    isActive: (path: string) => {
+      if (path === "") return rest === "" || rest === "/";
+      if (path === "/eserler") return rest === "/eserler" || rest.startsWith("/eser/") || rest.startsWith("/il/") || rest.startsWith("/kulliye/");
+      return rest === path || rest.startsWith(`${path}/`);
+    },
+  };
 }
+
+const ICON_BTN_BASE =
+  "relative grid size-11 place-items-center rounded-full text-[13px] font-bold transition-colors duration-200 after:absolute after:-inset-1 focus-visible:ring-3 focus-visible:ring-ring/50";
+const ICON_BTN_GLASS =
+  "border border-[color-mix(in_srgb,var(--on-photo)_24%,transparent)] bg-[color-mix(in_srgb,var(--on-photo)_14%,transparent)] text-[var(--on-photo)] backdrop-blur-[14px] hover:bg-[color-mix(in_srgb,var(--on-photo)_22%,transparent)] contrast:border-2 contrast:border-current contrast:bg-foreground contrast:backdrop-blur-none";
+const ICON_BTN_SOLID =
+  "border border-transparent bg-secondary text-foreground hover:bg-border/60 contrast:border-2 contrast:border-border";
 
 /**
  * Görünüm: yüksek kontrast, Sezi kedisi (gizlenebilir) ve üç yazı boyutu (her seçenek kendi boyutunda "A").
  * Açılır pencere tetikleyiciden açılır; değişiklik hemen uygulanır.
  */
-function AppearanceMenu() {
+function AppearanceMenu({ solid }: { solid: boolean }) {
   const { t } = useT();
   const a = useAppearance();
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label={t("appearance.open")}>
-          <ALargeSmallIcon aria-hidden />
-        </Button>
+        <button
+          type="button"
+          aria-label={t("appearance.open")}
+          title={t("appearance.open")}
+          className={cn(ICON_BTN_BASE, solid ? ICON_BTN_SOLID : ICON_BTN_GLASS)}
+        >
+          <span aria-hidden>Aa</span>
+        </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72 gap-0 p-2">
         <label className="flex min-h-12 cursor-pointer items-center justify-between gap-3 rounded-lg px-2 hover:bg-muted">
@@ -77,7 +98,7 @@ function AppearanceMenu() {
                   aria-label={t(`appearance.text.${s}`)}
                   onClick={() => setAppearance({ text: s })}
                   className={cn(
-                    "flex min-h-12 items-end justify-center rounded-lg pb-2.5 font-heading font-extrabold leading-none transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]",
+                    "flex min-h-12 items-end justify-center rounded-lg pb-2.5 font-bold leading-none transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]",
                     on ? "bg-card text-foreground shadow-sm contrast:outline-2 contrast:outline-border" : "text-muted-foreground hover:text-foreground",
                   )}
                 >
@@ -94,53 +115,66 @@ function AppearanceMenu() {
   );
 }
 
-function LangSwitch() {
+function LangSwitch({ solid }: { solid: boolean }) {
   const { t, lang } = useT();
   const { rest } = useActive();
   const other = lang === "tr" ? "en" : "tr";
   return (
-    <Button variant="ghost" asChild>
-      <Link href={href(other, rest)} hrefLang={other} lang={other} aria-label={t("nav.langLabel")}>
-        {t("nav.lang")}
-      </Link>
-    </Button>
+    <Link
+      href={href(other, rest)}
+      hrefLang={other}
+      lang={other}
+      aria-label={t("nav.langLabel")}
+      className={cn(ICON_BTN_BASE, solid ? ICON_BTN_SOLID : ICON_BTN_GLASS)}
+    >
+      {t("nav.lang")}
+    </Link>
   );
 }
 
-/** Hesap düğmesi: girişsizken "Giriş yap", girişliyken avatar + ad → hesap sayfası. */
-function AccountLink() {
+/** Hesap düğmesi: girişsizken "Giriş yap", girişliyken avatar + ad → pasaport sayfası. */
+function AccountLink({ solid }: { solid: boolean }) {
   const { t, lang } = useT();
   const { ready, user } = useAccount();
   const { identity, avatar } = useIdentity();
-  if (!ready) return <span className="inline-block h-10 w-24" aria-hidden />;
+  if (!ready) return <span className="inline-block h-11 w-24" aria-hidden />;
   if (!user) {
     return (
-      <Button variant="default" asChild>
-        <Link href={href(lang, "/hesap/giris")}>
-          <UserRoundIcon aria-hidden />
-          {t("nav.signIn")}
-        </Link>
-      </Button>
+      <Link
+        href={href(lang, "/hesap/giris")}
+        className={cn(
+          "relative inline-flex h-11 items-center gap-2 rounded-full px-4 text-[14px] font-bold transition-colors duration-200 after:absolute after:-inset-y-1 after:inset-x-0",
+          solid
+            ? "bg-primary text-primary-foreground hover:opacity-92 contrast:outline-2 contrast:outline-border"
+            : "bg-[var(--on-photo)] text-foreground hover:opacity-92 contrast:outline-2 contrast:outline-current",
+        )}
+      >
+        <UserRoundIcon className="size-4" aria-hidden />
+        {t("nav.signIn")}
+      </Link>
     );
   }
   const name = identity?.display_name || user.email || t("nav.account");
   return (
-    <Button variant="ghost" asChild>
-      <Link href={href(lang, "/hesap")} aria-label={`${t("nav.account")}: ${name}`}>
-        <Avatar identity={identity} src={avatar} size={28} />
-        <span className="max-w-36 truncate">{name}</span>
-      </Link>
-    </Button>
+    <Link
+      href={href(lang, "/hesap/pasaport")}
+      aria-label={`${t("nav.account")}: ${name}`}
+      className={cn(
+        "relative inline-flex h-11 items-center gap-2 rounded-full py-0 pr-3.5 pl-1 text-[14px] font-bold transition-colors duration-200 after:absolute after:-inset-y-1 after:inset-x-0",
+        solid
+          ? "bg-secondary text-foreground hover:bg-border/60 contrast:outline-2 contrast:outline-border"
+          : "bg-[var(--on-photo)] text-foreground hover:opacity-92 contrast:outline-2 contrast:outline-current",
+      )}
+    >
+      <Avatar identity={identity} src={avatar} size={36} />
+      <span className="max-w-32 truncate">{name}</span>
+    </Link>
   );
 }
 
 /**
- * Üst menü (Aceternity "Resizable Navbar" gibi): sayfanın başında tam genişlikte düz çubuk; aşağı kayınca daralıp
- * ortada yüzen, bulanık zeminli bir çubuğa dönüşür, yukarı dönünce açılır. Sayfa bağlantıları ortada (logo solda,
- * eylemler sağda; üç sütun). Rota / Turlar / Sergiler'de dolgu
- * üzerine gelinen bağlantının arkasına kayar, imleç yokken seçili sayfada durur (seçili sayfa ayrıca kalın ve koyu).
- * Arama (Ctrl+K), dil, görünüm ve hesap sağda. Telefon ve tablette sayfalar alttaki sekme çubuğunda (`BottomNav`);
- * Sergiler, Hakkında ve Bildirim alt bilgide. Hareket azaltmada geçişler anlık.
+ * Üst menü: fotoğraf bandının en tepesindeyken taslaktaki gibi bandın içinde yüzer (`.nav` + `.glass` haplar);
+ * aşağı kaydırılınca veya bantsız sayfalarda üst kenara tam oturan sıcak buzlu kâğıt şeridine dönüşür.
  */
 export function SiteHeader() {
   const { t, lang } = useT();
@@ -148,73 +182,104 @@ export function SiteHeader() {
   const navRef = useRef<HTMLElement>(null);
   const active = LINKS.findIndex((l) => isActive(l.path));
   const [hovered, setHovered] = useState<number | null>(null);
-  const pill = useSlidingBox(navRef, "a", hovered ?? active, [lang]);
-  const [scrolled, setScrolled] = useState(false);
+  const pill = useSlidingBox(navRef, "a", hovered ?? active, [lang, rest]);
+  const [solid, setSolid] = useState(true);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+    const band = document.querySelector<HTMLElement>("[data-band]");
+    const routeMap = document.querySelector<HTMLElement>("[data-route-map]");
+    if (routeMap || !band || band.dataset.band === "solid") {
+      setSolid(true);
+      return;
+    }
+    const update = () => setSolid(window.scrollY > 24 || band.getBoundingClientRect().bottom <= 80);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, [rest]);
 
   return (
     <>
       <header
-        data-scrolled={scrolled}
+        data-scrolled={solid}
         className={cn(
-          // Yükseklik değişmez (sayfa kaymasın); yüzen çubuk yalnız `transform` ile aşağı iner.
-          "group/header sticky top-0 z-40 border-b px-3 transition-[background-color,border-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] sm:px-4",
-          scrolled ? "border-transparent" : "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85",
+          "group/header fixed inset-x-0 top-0 z-50 border-b px-4 py-4 transition-colors duration-200 min-[900px]:px-[34px]",
+          solid
+            ? "border-border/70 bg-background/95 text-foreground backdrop-blur-[18px] contrast:border-b-2 contrast:border-border contrast:bg-background contrast:backdrop-blur-none"
+            : "border-transparent text-[var(--on-photo)]",
         )}
       >
         <a
           href="#icerik"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-3 focus:text-primary-foreground"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-3 focus:text-primary-foreground"
         >
           {t("nav.skip")}
         </a>
-        <div
-          className={cn(
-            "mx-auto flex h-16 items-center gap-2 border px-1 lg:grid lg:grid-cols-[1fr_auto_1fr] transition-[max-width,border-radius,background-color,box-shadow,border-color,transform,padding] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
-            scrolled
-              ? "max-w-4xl translate-y-2 rounded-xl px-3 border-border bg-background/80 shadow-lg shadow-foreground/5 backdrop-blur-md contrast:border-2 contrast:border-foreground contrast:bg-background"
-              : "max-w-6xl rounded-none border-transparent",
-          )}
-        >
-          <Link href={href(lang)} className="mr-2 inline-flex min-h-12 items-center gap-2 justify-self-start font-heading text-2xl font-extrabold tracking-tight text-link" aria-label={t("nav.home")}>
-            <BrandMark className="h-8 text-brand-mark" />
+        <div className="mx-auto grid grid-cols-[1fr_auto] items-center gap-3 min-[1200px]:grid-cols-[1fr_auto_1fr]">
+          <Link
+            href={href(lang)}
+            className={cn(
+              "inline-flex min-h-12 items-center gap-2.5 justify-self-start font-heading text-[28px] font-normal leading-none tracking-[-0.02em] transition-colors duration-200",
+              solid ? "text-[var(--brand-mark)]" : "text-[var(--on-photo)]",
+            )}
+            aria-label={t("nav.home")}
+          >
+            <BrandMark className="h-[26px] w-auto" />
             {t("site.name")}
           </Link>
-          <nav ref={navRef} aria-label={t("nav.main")} className="relative hidden items-center gap-1 justify-self-center lg:flex" onMouseLeave={() => setHovered(null)}>
+          <nav
+            ref={navRef}
+            aria-label={t("nav.main")}
+            onMouseLeave={() => setHovered(null)}
+            className={cn(
+              "relative hidden items-center gap-1 justify-self-center rounded-full border border-transparent p-1 transition-colors duration-200 min-[1200px]:flex",
+              solid
+                ? "bg-secondary text-muted-foreground contrast:outline-2 contrast:outline-border"
+                : "border border-[color-mix(in_srgb,var(--on-photo)_24%,transparent)] bg-[color-mix(in_srgb,var(--on-photo)_14%,transparent)] text-[var(--on-photo)] backdrop-blur-[14px] contrast:border-2 contrast:border-current contrast:bg-foreground contrast:backdrop-blur-none",
+            )}
+          >
             <span
               aria-hidden
               className={cn(
-                "pointer-events-none absolute top-1/2 left-0 h-10 rounded-lg bg-secondary transition-[transform,width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] contrast:outline-2 contrast:outline-foreground",
+                "pointer-events-none absolute inset-y-1 left-0 rounded-full transition-[transform,width,opacity] duration-200 ease-out motion-reduce:transition-none",
+                solid ? "bg-foreground" : "bg-[var(--on-photo)]",
                 pill ? "opacity-100" : "opacity-0",
               )}
-              style={pill ? { width: pill.width, transform: `translate(${pill.left}px, -50%)` } : undefined}
+              style={pill ? { width: pill.width, transform: `translateX(${pill.left}px)` } : undefined}
             />
-            {LINKS.map((l, i) => (
-              <Link
-                key={l.path}
-                href={href(lang, l.path)}
-                aria-current={isActive(l.path) ? "page" : undefined}
-                onMouseEnter={() => setHovered(i)}
-                onFocus={() => setHovered(i)}
-                onBlur={() => setHovered(null)}
-                className="relative inline-flex min-h-12 items-center rounded-lg px-4 font-heading text-[0.9375rem] font-bold text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 aria-[current=page]:font-extrabold aria-[current=page]:text-foreground"
-              >
-                {t(l.label)}
-              </Link>
-            ))}
+            {LINKS.map((l, i) => {
+              const on = (hovered ?? active) === i;
+              return (
+                <Link
+                  key={l.path}
+                  href={href(lang, l.path)}
+                  aria-current={isActive(l.path) ? "page" : undefined}
+                  onMouseEnter={() => setHovered(i)}
+                  onFocus={() => setHovered(i)}
+                  onBlur={() => setHovered(null)}
+                  className={cn(
+                    "relative z-10 inline-flex min-h-12 items-center rounded-full px-4 text-[14px] font-bold leading-none transition-colors duration-200 outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                    on && !pill && (solid ? "bg-foreground" : "bg-[var(--on-photo)]"),
+                    on
+                      ? solid
+                        ? "text-[var(--on-photo)]"
+                        : "text-foreground"
+                      : solid
+                        ? "text-muted-foreground hover:text-foreground"
+                        : "text-[var(--on-photo)]",
+                  )}
+                >
+                  {t(l.label)}
+                </Link>
+              );
+            })}
           </nav>
-          <div className="ml-auto flex items-center gap-1 justify-self-end">
-            <SiteSearch />
-            <LangSwitch />
-            <AppearanceMenu />
-            <div className="hidden lg:block">
-              <AccountLink />
+          <div className="flex items-center gap-2 justify-self-end">
+            <SiteSearch className={cn(ICON_BTN_BASE, solid ? ICON_BTN_SOLID : ICON_BTN_GLASS)} />
+            <AppearanceMenu solid={solid} />
+            <LangSwitch solid={solid} />
+            <div className="hidden min-[1200px]:block">
+              <AccountLink solid={solid} />
             </div>
           </div>
         </div>

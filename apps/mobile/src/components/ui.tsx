@@ -1,24 +1,28 @@
 /**
- * Sezi arayüz bileşenleri (Çini 2). Tüm ekranlar bunlardan ve `design/sweet/components` parçalarından kurulur:
+ * Sezi arayüz bileşenleri ("Sezi kâğıt"). Tüm ekranlar bunlardan ve `design/sweet/components` parçalarından kurulur:
  * tek dokunma alanı ölçüsü (≥ 48 dp), tek köşe ölçeği (`radius`), tek tipografi ölçeği (`type`).
  * Yüzeyler düz: kart ve alanlar dolgu tonuyla ayrılır; yüksek kontrastta 2 dp çerçeve (`outline`).
+ * Düğmeler, çipler ve bölmeli seçiciler haptır; ana eylem mürekkep hap, yanında altın ok dairesi olabilir.
  */
 import { createContext, useContext, useRef, useState, type ReactNode, type RefObject } from 'react';
 import * as Haptics from 'expo-haptics';
-import { Pressable, StyleSheet, Switch, TextInput, useWindowDimensions, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, Switch, TextInput, useWindowDimensions, View, type StyleProp, type TextInputProps, type TextStyle, type ViewStyle } from 'react-native';
 import { Text } from '@/components/text';
 
-import { ChevronIcon, InfoIcon } from '@/design/icons';
+import { useGlassInk } from '@/components/glass';
+import { ArrowIcon, ChevronIcon, InfoIcon } from '@/design/icons';
 import { EmptyMotif } from '@/design/motif';
 import { outline, SoftPressable } from '@/design/sweet/components';
-import { radius, space, type } from '@/design/type';
+import { radius, space, type, upper } from '@/design/type';
 import { useSweetTheme } from '@/hooks/use-sweet-theme';
+import { useT } from '@/lib/i18n';
 
-type Variant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+type Variant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'cream' | 'line';
 
 /**
- * Düğme: 54 dp (kompakt 48), 16 köşe. `primary` firuze dolgu, `secondary` gri dolgu,
- * `outline` yüzey + ince çerçeve, `ghost` yalnız yazı, `danger` yüzey üstünde tehlike rengi.
+ * Düğme: 56 dp (kompakt 48), hap. `primary` mürekkep dolgu, `secondary` yüzey dolgu, `outline` yüzey + ince çerçeve,
+ * `ghost` yalnız yazı, `danger` tehlike rengi. Fotoğraf ya da koyu cam üstünde: `cream` krem dolgu + mürekkep yazı,
+ * `line` saydam + 1.5 dp çerçeve (cam yazı rengiyle). `arrow` sağda altın daire içinde ok çizer.
  */
 export function Button({
   label,
@@ -29,6 +33,7 @@ export function Button({
   hint,
   style,
   compact,
+  arrow,
 }: {
   label: string;
   onPress: () => void;
@@ -38,14 +43,20 @@ export function Button({
   hint?: string;
   style?: StyleProp<ViewStyle>;
   compact?: boolean;
+  arrow?: boolean;
 }) {
   const t = useSweetTheme();
+  const ink = useGlassInk();
+  const lineFg = ink?.text ?? t.text;
   const v = {
-    primary: { bg: t.primary.fill, fg: t.primary.ink, border: t.primary.fill },
-    secondary: { bg: t.soft, fg: t.text, border: t.soft },
-    outline: { bg: t.surface, fg: t.text, border: t.border },
-    ghost: { bg: 'transparent', fg: t.primaryText, border: 'transparent' },
-    danger: { bg: t.surface, fg: t.danger, border: t.danger },
+    primary: { bg: t.primary.fill, fg: t.primary.ink, border: t.primary.fill, width: 0 },
+    secondary: { bg: t.surface, fg: t.text, border: t.surface, width: 0 },
+    outline: { bg: t.surface, fg: t.text, border: t.border, width: 1.5 },
+    ghost: { bg: 'transparent', fg: t.primaryText, border: 'transparent', width: 0 },
+    danger: { bg: t.surface, fg: t.danger, border: t.danger, width: 1.5 },
+    // Krem dolgu yüksek kontrastta beyazdır: yazı açık cam mürekkebi (siyah) olur.
+    cream: { bg: t.onPhoto.text, fg: t.glass.light.text, border: t.onPhoto.text, width: 0 },
+    line: { bg: 'transparent', fg: lineFg, border: lineFg, width: 1.5 },
   }[variant];
   return (
     <SoftPressable
@@ -58,29 +69,37 @@ export function Button({
       style={[
         styles.btn,
         compact && styles.btnCompact,
-        { backgroundColor: v.bg, borderColor: t.outlined && variant !== 'ghost' ? t.border : v.border },
+        arrow && styles.btnArrow,
+        { backgroundColor: v.bg, borderColor: t.outlined && variant !== 'ghost' ? t.border : v.border, borderWidth: v.width },
         t.outlined && variant !== 'ghost' && { borderWidth: 2 },
         disabled && { opacity: 0.4 },
         style,
       ]}>
       {icon ? icon(v.fg) : null}
       <Text style={[type.button, { color: v.fg, flexShrink: 1, textAlign: 'center' }]}>{label}</Text>
+      {arrow ? (
+        // Dolgu zaten altınsa (koyu temada ana düğme) daire mürekkebe döner; yoksa altın daire dolguda kaybolur.
+        <View style={[styles.arrow, { backgroundColor: v.bg === t.gold.fill ? t.gold.ink : t.gold.fill }]}>
+          <ArrowIcon color={v.bg === t.gold.fill ? t.gold.fill : t.gold.ink} size={16} />
+        </View>
+      ) : null}
     </SoftPressable>
   );
 }
 
-/** Kart: beyaz yüzey, 22 köşe, gölgesiz (zeminden tonla ayrılır). */
+/** Kart: yüzey rengi, 28 köşe, gölgesiz (zeminden tonla ayrılır). */
 export function Card({ children, style, padded = true }: { children: ReactNode; style?: StyleProp<ViewStyle>; padded?: boolean }) {
   const t = useSweetTheme();
   // Çerçeve kalkınca 0 açıkça verilir: Android'de kenarlık silinince taşma kırpması bozulup içerik kayboluyor (tema canlı değişince).
-  return <View style={[styles.card, { backgroundColor: t.surface }, outline(t) ?? { borderWidth: 0 }, padded && { padding: space.lg }, style]}>{children}</View>;
+  return <View style={[styles.card, { backgroundColor: t.surface }, outline(t), padded && { padding: space.lg }, style]}>{children}</View>;
 }
 
 export function SectionTitle({ title, action }: { title: string; action?: ReactNode }) {
   const t = useSweetTheme();
+  const ink = useGlassInk();
   return (
     <View style={styles.sectionTitle}>
-      <Text style={[type.heading, { color: t.text, flex: 1 }]} accessibilityRole="header">
+      <Text style={[type.heading, { color: ink?.text ?? t.text, flex: 1 }]} accessibilityRole="header">
         {title}
       </Text>
       {action}
@@ -121,9 +140,12 @@ export function ProgressBar({ value, max, label, compact }: { value: number; max
   );
 }
 
-export function Eyebrow({ text, color }: { text: string; color?: string }) {
+/** Üst etiket: küçük, kalın, aralıklı büyük harf (Türkçe i/İ kuralıyla). Cam içinde camın soluk yazı rengini alır. */
+export function Eyebrow({ text, color, style }: { text: string; color?: string; style?: StyleProp<TextStyle> }) {
   const t = useSweetTheme();
-  return <Text style={[type.meta, { color: color ?? t.textMuted }]}>{text}</Text>;
+  const ink = useGlassInk();
+  const { lang } = useT();
+  return <Text style={[type.eyebrow, { color: color ?? ink?.muted ?? t.textMuted }, style]}>{upper(text, lang)}</Text>;
 }
 
 /** Liste satırı: solda simge, ortada başlık + açıklama, sağda ok ya da özel öğe. Kart içinde ince çizgiyle ayrılır. */
@@ -147,17 +169,21 @@ export function ListRow({
   danger?: boolean;
 }) {
   const t = useSweetTheme();
+  const ink = useGlassInk();
+  const fg = ink?.text ?? t.text;
+  const muted = ink?.muted ?? t.textMuted;
+  const divider = t.outlined ? t.border : ink ? `${ink.text}1F` : t.border;
   const body = (
     <>
       {leading}
       <View style={{ flex: 1, gap: 2 }}>
-        <Text style={[type.itemTitle, { color: danger ? t.danger : t.text }]}>{title}</Text>
-        {subtitle ? <Text style={[type.meta, { color: t.textMuted }]}>{subtitle}</Text> : null}
+        <Text style={[type.itemTitle, { color: danger ? t.danger : fg }]}>{title}</Text>
+        {subtitle ? <Text style={[type.meta, { color: muted }]}>{subtitle}</Text> : null}
       </View>
-      {trailing ?? (onPress ? <ChevronIcon color={t.textMuted} size={18} /> : null)}
+      {trailing ?? (onPress ? <ChevronIcon color={muted} size={18} /> : null)}
     </>
   );
-  const rowStyle = [styles.row, !first && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.border }, !first && t.outlined && { borderTopWidth: 1 }];
+  const rowStyle = [styles.row, !first && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: divider }, !first && t.outlined && { borderTopWidth: 1 }];
   if (!onPress) {
     return (
       <View style={rowStyle} accessible accessibilityLabel={[title, subtitle].filter(Boolean).join(', ')}>
@@ -189,23 +215,27 @@ export function ToggleRow({
   icon?: (color: string) => ReactNode;
 }) {
   const t = useSweetTheme();
+  const ink = useGlassInk();
+  const fg = ink?.text ?? t.text;
+  const muted = ink?.muted ?? t.textMuted;
+  const divider = t.outlined ? t.border : ink ? `${ink.text}1F` : t.border;
   return (
     <SoftPressable
       onPress={() => onChange(!value)}
       accessibilityRole="switch"
       accessibilityState={{ checked: value }}
       accessibilityLabel={[title, subtitle].filter(Boolean).join(', ')}
-      style={[styles.row, !first && { borderTopWidth: t.outlined ? 1 : StyleSheet.hairlineWidth, borderTopColor: t.border }]}>
-      {icon ? icon(t.text) : null}
+      style={[styles.row, !first && { borderTopWidth: t.outlined ? 1 : StyleSheet.hairlineWidth, borderTopColor: divider }]}>
+      {icon ? icon(fg) : null}
       <View style={{ flex: 1, gap: 2 }}>
-        <Text style={[type.itemTitle, { color: t.text }]}>{title}</Text>
-        {subtitle ? <Text style={[type.meta, { color: t.textMuted }]}>{subtitle}</Text> : null}
+        <Text style={[type.itemTitle, { color: fg }]}>{title}</Text>
+        {subtitle ? <Text style={[type.meta, { color: muted }]}>{subtitle}</Text> : null}
       </View>
       <Switch
         value={value}
         onValueChange={onChange}
         // Kapalı iz de zeminden ayrılsın (≥ 3:1): açık/kapalı farkı ayrıca topun yerinde.
-        trackColor={{ false: t.textMuted, true: t.primaryText }}
+        trackColor={{ false: ink ? `${ink.text}40` : t.textMuted, true: t.primaryText }}
         thumbColor={t.surface}
         ios_backgroundColor={t.soft}
         importantForAccessibility="no"
@@ -215,7 +245,7 @@ export function ToggleRow({
   );
 }
 
-/** Seçeneklerden birini seçtiren yatay grup (radyo düğmesi semantiği): gri ray, seçili parça beyaz. */
+/** Seçeneklerden birini seçtiren yatay grup (radyo düğmesi semantiği): dolgulu hap ray, seçili parça mürekkep ve kalın. */
 export function Segmented<T extends string | number>({
   options,
   value,
@@ -228,10 +258,13 @@ export function Segmented<T extends string | number>({
   label: string;
 }) {
   const t = useSweetTheme();
+  const ink = useGlassInk();
   const { fontScale } = useWindowDimensions();
+  const railBg = t.outlined ? t.soft : ink ? `${t.surface}A6` : t.soft;
+  const idleFg = ink?.muted ?? t.textMuted;
   return (
     <View
-      style={[styles.segmented, { backgroundColor: t.soft, flexDirection: fontScale > 1.5 ? 'column' : 'row' }, outline(t)]}
+      style={[styles.segmented, { backgroundColor: railBg, flexDirection: fontScale > 1.5 ? 'column' : 'row' }, outline(t)]}
       accessibilityRole="radiogroup"
       accessibilityLabel={label}>
       {options.map((o) => {
@@ -247,8 +280,8 @@ export function Segmented<T extends string | number>({
             accessibilityRole="radio"
             accessibilityLabel={o.label}
             accessibilityState={{ checked: on }}
-            style={[styles.segment, on && { backgroundColor: t.outlined ? t.text : t.surface }]}>
-            <Text style={[type.button, { fontSize: 15, color: on ? (t.outlined ? t.background : t.text) : t.textMuted, textAlign: 'center', flexShrink: 1 }]}>{o.label}</Text>
+            style={[styles.segment, on && { backgroundColor: t.primary.fill }]}>
+            <Text style={[type.button, { fontSize: 15, color: on ? t.primary.ink : idleFg, textAlign: 'center', flexShrink: 1 }, !on && { fontFamily: type.meta.fontFamily }]}>{o.label}</Text>
           </SoftPressable>
         );
       })}
@@ -256,7 +289,7 @@ export function Segmented<T extends string | number>({
   );
 }
 
-/** Seçim çipi: gri dolgu; seçiliyken firuze dolgu ve kalın yazı. */
+/** Seçim çipi: dolgulu hap; seçiliyken mürekkep dolgu ve kalın yazı (renk tek başına anlam taşımaz). */
 export function Chip({ label, selected, onPress, icon }: { label: string; selected: boolean; onPress: () => void; icon?: (color: string) => ReactNode }) {
   const t = useSweetTheme();
   const fg = selected ? t.primary.ink : t.text;
@@ -271,7 +304,7 @@ export function Chip({ label, selected, onPress, icon }: { label: string; select
       accessibilityState={{ selected }}
       style={[styles.chip, { backgroundColor: selected ? t.primary.fill : t.soft }, outline(t), selected && t.outlined && { borderWidth: 3 }]}>
       {icon ? icon(fg) : null}
-      <Text style={[type.bubble, { color: fg, fontSize: 15, flexShrink: 1 }, selected && { fontFamily: type.button.fontFamily }]}>{label}</Text>
+      <Text style={[type.bubble, { color: fg, fontSize: 15, flexShrink: 1 }, !selected && { fontFamily: type.meta.fontFamily }]}>{label}</Text>
     </SoftPressable>
   );
 }
@@ -287,7 +320,7 @@ export function Badge({ label, tone = 'neutral' }: { label: string; tone?: 'neut
   }[tone];
   return (
     <View style={[styles.badge, { backgroundColor: c.bg }, outline(t)]}>
-      <Text style={[type.bubble, { color: c.fg }, tone !== 'neutral' && { fontFamily: type.button.fontFamily }]}>{label}</Text>
+      <Text style={[type.bubble, { color: c.fg }]}>{label}</Text>
     </View>
   );
 }
@@ -401,27 +434,28 @@ const styles = StyleSheet.create({
   btn: {
     flexDirection: 'row',
     gap: space.sm,
-    minHeight: 54,
+    minHeight: 56,
     paddingHorizontal: space.xl,
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
     borderCurve: 'continuous',
-    borderWidth: 1,
     paddingVertical: space.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
   btnCompact: { minHeight: 48, paddingHorizontal: space.lg },
-  card: { borderRadius: radius.lg, borderCurve: 'continuous', overflow: 'hidden' },
+  btnArrow: { paddingRight: space.sm + 4, gap: space.md },
+  arrow: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  card: { borderRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden' },
   sectionTitle: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingTop: space.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 64, paddingHorizontal: space.lg, paddingVertical: space.md },
-  segmented: { flexDirection: 'row', padding: 4, borderRadius: radius.md, borderCurve: 'continuous', gap: 4 },
+  segmented: { flexDirection: 'row', padding: 4, borderRadius: radius.pill, borderCurve: 'continuous', gap: 4 },
   segment: {
     flex: 1,
     minWidth: 48,
     minHeight: 48,
     paddingVertical: space.sm,
     paddingHorizontal: space.xs,
-    borderRadius: 12,
+    borderRadius: radius.pill,
     borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',
@@ -434,10 +468,10 @@ const styles = StyleSheet.create({
     minHeight: 48,
     paddingVertical: space.sm,
     paddingHorizontal: space.lg,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     borderCurve: 'continuous',
   },
-  badge: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8 },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 5, borderRadius: radius.pill },
   empty: { alignItems: 'center', gap: space.md, paddingVertical: space.xxl, paddingHorizontal: space.lg },
   field: {
     flexDirection: 'row',

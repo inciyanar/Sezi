@@ -21,6 +21,7 @@ import { z } from "zod";
 
 import { errorKey } from "./account";
 import type { MessageKey } from "./i18n";
+import { photoUrl } from "./media";
 import { browserSupabase } from "./supabase-browser";
 
 const WorkRow = WorkRowSchema.pick({
@@ -86,6 +87,28 @@ export async function getVisits(uid: string) {
     .order("first_at", { ascending: false });
   if (error) throw error;
   return z.array(VisitSchema).parse(data);
+}
+export async function getPublicPhotoCount(uid: string): Promise<number | null> {
+  const { count, error } = await browserSupabase()
+    .from("user_photos")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", uid)
+    .eq("visibility", "public")
+    .eq("review", "approved");
+  return error ? null : count;
+}
+
+export async function getPassportCover(slug: string): Promise<string | null> {
+  const { data, error } = await browserSupabase()
+    .from("works_view")
+    .select("photos")
+    .eq("status", "verified")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (error || !data) return null;
+  const result = WorkRowSchema.pick({ photos: true }).safeParse(data);
+  if (!result.success || !result.data.photos[0]) return null;
+  return photoUrl(result.data.photos[0]);
 }
 export async function getContributions(uid: string) {
   const { data, error } = await browserSupabase()
@@ -182,19 +205,28 @@ export async function unblock(uid: string) {
 export async function getPhotos({
   uid,
   workSlug,
-  community,
-}: { uid?: string; workSlug?: string; community?: boolean } = {}) {
+}: { uid?: string; workSlug?: string } = {}) {
   let query = browserSupabase()
     .from("user_photos")
     .select("*")
     .order("created_at", { ascending: false });
   if (uid) query = query.eq("user_id", uid);
   if (workSlug) query = query.eq("work_slug", workSlug);
-  if (community)
-    query = query.eq("visibility", "public").eq("review", "approved").limit(12);
   const { data, error } = await query;
   if (error) throw error;
   return z.array(UserPhotoSchema).parse(data);
+}
+export async function getWorkCommunityPhotos(workSlug: string) {
+  const { data, count, error } = await browserSupabase()
+    .from("user_photos")
+    .select("*", { count: "exact" })
+    .eq("work_slug", workSlug)
+    .eq("visibility", "public")
+    .eq("review", "approved")
+    .order("created_at", { ascending: false })
+    .limit(12);
+  if (error) throw error;
+  return { photos: z.array(UserPhotoSchema).parse(data), count: count ?? 0 };
 }
 export async function getPhoto(id: string) {
   const { data, error } = await browserSupabase()

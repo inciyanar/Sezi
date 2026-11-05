@@ -9,7 +9,7 @@ import { useSweetTheme } from '@/hooks/use-sweet-theme';
 import { initials } from '@/lib/identity';
 
 /**
- * Profil dairesi: fotoğraf varsa fotoğraf, yoksa seçilen Çini 2 tonunda baş harfler; ad yoksa (girişsiz, yükleniyor)
+ * Profil dairesi: fotoğraf varsa fotoğraf, yoksa seçilen tonda baş harfler; ad yoksa (girişsiz, yükleniyor)
  * kişi simgesi, boş daire hiç görünmez. Dekoratiftir: kimin olduğu yanındaki adla söylenir. Fotoğraf yüklenemezse
  * (internet yok, önbellekte yok) baş harfler görünür kalır.
  */
@@ -31,7 +31,7 @@ export function Avatar({
       importantForAccessibility="no-hide-descendants"
       style={[styles.circle, { width: size, height: size, borderRadius: size / 2, backgroundColor: tone.fill }, t.outlined && { borderWidth: 2, borderColor: t.border }]}>
       {letters ? (
-        <Text style={{ fontFamily: font.round, fontSize: size * 0.38, color: tone.ink }}>{letters}</Text>
+        <Text style={{ fontFamily: font.serif, fontSize: size * 0.42, color: tone.ink }}>{letters}</Text>
       ) : (
         <PersonIcon color={tone.ink} size={size * 0.46} filled />
       )}

@@ -7,6 +7,7 @@ import { Alert, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CueFlash } from '@/components/cue-flash';
+import { Glass, GlassScope, GlassTarget, type GlassToneName } from '@/components/glass';
 import { AltLines, EndPin, ExtraLines, PointsLayer, RouteLine, SeziMap, StopBadges, UserDot, type MapPoint, type SeziMapHandle } from '@/components/map';
 import { NavSheet } from '@/components/nav-sheet';
 import { PointPopup } from '@/components/point-popup';
@@ -16,12 +17,13 @@ import { DevPlanTools, DevWalkTools } from '@/components/route/dev-tools';
 import { PlanPanel } from '@/components/route/plan-panel';
 import { WalkPanel } from '@/components/route/walk-panel';
 import { Text } from '@/components/text';
-import { CloseIcon, PinIcon } from '@/design/icons';
+import { BackIcon, CloseIcon, PinIcon } from '@/design/icons';
 import { SoftPressable, sweetShadow } from '@/design/sweet/components';
 import { radius, space, type } from '@/design/type';
-import { useSweetTheme } from '@/hooks/use-sweet-theme';
+import { useIsDark, useSweetTheme } from '@/hooks/use-sweet-theme';
 import { useT } from '@/lib/i18n';
 import { segmentLines, useNavVersion, useStartPoints, walkingSpeed, type StartPoint } from '@/lib/nav';
+import { DESTINATIONS, destinationName, destinationOf } from '@/lib/navigation/destinations';
 import { navigation, useNavigation, type NavConfig, type NavState } from '@/lib/navigation/session';
 import { usePassport } from '@/lib/passport';
 import { useNavPoints, useWorkPoints } from '@/lib/points';
@@ -36,6 +38,9 @@ import { useSettings } from '@/lib/settings';
 export default function Navigate() {
   const params = useLocalSearchParams<{ dest?: string; tour?: string; stroll?: string }>();
   const t = useSweetTheme();
+  const dark = useIsDark();
+  const tone: GlassToneName = dark && !t.outlined ? 'dark' : 'light';
+  const ink = t.glass[tone];
   const s = useMemo(() => makeStyles(t), [t]);
   const { t: tr, lang } = useT();
   const insets = useSafeAreaInsets();
@@ -110,11 +115,13 @@ export default function Navigate() {
   const plan = state.plan;
   const options = state.options;
   const fitLine = useMemo(() => (options.length > 1 ? options.flatMap((o) => o.plan.geometry.line) : (plan?.geometry.line ?? [])), [options, plan]);
+  const allDestCoords = useMemo(() => DESTINATIONS.map((n) => n.landmarkAt ?? n.location), []);
+  const fitCoords = !searching && fitLine.length ? fitLine : allDestCoords;
   useEffect(() => {
-    if (state.phase !== 'plan' || fitLine.length === 0) return;
-    // Plan paneli ekranın altını kaplar: rota panelin üstünde kalan alana sığdırılır.
-    mapRef.current?.fit(fitLine, { top: insets.top + 72, bottom: sheetHeight + space.lg });
-  }, [fitLine, state.phase, insets.top, sheetHeight]);
+    if (state.phase !== 'plan' || fitCoords.length === 0) return;
+    // Plan paneli ekranın altını kaplar: rota veya seçilebilir hedefler panelin üstünde kalan alana sığdırılır.
+    mapRef.current?.fit(fitCoords, { top: insets.top + 72, bottom: sheetHeight + space.lg });
+  }, [fitCoords, state.phase, insets.top, sheetHeight]);
   useEffect(() => {
     if (state.phase === 'active' && follow && state.position) mapRef.current?.centerOn(state.position);
   }, [state.position, state.phase, follow]);
@@ -130,11 +137,31 @@ export default function Navigate() {
         : mapPoints.flatMap((point) => {
             if (!point.order) return [];
             const atM = plan.via.atM[point.order - 1];
-            return atM === undefined ? [] : [{ ...point, onLine: pointAlong(plan.geometry.line, atM) }];
+            const next = state.phase === 'active' ? plan.via.atM.filter((distance) => distance <= state.distance).length + 1 : 1;
+            return atM === undefined ? [] : [{ ...point, selected: point.order === next, onLine: pointAlong(plan.geometry.line, atM) }];
           }),
-    [plan, mapPoints],
+    [plan, mapPoints, state.phase, state.distance],
   );
   const otherPoints = useMemo(() => mapPoints.filter((point) => !point.order), [mapPoints]);
+  // Hedef seçilmemişken ("Nereye?" açıkken veya rota yokken) pilot alandaki tüm seçilebilir eserler haritada tür simgesiyle görünür.
+  const destPoints = useMemo<MapPoint[]>(
+    () =>
+      DESTINATIONS.flatMap((n) =>
+        n.workSlug
+          ? [
+              {
+                id: n.workSlug,
+                location: n.landmarkAt ?? n.location,
+                kind: 'work' as const,
+                typeSlug: n.workType,
+                label: destinationName(n, lang),
+                selected: state.dest === n.workSlug,
+              },
+            ]
+          : [],
+      ),
+    [lang, state.dest],
+  );
   const altLines = useMemo(
     () => (state.phase === 'plan' ? options.filter((o) => o.choice !== state.choice).map((o) => ({ id: o.choice, line: o.plan.geometry.line })) : []),
     [options, state.choice, state.phase],
@@ -157,8 +184,13 @@ export default function Navigate() {
     navigation.setStart({ kind: 'pick', location: p });
   };
   const onPointPress = (id: string) => {
-    if (state.phase !== 'plan' || picking || !dev) return;
-    if (starts.some((p) => p.id === id)) navigation.setStart({ kind: 'point', id });
+    if (state.phase !== 'plan' || picking) return;
+    if (DESTINATIONS.some((n) => n.workSlug === id)) {
+      void Haptics.selectionAsync();
+      pickDest(id);
+      return;
+    }
+    if (dev && starts.some((p) => p.id === id)) navigation.setStart({ kind: 'point', id });
   };
   const onAltPress = (id: string) => {
     const option = options.find((o) => o.choice === id);
@@ -189,7 +221,7 @@ export default function Navigate() {
       <DestinationSearch onPick={pickDest} onCancel={chosen ? () => setSearching(false) : undefined} />
     ) : (
       <>
-        <PlanPanel state={state} onChangeDest={() => setSearching(true)} />
+        <PlanPanel state={state} onChangeDest={() => setSearching(true)} points={[...points, ...workPts]} canHear={canHear} />
         {dev ? <DevPlanTools state={state} starts={starts} points={points} order={order} picking={picking} setPicking={setPicking} /> : null}
       </>
     );
@@ -204,14 +236,24 @@ export default function Navigate() {
     content = <ArrivalPanel state={state} points={points} canHear={canHear} />;
   }
 
+  const destination = destinationOf(state.dest);
+  const destinationTitle = destination ? destinationName(destination, lang) : tr('nav.stroll');
+  const startTitle = state.start.kind === 'here' ? tr('nav.here') : state.start.kind === 'point'
+    ? (starts.find((point) => point.id === (state.start.kind === 'point' ? state.start.id : ''))?.name[lang] ?? tr('nav.pickOnMap'))
+    : tr('nav.pickOnMap');
+
   const topBar = (
     <View style={[s.mapBar, { top: insets.top + space.sm }]} pointerEvents="box-none">
-      <RoundButton label={state.phase === 'active' ? tr('nav.end') : tr('nav.close')} onPress={onClose} t={t}>
-        <CloseIcon color={t.text} />
+      <RoundButton label={state.phase === 'active' ? tr('nav.end') : tr('nav.close')} onPress={onClose} t={t} tone={tone}>
+        {state.phase === 'active' ? <CloseIcon color={ink.text} /> : <BackIcon color={ink.text} />}
       </RoundButton>
+      <Glass tone={tone} radius={radius.pill} style={s.mapTitle}>
+        <Text style={[type.button, { color: ink.text }]} numberOfLines={1}>{destinationTitle}</Text>
+        <Text style={[type.meta, { color: ink.muted }]} numberOfLines={1}>{tr('nav.from')}: {startTitle}</Text>
+      </Glass>
       {state.phase === 'active' && !mapless ? (
-        <RoundButton label={tr('nav.recenter')} onPress={() => setFollow((v) => !v)} t={t} active={follow}>
-          <PinIcon color={follow ? t.primary.ink : t.text} size={20} />
+        <RoundButton label={tr('nav.recenter')} onPress={() => setFollow((v) => !v)} t={t} tone={tone} active={follow}>
+          <PinIcon color={ink.text} size={20} />
         </RoundButton>
       ) : null}
     </View>
@@ -246,11 +288,13 @@ export default function Navigate() {
   }
 
   return (
+    <GlassScope>
     <View style={s.screen}>
+      <GlassTarget style={{ flex: 1 }}>
       <SeziMap
         ref={mapRef}
         style={{ flex: 1 }}
-        initial={fitLine.length ? fitLine : starts.map((p) => p.location)}
+        initial={fitCoords.length ? fitCoords : starts.map((p) => p.location)}
         initialPadding={{ top: insets.top + 72, bottom: sheetHeight + space.lg }}
         onPress={onMapPress}
         accessibilityLabel={tr('nav.mapLabel', { n: order.size })}>
@@ -258,12 +302,13 @@ export default function Navigate() {
         {route && altLines.length ? <AltLines lines={altLines} onPress={onAltPress} /> : null}
         {route ? <RouteLine pieces={pieces} activeLeg={activeLeg} walked={walked} animate={state.phase === 'plan'} /> : null}
         {state.blocked.length ? <ExtraLines id="blocked" data={segmentLines(state.blocked)} color={t.danger} dashed /> : null}
-        <PointsLayer points={route ? otherPoints : []} onPress={onPointPress} />
+        <PointsLayer points={route ? otherPoints : destPoints} onPress={onPointPress} />
         <StopBadges stops={route ? stopBadges : []} onPress={onPointPress} />
         {route && startAt && state.phase === 'plan' ? <EndPin id="start" location={startAt} kind="start" /> : null}
         {route ? <EndPin id="end" location={route.end.location} kind="end" /> : null}
         {userAt ? <UserDot location={userAt} /> : null}
       </SeziMap>
+      </GlassTarget>
 
       {topBar}
       {picking ? (
@@ -278,22 +323,21 @@ export default function Navigate() {
       {popup}
       {flash}
     </View>
+    </GlassScope>
   );
 }
 
-function RoundButton({ label, onPress, children, t, active }: { label: string; onPress: () => void; children: ReactNode; t: SweetTheme; active?: boolean }) {
+function RoundButton({ label, onPress, children, t, tone, active }: { label: string; onPress: () => void; children: ReactNode; t: SweetTheme; tone: GlassToneName; active?: boolean }) {
   return (
     <SoftPressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={active === undefined ? undefined : { selected: active }}
-      style={[
-        { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: active ? t.primary.fill : t.surface },
-        sweetShadow(t),
-        active && t.outlined && { borderWidth: 3 },
-      ]}>
-      {children}
+      style={sweetShadow(t)}>
+      <Glass tone={tone} radius={24} style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderWidth: active ? 2 : 0, borderColor: t.glass[tone].text }}>
+        {children}
+      </Glass>
     </SoftPressable>
   );
 }
@@ -321,7 +365,8 @@ function buildMapPoints(points: NavPoint[], starts: StartPoint[], state: NavStat
       out.push({ id: p.id, location: p.location, kind: 'story', order: order.get(p.id), label: order.has(p.id) ? name(p) : undefined, done: fired.has(p.id) });
     } else if (p.roles.includes('landmark') && !p.roles.includes('start')) {
       if (!nearRoute(p.location) || (p.workSlug && stopWorks.has(p.workSlug))) continue;
-      out.push({ id: p.id, location: p.location, kind: 'landmark', label: name(p) });
+      const typeSlug = p.workSlug ? destinationOf(p.workSlug)?.workType : undefined;
+      out.push({ id: p.id, location: p.location, kind: 'landmark', label: name(p), typeSlug });
     }
   }
   if (state.phase === 'plan' && state.start.kind === 'point') {
@@ -334,7 +379,8 @@ function buildMapPoints(points: NavPoint[], starts: StartPoint[], state: NavStat
 const makeStyles = (t: SweetTheme) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: t.background },
-    mapBar: { position: 'absolute', left: space.lg, right: space.lg, flexDirection: 'row', justifyContent: 'space-between' },
+    mapBar: { position: 'absolute', left: space.lg, right: space.lg, flexDirection: 'row', alignItems: 'center', gap: space.sm },
+    mapTitle: { flex: 1, minHeight: 48, justifyContent: 'center', paddingHorizontal: space.lg, paddingVertical: space.xs },
     pickBanner: { position: 'absolute', alignSelf: 'center', backgroundColor: t.primary.fill, paddingHorizontal: space.lg, paddingVertical: space.sm, borderRadius: radius.pill, borderCurve: 'continuous' },
     fullBody: { paddingHorizontal: space.xl, gap: space.lg },
   });

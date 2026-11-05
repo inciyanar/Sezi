@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
+import { useGlassInk } from '@/components/glass';
 import { LynchLine } from '@/components/lynch-line';
 import { PhotoSourceTag } from '@/components/photo-source';
 import { Text } from '@/components/text';
@@ -23,6 +24,7 @@ import { photoUrl, useWork } from '@/lib/works';
  */
 export function ArrivalPanel({ state, points, canHear }: { state: NavState; points: NavPoint[]; canHear: boolean }) {
   const t = useSweetTheme();
+  const glassInk = useGlassInk();
   const { t: tr, lang } = useT();
   const slug = state.arrived;
   const { data: work } = useWork(slug ?? '');
@@ -37,10 +39,10 @@ export function ArrivalPanel({ state, points, canHear }: { state: NavState; poin
     const seen = state.fired.map((id) => points.find((p) => p.id === id) ?? workPts.find((p) => p.id === id)).filter((p): p is NavPoint => !!p);
     return (
       <>
-        <Text style={[type.title, { color: t.text }]} accessibilityRole="header">
+        <Text style={[type.title, { color: glassInk?.text ?? t.text }]} accessibilityRole="header">
           {tr('nav.strollDone')}
         </Text>
-        <Text style={[type.lead, { color: t.textMuted }]}>{tr('nav.seenCount', { n: seen.length })}</Text>
+        <Text style={[type.lead, { color: glassInk?.muted ?? t.textMuted }]}>{tr('nav.seenCount', { n: seen.length })}</Text>
         <LynchLine
           stops={seen.map((point, index) => ({
             key: point.id,
@@ -77,10 +79,10 @@ export function ArrivalPanel({ state, points, canHear }: { state: NavState; poin
       ) : null}
       <FadeInItem index={2} style={styles.titleRow}>
         <View style={{ flex: 1, gap: space.xs }}>
-          <Text style={[type.title, { color: t.text }]} accessibilityRole="header">
+          <Text style={[type.title, { color: glassInk?.text ?? t.text }]} accessibilityRole="header">
             {name}
           </Text>
-          {work ? <Text style={[type.meta, { color: t.textMuted }]}>{[loc(work.type_name, lang), work.district].filter(Boolean).join(' · ')}</Text> : null}
+          {work ? <Text style={[type.meta, { color: glassInk?.muted ?? t.textMuted }]}>{[loc(work.type_name, lang), work.district].filter(Boolean).join(' · ')}</Text> : null}
         </View>
         {arrival && canHear ? (
           <IconBubble
@@ -92,7 +94,7 @@ export function ArrivalPanel({ state, points, canHear }: { state: NavState; poin
       </FadeInItem>
       {body ? (
         <FadeInItem index={3}>
-          <Text style={[type.body, { color: t.text }]}>{body}</Text>
+          <Text style={[type.body, { color: glassInk?.text ?? t.text }]}>{body}</Text>
         </FadeInItem>
       ) : null}
       {next ? (

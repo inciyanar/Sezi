@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PageContainer } from "@/components/page";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "@/components/ui/tag";
 import { WorkCard } from "@/components/works/work-card";
 import { WorksMapView } from "@/components/works/works-map-view";
 import { getWorkIndex } from "@/lib/data";
@@ -83,9 +83,9 @@ export default async function ComplexDetailPage({
             {[cityName, first.district].filter(Boolean).join(", ")}
           </Link>
           <span aria-hidden>·</span>
-          <Badge variant="secondary" className="num">
+          <Tag tone="neutral" className="num">
             {t(lang, "works.complex.count", { n: formatNumber(lang, complexWorks.length) })}
-          </Badge>
+          </Tag>
         </div>
       </header>
 
@@ -95,13 +95,13 @@ export default async function ComplexDetailPage({
           {sortedTypes.map(([typeSlug, info]) => (
             <Link
               key={typeSlug}
-              href={href(lang, `/?il=${first.city_slug}&tur=${typeSlug}`)}
+              href={href(lang, `/eserler?il=${first.city_slug}&tur=${typeSlug}`)}
               className="inline-flex min-h-12 items-center gap-2 rounded-lg border bg-card px-3.5 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
             >
               <span>{info.label}</span>
-              <Badge variant="secondary" className="num">
+              <Tag tone="neutral" className="num">
                 {formatNumber(lang, info.count)}
-              </Badge>
+              </Tag>
             </Link>
           ))}
         </div>
@@ -119,7 +119,7 @@ export default async function ComplexDetailPage({
       {/* Harita: isteğe bağlı katlanmış */}
       {hasAnyLocation ? (
         <details className="group rounded-lg border p-4 text-sm">
-          <summary className="cursor-pointer font-heading font-bold text-foreground hover:text-link">
+          <summary className="cursor-pointer font-bold text-foreground hover:text-link">
             {t(lang, "works.complex.mapTitle", { name: complexName })}
           </summary>
           <div className="mt-3">

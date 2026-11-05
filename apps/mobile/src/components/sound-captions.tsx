@@ -2,6 +2,7 @@ import { sideText, type SoundVoice } from '@sezi/shared';
 import { StyleSheet, View } from 'react-native';
 import { Text } from '@/components/text';
 
+import { Eyebrow } from '@/components/ui';
 import { outline } from '@/design/sweet/components';
 import { radius, space, type } from '@/design/type';
 import { useSweetTheme } from '@/hooks/use-sweet-theme';
@@ -17,7 +18,7 @@ export function SoundCaptions({ sounds, muted }: { sounds: SoundVoice[]; muted: 
   const { t: tr, lang } = useT();
   return (
     <View style={[styles.box, { backgroundColor: t.soft }, outline(t)]}>
-      <Text style={[type.eyebrow, { color: t.primaryText }]}>{tr('sound.title')}</Text>
+      <Eyebrow text={tr('sound.title')} />
       {sounds.length === 0 ? <Text style={[type.meta, { color: t.textMuted }]}>{tr('sound.none')}</Text> : null}
       {sounds.map((v) => {
         const kind = tr(`sound.${v.kind}` as MessageKey);

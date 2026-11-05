@@ -30,7 +30,7 @@ export function NavAlertBanner({ alert, onDismiss }: { alert: NavAlert | null; o
 }
 
 const styles = StyleSheet.create({
-  box: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.sm, paddingRight: space.xs, borderRadius: radius.md, borderCurve: 'continuous', borderWidth: 2, overflow: 'hidden' },
+  box: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.sm, paddingRight: space.xs, borderRadius: radius.xl, borderCurve: 'continuous', borderWidth: 2, overflow: 'hidden' },
   bar: { width: 6, alignSelf: 'stretch' },
   close: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
 });

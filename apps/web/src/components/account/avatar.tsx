@@ -37,7 +37,7 @@ export function Avatar({
       aria-hidden
       style={{ width: size, height: size, fontSize: Math.round(size * 0.38) }}
       className={cn(
-        "relative inline-flex shrink-0 select-none items-center justify-center overflow-hidden rounded-full font-heading font-extrabold",
+        "relative inline-flex shrink-0 select-none items-center justify-center overflow-hidden rounded-full font-heading font-normal tracking-[-0.02em]",
         "contrast:border-2 contrast:border-border",
         AVATAR_TONE_CLASS[tone],
         className,

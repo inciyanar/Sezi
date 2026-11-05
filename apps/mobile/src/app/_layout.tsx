@@ -76,7 +76,7 @@ function AppStack() {
           animation: reducedMotion ? 'none' : 'fade',
           headerShadowVisible: false,
           headerTintColor: t.text,
-          headerTitleStyle: { fontFamily: font.round, fontSize: 17 },
+          headerTitleStyle: { fontFamily: font.serif, fontSize: 20 },
           contentStyle: { backgroundColor: t.background },
         }}>
         {/* Profil yoksa uygulama onboarding'e yönlenir. */}
@@ -92,7 +92,10 @@ function AppStack() {
           <Stack.Screen name="search" options={{ title: tr('search.title'), animation: reducedMotion ? 'none' : 'fade_from_bottom' }} />
           <Stack.Screen name="report/new" options={{ title: tr('report.title'), presentation: 'modal' }} />
           <Stack.Screen name="reports" options={{ title: tr('reports.title') }} />
-          <Stack.Screen name="passport" options={{ title: tr('passport.title') }} />
+          <Stack.Screen name="tours" options={{ headerShown: false }} />
+          <Stack.Screen name="ask" options={{ headerShown: false, animation: reducedMotion ? 'none' : 'fade_from_bottom' }} />
+          <Stack.Screen name="stamp/[id]" options={{ headerShown: false, presentation: 'fullScreenModal', animation: reducedMotion ? 'none' : 'fade' }} />
+          <Stack.Screen name="story/[id]" options={{ headerShown: false, presentation: 'fullScreenModal', animation: reducedMotion ? 'none' : 'fade' }} />
           <Stack.Screen name="achievements" options={{ title: tr('ach.title') }} />
           <Stack.Screen name="photos/index" options={{ title: tr('photos.title') }} />
           <Stack.Screen name="photos/new" options={{ title: tr('photos.add'), presentation: 'modal' }} />
@@ -100,7 +103,7 @@ function AppStack() {
           <Stack.Screen name="friends" options={{ title: tr('friends.title') }} />
           <Stack.Screen name="person/[id]" options={{ title: tr('person.title') }} />
           <Stack.Screen name="privacy" options={{ title: tr('privacy.title') }} />
-          {/* Hesap isteğe bağlı: açılışta sorulmaz, Profil → Hesap'tan açılır. */}
+          {/* Hesap isteğe bağlı: açılışta sorulmaz, Pasaport → Hesap'tan açılır. */}
           <Stack.Screen name="account/index" options={{ title: tr('account.title') }} />
           <Stack.Screen name="account/sign-in" options={{ title: tr('account.signIn') }} />
           <Stack.Screen name="account/sign-up" options={{ title: tr('account.signUp') }} />
@@ -110,7 +113,7 @@ function AppStack() {
           <Stack.Screen name="account/password" options={{ title: tr('account.newPasswordTitle') }} />
           <Stack.Screen name="account/edit" options={{ title: tr('account.editProfile') }} />
           <Stack.Screen name="account/delete" options={{ title: tr('account.deleteTitle') }} />
-          <Stack.Screen name="settings" options={{ title: tr('settings.title') }} />
+          <Stack.Screen name="settings" options={{ headerShown: false }} />
           <Stack.Screen name="about" options={{ title: tr('about.title') }} />
           <Stack.Screen name="lab" options={{ title: tr('settings.device') }} />
         </Stack.Protected>

@@ -1,9 +1,9 @@
 /**
- * "Çini 2" deneme teması: sıcak kırık beyaz zemin, mürekkep siyahı metin; ana renk pastel firuze
- * (Bursa Yeşil Türbe çinileri, pilot alanın rengi). Firuze dolgu koyu firuze yazıyla okunur, beyaz yazıyla değil.
+ * "Sezi kâğıt" teması: sıcak kâğıt zemin, mürekkep metin, kiremit vurgu ve altın.
+ * Ana eylem mürekkep haptır (koyu temada altın). Altın yalnız dolgu ya da koyu zemin üstünde yazıdır;
+ * açık zeminde yazı olarak okunmaz. Fotoğraf üstündeki yazı `onPhoto`, buzlu cam yüzeyler `glass` ile çizilir.
  * Altı yumuşak ton (kobalt, firuze, mercan, safran, adaçayı, erik) tür ve vurgu için kullanılır;
  * her ton bir açık dolgu ve üstünde okunacak koyu "mürekkep" çiftidir (AA ≥ 4.5, testle korunur).
- * Şimdilik yalnız ana sayfa ve sekme çubuğu kullanır; diğer ekranlar `theme.ts` ile kalır.
  */
 
 export type SweetToneName = "cobalt" | "teal" | "coral" | "saffron" | "sage" | "plum";
@@ -14,7 +14,7 @@ export interface SweetTone {
   ink: string;
 }
 
-/** Sekme çubuğu: ekrandan ayrık, yüzen açık yüzey; seçili sekmede simgenin arkasında firuze gösterge. */
+/** Sekme çubuğu: ekrandan ayrık, yüzen koyu hap; seçili sekmede simgenin arkasında gösterge, simge altın. */
 export interface SweetNav {
   background: string;
   /** Seçili olmayan simge ve yazı. */
@@ -24,6 +24,14 @@ export interface SweetNav {
   /** Seçili simgenin arkasındaki kapsül ve üstündeki simge. */
   activeBackground: string;
   activeForeground: string;
+}
+
+/** Buzlu cam yüzeyi: `tint` rengi `alpha` opaklıkla bulanık fotoğrafın üstüne serilir. */
+export interface GlassTone {
+  tint: string;
+  alpha: number;
+  text: string;
+  muted: string;
 }
 
 export interface SweetTheme {
@@ -38,14 +46,19 @@ export interface SweetTheme {
   danger: string;
   /** Yüksek kontrast: dolgu yok, her yüzey 2 dp çerçeveyle ayrılır. */
   outlined: boolean;
-  /** Ana eylem: pastel firuze dolgu, koyu firuze yazı. `primary.ink` yalnız `primary.fill` üstünde okunur. */
+  /** Ana eylem: açık temada mürekkep hap, koyu temada altın. `primary.ink` yalnız `primary.fill` üstünde okunur. */
   primary: SweetTone;
-  /** Ana renk zemin ya da yüzey üstünde ön plan (ghost düğme, bağlantı) ve seçili kutucuğun dolgusu (üstünde `background`). */
+  /** Bağlantı, italik başlık vurgusu ve seçili kutucuğun dolgusu (üstünde `background`). */
   primaryText: string;
-  /** Vurgu: UNESCO rozeti, uyarı dolgusu (açık/koyu temada `tones.coral` ile aynı nesne). */
+  /** Vurgu: UNESCO rozeti, uyarı dolgusu. */
   accent: SweetTone;
   /** Vurgu rengi zemin ya da yüzey üstünde ön plan (uyarı yazısı, hedef işareti). */
   accentText: string;
+  /** Altın: ok dairesi, oynat düğmesi, seçili sekme simgesi. Açık zeminde yazı olarak kullanılmaz. */
+  gold: SweetTone;
+  /** Fotoğraf ve koyu bant üstündeki yazı; `accent` italik vurgu. */
+  onPhoto: { text: string; muted: string; accent: string };
+  glass: { light: GlassTone; dark: GlassTone };
   tones: Record<SweetToneName, SweetTone>;
   nav: SweetNav;
 }
@@ -70,40 +83,58 @@ const darkTones: Record<SweetToneName, SweetTone> = {
 
 const plain: SweetTone = { fill: "#FFFFFF", ink: "#000000" };
 
+const gold: SweetTone = { fill: "#C9A25E", ink: "#17140F" };
+const onPhoto = { text: "#FBF8F2", muted: "#E9E2D6", accent: "#C9A25E" };
+/**
+ * Buzlu cam: bulanıklaşan fotoğrafın üstüne serilen ton (maketteki `.frost`, `.frost-dark`). Saydamlık, bulanıklık
+ * hiç çizilemese bile en kötü zeminde (siyah ya da beyaz) metni AA'da tutar (testle korunur); bu yüzden açık camın
+ * ikincil yazısı mürekkebe yakındır.
+ */
+const glass: SweetTheme["glass"] = {
+  light: { tint: "#F4EFE7", alpha: 0.66, text: "#17140F", muted: "#3A332A" },
+  dark: { tint: "#17140F", alpha: 0.72, text: "#FBF8F2", muted: "#D9D1C4" },
+};
+
 export const sweetThemes: Record<"light" | "dark" | "highContrast", SweetTheme> = {
   light: {
-    background: "#F6F4F0",
-    surface: "#FFFFFF",
-    soft: "#ECE8E1",
-    text: "#16151A",
-    textMuted: "#5E5A64",
-    border: "#E2DED6",
-    shadow: "#16151A",
+    background: "#F4EFE7",
+    surface: "#FBF8F2",
+    soft: "#EAE2D4",
+    text: "#17140F",
+    textMuted: "#5B5246",
+    border: "#DDD3C1",
+    shadow: "#3C2814",
     danger: "#B3261E",
     outlined: false,
-    primary: { fill: "#A8E0D6", ink: "#0F4A44" },
-    primaryText: "#0F4A44",
-    accent: lightTones.coral,
-    accentText: "#9A361D",
+    primary: { fill: "#17140F", ink: "#FBF8F2" },
+    primaryText: "#562B1D",
+    accent: { fill: "#F3E1D7", ink: "#8C3B20" },
+    accentText: "#8C3B20",
+    gold,
+    onPhoto,
+    glass,
     tones: lightTones,
-    nav: { background: "#FFFFFF", foreground: "#5E5A64", activeLabel: "#16151A", activeBackground: "#A8E0D6", activeForeground: "#0F4A44" },
+    nav: { background: "#17140F", foreground: "#BDB3A4", activeLabel: "#FBF8F2", activeBackground: "#3A332A", activeForeground: "#C9A25E" },
   },
   dark: {
-    background: "#111014",
-    surface: "#1C1B20",
-    soft: "#26252B",
-    text: "#F3F1F5",
-    textMuted: "#ABA7B3",
-    border: "#2E2D34",
+    background: "#17140F",
+    surface: "#221E18",
+    soft: "#2C271F",
+    text: "#FBF8F2",
+    textMuted: "#BDB3A4",
+    border: "#3A332A",
     shadow: "#000000",
     danger: "#FFB4AB",
     outlined: false,
-    primary: { fill: "#7FCFC3", ink: "#06302B" },
-    primaryText: "#8FD8CC",
-    accent: darkTones.coral,
-    accentText: "#FFC6B3",
+    primary: { fill: "#C9A25E", ink: "#17140F" },
+    primaryText: "#C9A25E",
+    accent: { fill: "#3D2419", ink: "#F2B49A" },
+    accentText: "#F2B49A",
+    gold,
+    onPhoto,
+    glass,
     tones: darkTones,
-    nav: { background: "#1C1B20", foreground: "#ABA7B3", activeLabel: "#F3F1F5", activeBackground: "#7FCFC3", activeForeground: "#06302B" },
+    nav: { background: "#221E18", foreground: "#BDB3A4", activeLabel: "#FBF8F2", activeBackground: "#3A332A", activeForeground: "#C9A25E" },
   },
   highContrast: {
     background: "#FFFFFF",
@@ -115,10 +146,17 @@ export const sweetThemes: Record<"light" | "dark" | "highContrast", SweetTheme> 
     shadow: "#000000",
     danger: "#8E1F1A",
     outlined: true,
-    primary: { fill: "#064C50", ink: "#FFFFFF" },
+    primary: { fill: "#000000", ink: "#FFFFFF" },
     primaryText: "#064C50",
     accent: { fill: "#8E1F1A", ink: "#FFFFFF" },
     accentText: "#8E1F1A",
+    gold: { fill: "#000000", ink: "#FFFFFF" },
+    // Fotoğraf üstündeki yazının arkasına opak siyah perde konur; cam opaktır.
+    onPhoto: { text: "#FFFFFF", muted: "#FFFFFF", accent: "#FFFFFF" },
+    glass: {
+      light: { tint: "#FFFFFF", alpha: 1, text: "#000000", muted: "#000000" },
+      dark: { tint: "#000000", alpha: 1, text: "#FFFFFF", muted: "#FFFFFF" },
+    },
     tones: { cobalt: plain, teal: plain, coral: plain, saffron: plain, sage: plain, plum: plain },
     nav: { background: "#FFFFFF", foreground: "#000000", activeLabel: "#000000", activeBackground: "#000000", activeForeground: "#FFFFFF" },
   },

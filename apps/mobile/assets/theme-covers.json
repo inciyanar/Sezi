@@ -1,0 +1,11 @@
+{
+  "bursa": {
+    "explore": {
+      "light": "bursa/8df4d47f43b3.webp"
+    },
+    "passport": {
+      "light": "bursa/42d7863c95d3.webp",
+      "dark": "commons/268e5d9979047f30.webp"
+    }
+  }
+}

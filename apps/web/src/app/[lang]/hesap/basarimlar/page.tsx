@@ -16,7 +16,7 @@ export default function AchievementsPage() {
     <SocialShell title="ach.title" loading={result.loading} error={result.error}>
       <section aria-labelledby="earned-heading" className="grid gap-4">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 id="earned-heading" className="font-heading text-lg font-bold">
+          <h2 id="earned-heading" className="font-heading font-normal tracking-[-0.02em] text-lg">
             {t("ach.earned")}
           </h2>
           <span className="text-sm font-medium tabular-nums text-muted-foreground">
@@ -34,7 +34,7 @@ export default function AchievementsPage() {
       {locked.length ? (
         <section aria-labelledby="next-heading" className="grid gap-4">
           <div className="flex items-baseline justify-between gap-3">
-            <h2 id="next-heading" className="font-heading text-lg font-bold">
+            <h2 id="next-heading" className="font-heading font-normal tracking-[-0.02em] text-lg">
               {t("ach.next")}
             </h2>
             <span className="text-sm font-medium tabular-nums text-muted-foreground">

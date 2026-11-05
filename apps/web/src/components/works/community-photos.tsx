@@ -5,10 +5,12 @@ import { useId, useState } from "react";
 
 import { FormError } from "@/components/account/form-error";
 import { Button } from "@/components/ui/button";
+import { Eyebrow } from "@/components/ui/eyebrow";
+import { RichTitle } from "@/components/ui/rich-title";
 import { useAccount } from "@/lib/account";
 import { href } from "@/lib/i18n";
 import { useT } from "@/lib/i18n-client";
-import { getPhotos, photoUrls, socialErrorKey } from "@/lib/social";
+import { getWorkCommunityPhotos, photoUrls, socialErrorKey } from "@/lib/social";
 import { useAsync } from "@/lib/use-async";
 import { cn } from "@/lib/utils";
 
@@ -54,59 +56,41 @@ export function CommunityPhotos({ slug, className }: { slug: string; className?:
   const { user } = useAccount();
   const headingId = useId();
   const result = useAsync(async () => {
-    const photos = await getPhotos({ workSlug: slug, community: true });
+    const { photos, count } = await getWorkCommunityPhotos(slug);
     const urls = await photoUrls(
       photos.flatMap((photo) => [photo.thumb_path, photo.path]),
     );
-    return { photos, urls };
+    return { photos, urls, count };
   }, [slug, user?.id]);
   const data = result.data;
-  if (result.loading || (!result.error && !result.data?.photos.length))
-    return null;
+  if (result.loading) return null;
+  const shareHref = href(lang, `/hesap/fotograflar/yeni?eser=${encodeURIComponent(slug)}`);
+  if (result.error) return <FormError text={t(socialErrorKey(result.error))} />;
+  if (!data?.photos.length) return (
+    <section aria-label={t("works.detail.communityTitle")} className={cn("flex flex-wrap items-center justify-between gap-4 rounded-[28px] bg-card p-6", className)}>
+      <p>{t("works.detail.communityEmpty")}</p>
+      <Button asChild variant="line"><Link href={shareHref}>{t("photos.add")}</Link></Button>
+    </section>
+  );
   return (
-    <section aria-labelledby={headingId} className={cn("work-detail-section grid gap-4", className)}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id={headingId} className="font-heading text-2xl font-bold">
-          {t("works.community")}
-        </h2>
-        {user ? (
-          <Button asChild variant="outline" className="min-h-12">
-            <Link
-              href={href(
-                lang,
-                `/hesap/fotograflar/yeni?eser=${encodeURIComponent(slug)}`,
-              )}
-            >
-              {t("photos.add")}
-            </Link>
-          </Button>
-        ) : null}
+    <section aria-labelledby={headingId} className={cn("grid gap-6", className)}>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="grid gap-3">
+          <Eyebrow lang={lang} text={t("works.detail.communityCount", { n: data.count })} />
+          <RichTitle as="h2" id={headingId} text={t("works.detail.communityTitle")} className="font-heading text-4xl font-normal" />
+        </div>
+        <Button asChild variant="line"><Link href={shareHref}>{t("photos.add")}</Link></Button>
       </div>
-      {result.error ? (
-        <FormError text={t(socialErrorKey(result.error))} />
-      ) : null}
-      <div className="flex gap-4 overflow-x-auto pb-2">
-        {data?.photos.map((photo) => (
-          <figure key={photo.id} className="w-48 shrink-0">
-            <a
-              href={data.urls[photo.path]}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block overflow-hidden rounded-lg focus-visible:outline-2 focus-visible:outline-ring"
-            >
-              <PhotoImage
-                src={data.urls[photo.thumb_path]}
-                alt={photo.alt_text}
-              />
+      <div className={cn("grid grid-cols-3 gap-3", data.photos.length >= 6 && "auto-rows-[minmax(110px,18vw)]")}>
+        {data.photos.map((photo, index) => (
+          <figure key={photo.id} className={cn("min-w-0", data.photos.length >= 6 && index === 0 && "row-span-2", data.photos.length >= 6 && (index === 1 || index === 4) && "col-span-2")}>
+            <a href={data.urls[photo.path]} target="_blank" rel="noopener noreferrer" className="block h-full min-h-12 overflow-hidden rounded-2xl focus-visible:outline-2 focus-visible:outline-ring">
+              <PhotoImage src={data.urls[photo.thumb_path]} alt={photo.alt_text} className={cn(data.photos.length >= 6 && "h-full aspect-auto")} />
             </a>
-            <figcaption className="mt-2 text-base leading-relaxed text-muted-foreground">
-              {photo.credit_name
-                ? t("photos.credit", { name: photo.credit_name })
-                : null}
-              {photo.caption ? (
-                <p className="mt-1 text-foreground">{photo.caption}</p>
-              ) : null}
-            </figcaption>
+            {(photo.credit_name || photo.caption) ? <figcaption className="mt-2 text-sm text-muted-foreground">
+              {photo.credit_name ? t("photos.credit", { name: photo.credit_name }) : null}
+              {photo.caption ? <span className="block text-foreground">{photo.caption}</span> : null}
+            </figcaption> : null}
           </figure>
         ))}
       </div>

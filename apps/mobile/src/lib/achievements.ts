@@ -11,6 +11,7 @@ import { useEffect, useMemo } from 'react';
 import { AppState } from 'react-native';
 import { useAccount } from './account';
 import { usePassport } from './passport';
+import { useProfile } from './profile';
 import { useReports } from './reports';
 import { supabase } from './supabase';
 import { useTours } from './tours';
@@ -19,6 +20,9 @@ import { useWorks } from './works';
 export function useAchievements() {
   const { user } = useAccount();
   const { visits } = usePassport();
+  const { profile } = useProfile();
+  // Kurulum bitmişse Hoş Geldin damgası; eski profillerde kurulum zamanı yoktur (tarihsiz kazanılmış).
+  const welcomedAt = profile ? (profile.onboardedAt ?? null) : undefined;
   const worksQuery = useWorks();
   const tours = useTours();
   const reports = useReports();
@@ -66,11 +70,11 @@ export function useAchievements() {
   );
   return useMemo(
     () => ({
-      list: achievements({ visits, works, tours, contributions }),
+      list: achievements({ visits, works, tours, contributions, welcomedAt }),
       stats: passportStats(visits, works, tours),
       // İlk bildirim tabanı, eksik sunucu verisiyle oluşturulmaz.
       ready: worksQuery.isSuccess && (!user || contributionsQuery.isSuccess),
     }),
-    [visits, works, tours, contributions, worksQuery.isSuccess, user, contributionsQuery.isSuccess],
+    [visits, works, tours, contributions, welcomedAt, worksQuery.isSuccess, user, contributionsQuery.isSuccess],
   );
 }

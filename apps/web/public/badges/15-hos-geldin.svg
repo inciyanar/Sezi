@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<defs><g id="s15"><rect x="44" y="44" width="112" height="112" rx="14"/><rect x="44" y="44" width="112" height="112" rx="14" transform="rotate(45 100 100)"/></g></defs>
+<use href="#s15" fill="#9C7B4E" stroke="#9C7B4E" stroke-width="16" stroke-linejoin="round"/>
+<use href="#s15" fill="#E9D6B0" stroke="#E9D6B0" stroke-width="10" stroke-linejoin="round"/>
+<use href="#s15" fill="#4A9B8F"/>
+<circle cx="100" cy="100" r="54" fill="#F5EADB"/>
+<circle cx="100" cy="100" r="47" fill="none" stroke="#4A9B8F" stroke-width="2" stroke-dasharray="3 5"/>
+<path d="M100 52 L102.5 58 L108 60 L102.5 62 L100 68 L97.5 62 L92 60 L97.5 58 Z" fill="#C47B62"/>
+<path d="M78 132 V96 A22 22 0 0 1 122 96 V132 Z" fill="#C47B62"/>
+<path d="M86 132 V99 A14 14 0 0 1 114 99 V132 Z" fill="#8CD4C5"/>
+<path d="M86 132 V99 A14 14 0 0 1 98 85.2 V136 Z" fill="#4A9B8F"/>
+<circle cx="94" cy="114" r="2.5" fill="#F5EADB"/>
+<rect x="70" y="132" width="60" height="6" rx="2" fill="#8C4A33"/>
+</svg>

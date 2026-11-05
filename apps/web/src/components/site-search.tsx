@@ -7,7 +7,6 @@ import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 
 import { SeziLoader } from "@/components/sezi-loader";
-import { Button } from "@/components/ui/button";
 import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { href } from "@/lib/i18n";
 import { useT } from "@/lib/i18n-client";
@@ -23,7 +22,7 @@ const LIMIT = 8;
  * Eser dizini (yalnız ad, tür, yer) ilk açılışta çekilir ve oturum boyunca bellekte kalır; arama ortak
  * `searchWorks` ile tarayıcıda yapılır (ana sayfadaki aramayla aynı sonuç).
  */
-export function SiteSearch() {
+export function SiteSearch({ className }: { className?: string }) {
   const { t, lang } = useT();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -71,11 +70,16 @@ export function SiteSearch() {
 
   return (
     <>
-      <Button variant="ghost" onClick={() => setOpen(true)} aria-label={t("search.open")} aria-keyshortcuts="Control+K Meta+K" className="gap-2 max-sm:size-12 max-sm:px-0 group-data-[scrolled=true]/header:size-12 group-data-[scrolled=true]/header:px-0">
-        <SearchIcon aria-hidden />
-        <span className="hidden sm:inline group-data-[scrolled=true]/header:hidden">{t("search.button")}</span>
-        <kbd className="hidden group-data-[scrolled=true]/header:hidden rounded border bg-muted px-1.5 font-sans text-[0.6875rem] font-semibold text-muted-foreground lg:inline">Ctrl K</kbd>
-      </Button>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label={t("search.open")}
+        aria-keyshortcuts="Control+K Meta+K"
+        title={`${t("search.open")} (Ctrl+K)`}
+        className={className}
+      >
+        <SearchIcon className="size-[18px]" aria-hidden />
+      </button>
       <CommandDialog open={open} onOpenChange={setOpen} title={t("search.open")} description={t("search.placeholder")}>
         <Command shouldFilter={false}>
           <CommandInput value={q} onValueChange={setQ} placeholder={t("search.placeholder")} />

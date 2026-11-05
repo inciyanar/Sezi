@@ -1,28 +1,29 @@
 import { StyleSheet, View } from 'react-native';
 
+import { useGlassInk } from '@/components/glass';
 import { Text } from '@/components/text';
 import { Card, Segmented, ToggleRow } from '@/components/ui';
 import { space, type } from '@/design/type';
 import { useSweetTheme } from '@/hooks/use-sweet-theme';
-import { useT, type MessageKey } from '@/lib/i18n';
+import { useT } from '@/lib/i18n';
 import { useSettings } from '@/lib/settings';
 
 /**
- * Görme ile ilgili görünüm ayarları: yüksek kontrast, yazı boyutu, renk körlüğü, hareket.
- * Onboarding'de "Az görüyorum" seçilince seçeneklerin altında, Ayarlar'da herkes için görünür.
- * Değişiklik hemen uygulanır (önizleme ayrı değil). `tr`: onboarding henüz kaydedilmemiş dili verir.
+ * Görme ile ilgili görünüm ayarları: yüksek kontrast, yazı boyutu, renk körlüğü, hareket (Ayarlar ekranı).
+ * Değişiklik hemen uygulanır (önizleme ayrı değil). Cam içinde (`useGlassInk`) ek kart sarmalayıcısı açmaz.
  */
-export function VisionSettings({ tr: given }: { tr?: (key: MessageKey) => string }) {
+export function VisionSettings({ first = true }: { first?: boolean }) {
   const t = useSweetTheme();
-  const { t: saved } = useT();
-  const tr = given ?? saved;
+  const ink = useGlassInk();
+  const { t: tr } = useT();
   const { settings, update } = useSettings();
+  const divider = t.outlined ? t.border : ink ? `${ink.text}1F` : t.border;
 
-  return (
-    <Card padded={false}>
-      <ToggleRow first title={tr('vision.contrast')} subtitle={tr('vision.contrast.d')} value={settings.highContrast} onChange={(v) => update({ highContrast: v })} />
-      <View style={[styles.block, { borderTopWidth: t.outlined ? 1 : StyleSheet.hairlineWidth, borderTopColor: t.border }]}>
-        <Text style={[type.itemTitle, { color: t.text }]}>{tr('vision.textSize')}</Text>
+  const content = (
+    <>
+      <ToggleRow first={first} title={tr('vision.contrast')} subtitle={tr('vision.contrast.d')} value={settings.highContrast} onChange={(v) => update({ highContrast: v })} />
+      <View style={[styles.block, { borderTopWidth: t.outlined ? 1 : StyleSheet.hairlineWidth, borderTopColor: divider }]}>
+        <Text style={[type.itemTitle, { color: ink?.text ?? t.text }]}>{tr('vision.textSize')}</Text>
         <Segmented
           label={tr('vision.textSize')}
           value={settings.textScale}
@@ -41,8 +42,10 @@ export function VisionSettings({ tr: given }: { tr?: (key: MessageKey) => string
         onChange={(v) => update({ colorSafe: v })}
       />
       <ToggleRow title={tr('vision.motion')} subtitle={tr('vision.motion.d')} value={settings.reduceMotion} onChange={(v) => update({ reduceMotion: v })} />
-    </Card>
+    </>
   );
+  if (ink) return content;
+  return <Card padded={false}>{content}</Card>;
 }
 
 const styles = StyleSheet.create({

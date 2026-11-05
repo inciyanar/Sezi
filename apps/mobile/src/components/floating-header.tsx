@@ -7,8 +7,9 @@ import Animated, { useAnimatedReaction, useAnimatedScrollHandler, useAnimatedSty
 import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Glass } from '@/components/glass';
 import { ChevronIcon } from '@/design/icons';
-import { SoftPressable, sweetShadow } from '@/design/sweet/components';
+import { SoftPressable } from '@/design/sweet/components';
 import { duration, ease } from '@/design/sweet/motion';
 import { space, type } from '@/design/type';
 import { useSweetTheme } from '@/hooks/use-sweet-theme';
@@ -78,9 +79,13 @@ export function FloatingHeader({ title, scrollY, coverHeight, onBack = () => rou
         importantForAccessibility={pastCover ? 'no-hide-descendants' : 'auto'}
         style={[StyleSheet.absoluteFill, floatingStyle]}
       >
-        <SoftPressable onPress={onBack} accessibilityRole="button" accessibilityLabel={tr('work.back')} style={[s.back, { top: insets.top + space.sm, backgroundColor: t.surface }, sweetShadow(t)]}>
-          <View style={{ transform: [{ rotate: '180deg' }] }}><ChevronIcon color={t.text} size={22} /></View>
-        </SoftPressable>
+        <View style={[s.back, { top: insets.top + space.sm }]}>
+          <Glass tone="dark" radius={24}>
+            <SoftPressable onPress={onBack} accessibilityRole="button" accessibilityLabel={tr('work.back')} style={s.backButton}>
+              <View style={{ transform: [{ rotate: '180deg' }] }}><ChevronIcon color={t.glass.dark.text} size={22} /></View>
+            </SoftPressable>
+          </Glass>
+        </View>
       </Animated.View>
     </View>
   );
@@ -88,6 +93,7 @@ export function FloatingHeader({ title, scrollY, coverHeight, onBack = () => rou
 
 const s = StyleSheet.create({
   bar: { position: 'absolute', left: 0, right: 0, top: 0, minHeight: 64, paddingLeft: 80, paddingRight: space.xl, paddingBottom: space.lg, justifyContent: 'center' },
-  back: { position: 'absolute', left: space.lg, width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' },
+  back: { position: 'absolute', left: space.lg, width: 48, height: 48 },
+  backButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   barBack: { position: 'absolute', left: space.lg, top: space.sm, width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
 });
