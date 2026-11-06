@@ -78,7 +78,7 @@ export default function PrivacyPage() {
                 {t(`privacy.vis.${identity.visibility}`)}
               </p>
             </section>
-            <div className="flex min-h-16 items-center gap-4 rounded-xl border bg-card px-4 py-3">
+            <div className="flex min-h-16 items-center gap-4 rounded-[24px] border bg-card px-4 py-3">
               <Search aria-hidden className="size-5 shrink-0 text-muted-foreground" />
               <label htmlFor="privacy-findable" className="grid flex-1 cursor-pointer gap-0.5">
                 <span className="font-semibold">{t("privacy.findable")}</span>
@@ -110,7 +110,7 @@ export default function PrivacyPage() {
             {t("privacy.blocked")}
           </h2>
           {blocked.data?.length ? (
-            <ul className="divide-y rounded-xl border bg-card">
+            <ul className="divide-y rounded-[24px] border bg-card">
               {blocked.data.map(({ id, person }) => {
                 const name = person?.display_name ?? t("person.notFound");
                 return (

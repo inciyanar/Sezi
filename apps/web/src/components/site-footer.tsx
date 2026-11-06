@@ -1,32 +1,39 @@
-import Link from "next/link";
-
-import { BrandMark } from "@/components/brand-mark";
+import { FooterWordmark } from "@/components/prestigeui/footer-wordmark";
 import { href, t, type Lang } from "@/lib/i18n";
 
-const LINK = "inline-flex min-h-12 items-center font-bold text-link underline";
-
+/** Sitenin alt bilgisi: Prestige UI "footer-wordmark" bloğu, Sezi'nin gerçek sayfaları ve metinleriyle. */
 export function SiteFooter({ lang }: { lang: Lang }) {
   return (
-    <footer className="mt-16 px-4 pb-8 pt-10 sm:px-8">
-      <div className="mx-auto max-w-7xl">
-        <Link href={href(lang)} aria-label={t(lang, "nav.home")} className="flex items-end gap-[0.15em] font-heading text-[clamp(70px,15vw,230px)] font-normal leading-[.85] tracking-[-0.05em] text-[var(--brand-mark)]">
-          <BrandMark className="mb-[0.06em] h-[0.62em] shrink-0" />
-          {t(lang, "site.name")}
-        </Link>
-        <div className="mt-10 flex flex-col gap-x-8 gap-y-2 border-t border-border pt-5 text-sm text-muted-foreground lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
-          <p>© 2026 {t(lang, "site.name")} · {t(lang, "site.tagline")}</p>
-          <nav aria-label={t(lang, "nav.about")} className="flex flex-wrap gap-x-5">
-            <Link className={LINK} href={href(lang, "/turlar")}>{t(lang, "nav.tours")}</Link>
-            <Link className={LINK} href={href(lang, "/rota")}>{t(lang, "nav.route")}</Link>
-            <Link className={LINK} href={href(lang, "/sergiler")}>{t(lang, "nav.exhibitions")}</Link>
-            <Link className={LINK} href={href(lang, "/hakkinda")}>{t(lang, "nav.about")}</Link>
-            <Link className={LINK} href={href(lang, "/bildirim")}>{t(lang, "nav.report")}</Link>
-            <Link className={LINK} href={href(lang, "/hakkinda#erisilebilirlik")}>{t(lang, "nav.accessibility")}</Link>
-          </nav>
-          <p>{t(lang, "footer.source")}</p>
-          <p>{t(lang, "footer.project")}</p>
-        </div>
-      </div>
-    </footer>
+    <FooterWordmark
+      brand={t(lang, "site.name")}
+      homeHref={href(lang)}
+      homeLabel={t(lang, "nav.home")}
+      tagline={t(lang, "site.tagline")}
+      navLabel={t(lang, "footer.label")}
+      groups={[
+        {
+          title: t(lang, "footer.explore"),
+          links: [
+            { label: t(lang, "nav.tours"), href: href(lang, "/turlar") },
+            { label: t(lang, "nav.route"), href: href(lang, "/rota") },
+            { label: t(lang, "nav.exhibitions"), href: href(lang, "/sergiler") },
+          ],
+        },
+        {
+          title: t(lang, "footer.about"),
+          links: [
+            { label: t(lang, "nav.about"), href: href(lang, "/hakkinda") },
+            { label: t(lang, "nav.accessibility"), href: href(lang, "/hakkinda#erisilebilirlik") },
+            { label: t(lang, "nav.report"), href: href(lang, "/bildirim") },
+          ],
+        },
+      ]}
+      notes={[t(lang, "footer.source"), t(lang, "footer.project")]}
+      backToTop={t(lang, "footer.backToTop")}
+      timeLabel={t(lang, "footer.localTime")}
+      city="Bursa"
+      timeZone="Europe/Istanbul"
+      locale={lang === "tr" ? "tr-TR" : "en-GB"}
+    />
   );
 }

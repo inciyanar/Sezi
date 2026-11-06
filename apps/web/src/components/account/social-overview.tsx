@@ -17,7 +17,7 @@ import { useAsync } from "@/lib/use-async";
 import { cn } from "@/lib/utils";
 
 const cardLink =
-  "group grid gap-4 rounded-xl border bg-card p-4 outline-none hover:border-link focus-visible:ring-3 focus-visible:ring-ring";
+  "group grid gap-5 rounded-[24px] border bg-card p-5 outline-none transition-colors hover:border-link focus-visible:ring-3 focus-visible:ring-ring sm:p-6";
 
 /** Hesap sayfası: pasaport kartı (son damgalar + sayılar) ve başarım kartı (son kazanılanlar + en yakın). */
 export function SocialOverview({ uid }: { uid: string }) {
@@ -25,7 +25,7 @@ export function SocialOverview({ uid }: { uid: string }) {
   const passport = usePassportData(uid);
   const data = passport.data;
   if (passport.error) return <FormError text={t(errorKey(passport.error))} />;
-  if (!data) return <Skeleton className="h-64 w-full rounded-xl" />;
+  if (!data) return <Skeleton className="h-64 w-full rounded-[24px]" />;
   const bySlug = new Map(data.works.map((work) => [work.slug, work]));
   const stamps = [...data.visits].filter((visit) => bySlug.has(visit.work_slug)).sort((a, b) => b.first_at.localeCompare(a.first_at));
   const cities = data.stats.cities.filter((city) => city.visited > 0).length;
@@ -95,7 +95,7 @@ export function SocialOverview({ uid }: { uid: string }) {
 function CardHead({ title, trailing }: { title: string; trailing?: string }) {
   return (
     <div aria-hidden className="flex items-center gap-2">
-      <h2 className="flex-1 font-heading font-normal tracking-[-0.02em] text-lg">{title}</h2>
+      <h2 className="flex-1 font-heading font-normal tracking-[-0.02em] text-2xl">{title}</h2>
       {trailing ? <span className="text-sm text-muted-foreground">{trailing}</span> : null}
       <ChevronRight className="size-5 text-muted-foreground transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
     </div>
@@ -125,7 +125,7 @@ export function CommunityTiles({ uid }: { uid: string }) {
   const visibility = identity?.visibility ?? "private";
   return (
     <section aria-labelledby="community-heading" className="grid gap-3">
-      <h2 id="community-heading" className="font-heading font-normal tracking-[-0.02em] text-lg">
+      <h2 id="community-heading" className="font-heading font-normal tracking-[-0.02em] text-2xl">
         {t("social.community")}
       </h2>
       <ul className="grid grid-cols-3 gap-3">
@@ -164,7 +164,7 @@ function Tile({
       <Link
         href={to}
         aria-label={[label, countLabel ?? (count ? String(count) : null)].filter(Boolean).join(", ")}
-        className="relative grid min-h-28 justify-items-center content-center gap-2 rounded-xl border bg-card p-3 text-center outline-none hover:border-link focus-visible:ring-3 focus-visible:ring-ring"
+        className="relative grid min-h-28 justify-items-center content-center gap-2 rounded-[20px] border bg-card p-3 text-center outline-none transition-colors hover:border-link focus-visible:ring-3 focus-visible:ring-ring"
       >
         <span
           aria-hidden

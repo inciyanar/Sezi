@@ -1,15 +1,15 @@
 "use client";
 
 import { profileFor } from "@sezi/shared";
-import { ChevronRightIcon, KeyRoundIcon, LogOutIcon, PencilIcon, Trash2Icon, UserCheckIcon } from "lucide-react";
+import { ChevronRightIcon, KeyRoundIcon, LogOutIcon, PencilIcon, Trash2Icon, UserCheckIcon, type LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
+import { AccountHeader, AccountPage as AccountShell, accountCard } from "@/components/account/account-layout";
 import { Avatar } from "@/components/account/avatar";
 import { AccountNote, FormError } from "@/components/account/form-error";
 import { CommunityTiles, SocialOverview } from "@/components/account/social-overview";
-import { PageContainer } from "@/components/page";
 import { ProfileDialog } from "@/components/profile-dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,10 +18,48 @@ import { href } from "@/lib/i18n";
 import { useT } from "@/lib/i18n-client";
 import { useIdentity } from "@/lib/identity";
 import { useProfile } from "@/lib/profile";
+import { cn } from "@/lib/utils";
+
+/** Ayar satırının içeriği: ikon dairesi, başlık, isteğe bağlı alt satır ve sağda ok. */
+function RowBody({ icon: Icon, title, detail, danger }: { icon: LucideIcon; title: string; detail?: string; danger?: boolean }) {
+  return (
+    <>
+      <span
+        aria-hidden
+        className={cn(
+          "grid size-10 shrink-0 place-items-center rounded-full contrast:outline-2 contrast:outline-border",
+          danger ? "bg-destructive/10 text-destructive" : "bg-secondary text-foreground",
+        )}
+      >
+        <Icon className="size-[18px]" />
+      </span>
+      <span className="grid min-w-0 flex-1 gap-0.5 text-left">
+        <span className={cn("font-bold text-[15px]", danger && "text-destructive")}>{title}</span>
+        {detail ? <span className="truncate text-sm text-muted-foreground">{detail}</span> : null}
+      </span>
+      <ChevronRightIcon aria-hidden className="size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
+    </>
+  );
+}
+
+const rowClass =
+  "group flex min-h-16 w-full items-center gap-4 rounded-[18px] px-3 py-2 outline-none transition-colors hover:bg-secondary focus-visible:ring-3 focus-visible:ring-ring";
+
+function SettingsList({ children, title }: { children: ReactNode; title: string }) {
+  return (
+    <section aria-labelledby="settings-heading" className="grid gap-3">
+      <h2 id="settings-heading" className="font-heading font-normal tracking-[-0.02em] text-2xl">
+        {title}
+      </h2>
+      <div className={cn(accountCard, "grid gap-1 p-2")}>{children}</div>
+    </section>
+  );
+}
 
 /**
- * Hesap ana sayfası: girişsizken tanıtım, erişilebilirlik profili özeti ve kayıt/giriş bağlantıları;
- * girişliyken kimlik kartı, erişilebilirlik profili özeti, şifre değişimi, çıkış ve hesap silme.
+ * Hesap ana sayfası. Girişsizken: pasaport çağrısı, kayıt/giriş, erişilebilirlik profili ve gizlilik notu.
+ * Girişliyken: avatar + "Merhaba" başlığı, sağda pasaport ve damgalar, solda topluluk, ayarlar (profil, erişilebilirlik,
+ * şifre, hesap silme) ve çıkış.
  */
 export default function AccountPage() {
   const { t, lang } = useT();
@@ -34,51 +72,42 @@ export default function AccountPage() {
   const [outError, setOutError] = useState<string | null>(null);
 
   const profileSummary = `${t(`profile.vision.${profile.vision}`)} · ${t(`profile.mobility.${profile.mobility}`)} · ${t(`profile.hearing.${profile.hearing}`)}`;
+  const profileRow = (
+    <button type="button" className={rowClass} onClick={() => setProfileOpen(true)}>
+      <RowBody icon={UserCheckIcon} title={t("profile.title")} detail={profileSummary} />
+    </button>
+  );
 
   if (!ready) {
     return (
-      <PageContainer className="max-w-md">
-        <header className="mb-6">
-          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t("account.title")}</h1>
-        </header>
-        <div role="status" aria-label={t("account.loading")} className="grid gap-4">
-          <Skeleton className="h-28 w-full rounded-lg" />
-          <Skeleton className="h-24 w-full rounded-lg" />
+      <AccountShell width="wide">
+        <AccountHeader lang={lang} eyebrow={t("account.title")} title={t("account.settingsTitle")} />
+        <div role="status" aria-label={t("account.loading")} className="grid gap-6 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)]">
+          <Skeleton className="h-72 w-full rounded-[24px]" />
+          <Skeleton className="h-72 w-full rounded-[24px]" />
         </div>
-      </PageContainer>
+      </AccountShell>
     );
   }
 
   if (!user) {
     return (
-      <PageContainer className="max-w-md">
-        <header className="mb-6">
-          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t("account.title")}</h1>
-        </header>
-        <div className="grid gap-6">
-          <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border bg-card p-4">
-            <div className="grid gap-0.5">
-              <h2 className="font-bold text-sm">{t("profile.title")}</h2>
-              <p className="text-xs text-muted-foreground">{profileSummary}</p>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => setProfileOpen(true)}>
-              {t("profile.change")}
-            </Button>
-          </div>
-
+      <AccountShell>
+        <AccountHeader lang={lang} eyebrow={t("auth.eyebrow")} title={t("auth.signUpTitle")} lead={t("auth.signUpLead")} />
+        <div className="grid gap-8">
           <div className="grid gap-3 sm:grid-cols-2">
-            <Button asChild>
+            <Button asChild size="lg" arrow>
               <Link href={href(lang, "/hesap/kayit")}>{t("account.signUp")}</Link>
             </Button>
-            <Button variant="outline" asChild>
+            <Button asChild size="lg" variant="line">
               <Link href={href(lang, "/hesap/giris")}>{t("account.signIn")}</Link>
             </Button>
           </div>
-
+          <SettingsList title={t("account.settingsTitle")}>{profileRow}</SettingsList>
           <AccountNote text={t("account.privacy")} />
         </div>
         <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
-      </PageContainer>
+      </AccountShell>
     );
   }
 
@@ -95,83 +124,44 @@ export default function AccountPage() {
     }
   };
 
-  const name = identity?.display_name ?? user.email ?? "";
+  const name = identity?.display_name || user.email || "";
+  const handle = identity?.username ? `@${identity.username}` : identity?.display_name ? user.email : undefined;
 
   return (
-    <PageContainer className="max-w-5xl">
-      <header className="mb-6">
-        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t("account.title")}</h1>
-      </header>
-      {/* Dar ekranda sıra: kimlik, pasaport/başarımlar, topluluk, diğerleri; geniş ekranda pasaport sağ sütunda. */}
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
-          <Link
-            href={href(lang, "/hesap/duzenle")}
-            aria-label={`${name}${identity?.username ? `, @${identity.username}` : ""}. ${t("account.editProfile")}`}
-            className="group flex items-center gap-4 rounded-xl border bg-card p-4 outline-none hover:border-link focus-visible:ring-3 focus-visible:ring-ring"
-          >
-            <Avatar identity={identity} src={avatar} size={64} />
-            <span aria-hidden className="grid min-w-0 flex-1 gap-0.5">
-              <span className="truncate font-heading font-normal tracking-[-0.02em] text-xl">{name}</span>
-              <span className="truncate text-sm text-muted-foreground">
-                {identity?.username ? `@${identity.username}` : user.email}
-              </span>
-            </span>
-            <PencilIcon className="size-5 shrink-0 text-muted-foreground" aria-hidden />
-          </Link>
-
-          <div className="lg:col-start-2 lg:row-span-5 lg:row-start-1">
-            <SocialOverview uid={user.id} />
-          </div>
-
-          <div className="lg:col-start-1">
-            <CommunityTiles uid={user.id} />
-          </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border bg-card p-4">
-            <div className="flex items-center gap-3">
-              <UserCheckIcon className="size-5 shrink-0 text-muted-foreground" aria-hidden />
-              <div className="grid gap-0.5">
-                <h2 className="font-bold text-sm">{t("profile.title")}</h2>
-                <p className="text-xs text-muted-foreground">{profileSummary}</p>
-              </div>
-            </div>
-            <Button variant="outline" className="min-h-12" onClick={() => setProfileOpen(true)}>
-              {t("profile.change")}
-            </Button>
-          </div>
-
-          <div className="grid gap-1 rounded-xl border bg-card p-2">
-            <Link
-              href={href(lang, "/hesap/sifre?mod=degistir")}
-              className="flex min-h-12 items-center justify-between gap-3 rounded-lg px-3 py-2 hover:bg-muted"
-            >
-              <span className="flex items-center gap-3 font-bold text-sm">
-                <KeyRoundIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                {t("account.changePassword")}
-              </span>
-              <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+    <AccountShell width="wide">
+      <div className="mb-10 flex items-center gap-5 sm:gap-6">
+        <Avatar identity={identity} src={avatar} size={72} />
+        <AccountHeader lang={lang} eyebrow={t("account.title")} title={t("account.hello", { name })} lead={handle} className="mb-0 min-w-0 sm:mb-0 [&_h1]:break-words" />
+      </div>
+      {/* Dar ekranda sıra: pasaport/damgalar, topluluk, ayarlar; geniş ekranda pasaport sağ sütunda. */}
+      <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] lg:gap-12">
+        <div className="lg:col-start-2 lg:row-span-3 lg:row-start-1">
+          <SocialOverview uid={user.id} />
+        </div>
+        <div className="lg:col-start-1">
+          <CommunityTiles uid={user.id} />
+        </div>
+        <div className="grid gap-4 lg:col-start-1">
+          <SettingsList title={t("account.settingsTitle")}>
+            <Link href={href(lang, "/hesap/duzenle")} className={rowClass}>
+              <RowBody icon={PencilIcon} title={t("account.editProfile")} detail={handle ?? name} />
             </Link>
-            <Link
-              href={href(lang, "/hesap/sil")}
-              className="flex min-h-12 items-center justify-between gap-3 rounded-lg px-3 py-2 text-destructive hover:bg-destructive/5"
-            >
-              <span className="flex items-center gap-3 font-bold text-sm">
-                <Trash2Icon className="size-4 shrink-0" aria-hidden />
-                {t("account.delete")}
-              </span>
-              <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+            {profileRow}
+            <Link href={href(lang, "/hesap/sifre?mod=degistir")} className={rowClass}>
+              <RowBody icon={KeyRoundIcon} title={t("account.changePassword")} />
             </Link>
-          </div>
-
-          <div className="grid gap-2">
-            <Button variant="outline" onClick={() => void handleSignOut()} disabled={leaving} className="min-h-12 justify-center">
-              <LogOutIcon aria-hidden />
-              {leaving ? t("account.signingOut") : t("account.signOut")}
-            </Button>
-            <FormError text={outError} />
-          </div>
+            <Link href={href(lang, "/hesap/sil")} className={cn(rowClass, "hover:bg-destructive/5")}>
+              <RowBody icon={Trash2Icon} title={t("account.delete")} danger />
+            </Link>
+          </SettingsList>
+          <Button variant="line" size="lg" onClick={() => void handleSignOut()} disabled={leaving}>
+            <LogOutIcon aria-hidden />
+            {leaving ? t("account.signingOut") : t("account.signOut")}
+          </Button>
+          <FormError text={outError} />
+        </div>
       </div>
       <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
-    </PageContainer>
+    </AccountShell>
   );
 }

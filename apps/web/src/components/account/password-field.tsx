@@ -4,6 +4,7 @@ import { PASSWORD_MIN } from "@sezi/shared";
 import { CheckIcon, CircleIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import { useId, useState } from "react";
 
+import { accountInput } from "@/components/account/form-error";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -83,7 +84,7 @@ export function PasswordField({
           placeholder={t(isNew ? "account.newPasswordPlaceholder" : "account.passwordPlaceholder")}
           aria-invalid={!!error}
           aria-describedby={describedBy}
-          className="h-12 pr-12"
+          className={cn(accountInput, "pr-14")}
         />
         <Button
           type="button"
@@ -91,7 +92,7 @@ export function PasswordField({
           size="icon"
           onClick={() => setVisible((v) => !v)}
           aria-label={visible ? t("account.hide") : t("account.show")}
-          className="absolute right-1"
+          className="absolute right-1 size-12"
         >
           {visible ? <EyeOffIcon aria-hidden /> : <EyeIcon aria-hidden />}
         </Button>

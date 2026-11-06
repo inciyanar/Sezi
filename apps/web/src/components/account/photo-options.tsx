@@ -49,7 +49,7 @@ export function PhotoOptions({
           </p>
         ) : null}
       </div>
-      <div className="grid gap-1 rounded-xl border bg-card p-2">
+      <div className="grid gap-1 rounded-[24px] border bg-card p-2">
         <div className="flex min-h-12 items-center gap-3 px-2">
           <Archive aria-hidden className="size-5 shrink-0" />
           <label htmlFor={`${id}-archive`} className="grid flex-1 cursor-pointer">

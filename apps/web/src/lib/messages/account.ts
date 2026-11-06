@@ -101,6 +101,16 @@ export const tr = {
   "account.err.over_request_rate_limit": "Çok fazla deneme yapıldı. Biraz bekleyip tekrar dene.",
   "account.err.email_address_invalid": "Bu e-posta adresi kullanılamıyor.",
   "account.err.reauthentication_not_valid": "Onay kodu yanlış ya da süresi dolmuş.",
+  "auth.eyebrow": "Sezi hesabı",
+  "auth.quote": "Kayıp değilsin, _henüz sezmedin._",
+  "auth.quoteBody": "Gezdiğin eserler pasaportuna damgalanır; erişilebilirlik profilin her cihazda seninle gelir.",
+  "auth.signInTitle": "Tekrar _hoş geldin._",
+  "auth.signInLead": "Pasaportun, damgaların ve tercihlerin seni bekliyor.",
+  "auth.signUpTitle": "Pasaportunu _aç._",
+  "auth.signUpLead": "Bir ad, bir e-posta, bir şifre. Gerisini yürürken toplarsın.",
+  "auth.forgotLead": "E-posta adresine altı haneli bir kod gönderelim; kodla yeni şifreni belirlersin.",
+  "account.hello": "Merhaba, _{name}._",
+  "account.settingsTitle": "Ayarlar",
 };
 
 export const en: Record<keyof typeof tr, string> = {
@@ -205,4 +215,14 @@ export const en: Record<keyof typeof tr, string> = {
   "account.err.over_request_rate_limit": "Too many attempts. Wait a little and try again.",
   "account.err.email_address_invalid": "This email address cannot be used.",
   "account.err.reauthentication_not_valid": "The confirmation code is wrong or has expired.",
+  "auth.eyebrow": "Sezi account",
+  "auth.quote": "You are not lost, _you have yet to sense._",
+  "auth.quoteBody": "The works you visit are stamped into your passport; your accessibility profile follows you on every device.",
+  "auth.signInTitle": "Welcome _back._",
+  "auth.signInLead": "Your passport, stamps and preferences are waiting for you.",
+  "auth.signUpTitle": "Open your _passport._",
+  "auth.signUpLead": "A name, an email, a password. You collect the rest as you walk.",
+  "auth.forgotLead": "We will send a six-digit code to your email; you set a new password with it.",
+  "account.hello": "Hello, _{name}._",
+  "account.settingsTitle": "Settings",
 };

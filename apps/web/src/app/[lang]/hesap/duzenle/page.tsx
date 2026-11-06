@@ -17,7 +17,7 @@ import { toast } from "sonner";
 
 import { Avatar, AVATAR_TONE_CLASS } from "@/components/account/avatar";
 import { AccountField, FormError } from "@/components/account/form-error";
-import { PageContainer } from "@/components/page";
+import { AccountHeader, AccountPage, accountCard } from "@/components/account/account-layout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAccount } from "@/lib/account";
@@ -47,14 +47,12 @@ export default function EditProfilePage() {
 
   if (!identity) {
     return (
-      <PageContainer className="max-w-md">
-        <header className="mb-6">
-          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t("account.editProfile")}</h1>
-        </header>
+      <AccountPage>
+        <AccountHeader lang={lang} eyebrow={t("account.title")} title={t("account.editProfile")} />
         <div role="status" aria-label={t("account.loading")} className="grid gap-4">
-          <Skeleton className="h-64 w-full rounded-lg" />
+          <Skeleton className="h-96 w-full rounded-[24px]" />
         </div>
-      </PageContainer>
+      </AccountPage>
     );
   }
 
@@ -146,13 +144,11 @@ function Editor({
   };
 
   return (
-    <PageContainer className="max-w-md">
-      <header className="mb-6">
-        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t("account.editProfile")}</h1>
-      </header>
+    <AccountPage>
+      <AccountHeader lang={lang} eyebrow={t("account.title")} title={t("account.editProfile")} />
       <form
         noValidate
-        className="grid gap-6 rounded-lg border bg-card p-6"
+        className={cn(accountCard, "grid gap-7 p-6 sm:p-8")}
         onSubmit={(ev) => {
           ev.preventDefault();
           void submit();
@@ -249,14 +245,14 @@ function Editor({
             <FormError text={errors.form} />
 
             <div className="flex flex-wrap items-center gap-3 pt-1">
-              <Button type="submit" disabled={busy}>
+              <Button type="submit" size="lg" arrow disabled={busy}>
                 {busy ? t("account.saving") : t("account.save")}
               </Button>
-              <Button variant="ghost" asChild>
+              <Button variant="ghost" size="lg" asChild>
                 <Link href={href(lang, "/hesap")}>{t("common.cancel")}</Link>
               </Button>
             </div>
       </form>
-    </PageContainer>
+    </AccountPage>
   );
 }

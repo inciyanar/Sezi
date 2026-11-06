@@ -137,7 +137,7 @@ export default function FriendsPage() {
         <p className="py-6 text-center text-muted-foreground">{t("friends.noRequests")}</p>
       );
     return (
-      <ul className="divide-y rounded-xl border bg-card">
+      <ul className="divide-y rounded-[24px] border bg-card">
         {items.map(({ row, person, id, avatar }) => {
           const name = person?.display_name ?? t("person.notFound");
           const incoming = row.status === "pending" && row.addressee === user.id;
@@ -184,7 +184,7 @@ export default function FriendsPage() {
               <Search aria-hidden className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="friend-query"
-                className="h-12 rounded-xl border-0 bg-muted pl-12"
+                className="h-14 rounded-2xl border-0 bg-secondary pl-12 text-base md:text-base"
                 placeholder={t("friends.searchPlaceholder")}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
@@ -223,7 +223,7 @@ export default function FriendsPage() {
             ) : null}
           </div>
           {results.data?.length ? (
-            <ul className="divide-y rounded-xl border bg-card">
+            <ul className="divide-y rounded-[24px] border bg-card">
               {results.data.map(({ person, avatar }) => {
                 const state = friendState(list.data?.rows ?? [], user.id, person.user_id);
                 return (

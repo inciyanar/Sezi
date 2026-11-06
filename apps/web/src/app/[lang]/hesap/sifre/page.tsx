@@ -8,7 +8,8 @@ import { toast } from "sonner";
 import { CodeField, useCooldown } from "@/components/account/code-input";
 import { FormError } from "@/components/account/form-error";
 import { PasswordField } from "@/components/account/password-field";
-import { PageContainer } from "@/components/page";
+import { AccountHeader, AccountPage, accountCard } from "@/components/account/account-layout";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { errorKey, sendPasswordChangeCode, setPassword, useAccount } from "@/lib/account";
 import { href } from "@/lib/i18n";
@@ -77,28 +78,24 @@ function PasswordContent() {
 
   if (change && !sent) {
     return (
-      <PageContainer className="max-w-md">
-        <header className="mb-6">
-          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{title}</h1>
-        </header>
-        <div className="grid gap-4 rounded-lg border bg-card p-6">
+      <AccountPage>
+        <AccountHeader lang={lang} eyebrow={t("account.title")} title={title} />
+        <div className={cn(accountCard, "grid gap-4 p-6 sm:p-8")}>
           <FormError text={errors.form} />
-          <Button onClick={() => void sendCode()} disabled={busy}>
+          <Button size="lg" arrow onClick={() => void sendCode()} disabled={busy}>
             {busy ? t("account.sending") : t("account.sendCode")}
           </Button>
         </div>
-      </PageContainer>
+      </AccountPage>
     );
   }
 
   return (
-    <PageContainer className="max-w-md">
-      <header className="mb-6">
-        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{title}</h1>
-      </header>
+    <AccountPage>
+      <AccountHeader lang={lang} eyebrow={t(change ? "account.title" : "auth.eyebrow")} title={title} />
       <form
         noValidate
-        className="grid gap-5 rounded-lg border bg-card p-6"
+        className={cn(accountCard, "grid gap-5 p-6 sm:p-8")}
         onSubmit={(ev) => {
           ev.preventDefault();
           void save();
@@ -113,14 +110,15 @@ function PasswordContent() {
           error={errors.password}
         />
         <FormError text={errors.form} />
-        <div className="grid gap-2">
-          <Button type="submit" disabled={busy}>
+        <div className="grid gap-3">
+          <Button type="submit" size="lg" arrow disabled={busy}>
             {busy ? t("account.saving") : t("account.savePassword")}
           </Button>
           {change ? (
             <Button
               type="button"
-              variant="ghost"
+              size="lg"
+              variant="line"
               onClick={() => void sendCode()}
               disabled={cooldown.left > 0 || busy}
             >
@@ -129,7 +127,7 @@ function PasswordContent() {
           ) : null}
         </div>
       </form>
-    </PageContainer>
+    </AccountPage>
   );
 }
 

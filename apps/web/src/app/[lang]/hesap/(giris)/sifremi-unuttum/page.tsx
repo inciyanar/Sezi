@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 
 import { AccountField } from "@/components/account/form-error";
-import { PageContainer } from "@/components/page";
+import { AccountHeader } from "@/components/account/account-layout";
 import { Button } from "@/components/ui/button";
 import { errorKey, requestPasswordReset } from "@/lib/account";
 import { href } from "@/lib/i18n";
@@ -39,13 +39,11 @@ function ForgotContent() {
   };
 
   return (
-    <PageContainer className="max-w-md">
-      <header className="mb-6">
-        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t("account.forgotTitle")}</h1>
-      </header>
+    <>
+      <AccountHeader lang={lang} eyebrow={t("auth.eyebrow")} title={t("account.forgotTitle")} lead={t("auth.forgotLead")} />
       <form
         noValidate
-        className="grid gap-5 rounded-lg border bg-card p-6"
+        className="grid gap-5"
         onSubmit={(ev) => {
           ev.preventDefault();
           void submit();
@@ -61,11 +59,11 @@ function ForgotContent() {
           onChange={(ev) => setEmail(ev.target.value)}
           autoComplete="email"
         />
-        <Button type="submit" disabled={busy}>
+        <Button type="submit" size="lg" arrow disabled={busy}>
           {busy ? t("account.sending") : t("account.sendCode")}
         </Button>
       </form>
-    </PageContainer>
+    </>
   );
 }
 

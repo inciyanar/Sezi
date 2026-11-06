@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { AccountNote, FormError } from "@/components/account/form-error";
-import { PageContainer } from "@/components/page";
+import { AccountHeader, AccountPage, accountCard } from "@/components/account/account-layout";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,17 +57,15 @@ export default function DeleteAccountPage() {
   };
 
   return (
-    <PageContainer className="max-w-md">
-      <header className="mb-6">
-        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t("account.deleteTitle")}</h1>
-      </header>
-      <div className="grid gap-5 rounded-lg border bg-card p-6">
+    <AccountPage>
+      <AccountHeader lang={lang} eyebrow={t("account.title")} title={t("account.deleteTitle")} />
+      <div className={`${accountCard} grid gap-5 p-6 sm:p-8`}>
         <AccountNote text={t("account.deleteKeeps")} />
         <FormError text={error} />
-        <div className="grid gap-2">
+        <div className="grid gap-3">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" disabled={busy}>
+              <Button variant="destructive" size="lg" disabled={busy}>
                 {busy ? t("account.deleting") : t("account.deleteConfirm")}
               </Button>
             </AlertDialogTrigger>
@@ -84,11 +82,11 @@ export default function DeleteAccountPage() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          <Button variant="ghost" asChild>
+          <Button variant="ghost" size="lg" asChild>
             <Link href={href(lang, "/hesap")}>{t("common.cancel")}</Link>
           </Button>
         </div>
       </div>
-    </PageContainer>
+    </AccountPage>
   );
 }

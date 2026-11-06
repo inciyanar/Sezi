@@ -6,7 +6,7 @@ import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
 
 import { AccountNote } from "@/components/account/form-error";
-import { PageContainer } from "@/components/page";
+import { AccountHeader } from "@/components/account/account-layout";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -69,7 +69,7 @@ export function CodeField({
           onChange(digits);
           if (digits.length === CODE_LENGTH) onComplete?.(digits);
         }}
-        className="num h-14 text-center font-bold text-2xl tracking-[0.4em]"
+        className="num h-16 rounded-2xl bg-card text-center font-bold text-2xl tracking-[0.4em]"
       />
       <FieldDescription id={helpId}>{t("account.codeHelp", { n: CODE_LENGTH })}</FieldDescription>
       {error ? <FieldError id={errorId}>{error}</FieldError> : null}
@@ -128,27 +128,27 @@ export function CodeVerify({ mode, email }: { mode: "signup" | "recovery"; email
   };
 
   return (
-    <PageContainer className="max-w-md">
-      <header className="mb-6">
-        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
-          {t(mode === "recovery" ? "account.forgotTitle" : "account.verifyTitle")}
-        </h1>
-        {email ? <p className="mt-1 text-sm text-muted-foreground">{email}</p> : null}
-      </header>
+    <>
+      <AccountHeader
+        lang={lang}
+        eyebrow={t("auth.eyebrow")}
+        title={t(mode === "recovery" ? "account.forgotTitle" : "account.verifyTitle")}
+        lead={email || undefined}
+      />
       <div className="grid gap-6">
         <form
-          className="grid gap-5 rounded-lg border bg-card p-6"
+          className="grid gap-5"
           onSubmit={(e) => {
             e.preventDefault();
             void submit();
           }}
         >
           <CodeField value={code} onChange={setCode} error={error} onComplete={(c) => void submit(c)} autoFocus />
-          <div className="grid gap-2">
-            <Button type="submit" disabled={busy || code.length < CODE_LENGTH}>
+          <div className="grid gap-3">
+            <Button type="submit" size="lg" arrow disabled={busy || code.length < CODE_LENGTH}>
               {busy ? t("account.checking") : t("account.verify")}
             </Button>
-            <Button type="button" variant="ghost" onClick={() => void resend()} disabled={cooldown.left > 0 || busy}>
+            <Button type="button" size="lg" variant="line" onClick={() => void resend()} disabled={cooldown.left > 0 || busy}>
               {cooldown.left > 0 ? t("account.resendIn", { s: cooldown.left }) : t("account.resend")}
             </Button>
           </div>
@@ -160,6 +160,6 @@ export function CodeVerify({ mode, email }: { mode: "signup" | "recovery"; email
         </form>
         <AccountNote text={t(mode === "recovery" ? "account.noCodeRecovery" : "account.noCode")} />
       </div>
-    </PageContainer>
+    </>
   );
 }

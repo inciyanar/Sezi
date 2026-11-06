@@ -1,6 +1,7 @@
 "use client";
 
 import { achievements, BADGE_IDS, badgeFor, EMPTY_CONTRIBUTIONS, passportStats, type Achievement, type LocalizedText, type PassportStats, type PassportTour, type PassportWork, type Visit } from "@sezi/shared";
+import { SettingsIcon } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 
@@ -75,7 +76,7 @@ export function PassportContent({ data, createdAt }: { data: PassportData | null
       <Band size="auto" image={data?.cover} imageClassName="opacity-45" className="min-h-[480px] bg-[var(--glass-dark)]" contentClassName="flex min-h-[480px] items-end">
         <div className="mx-auto grid w-full max-w-7xl gap-10 px-6 pt-36 pb-12 md:grid-cols-2 md:items-end md:px-12">
           <div className="grid gap-8">
-            {data ? <div className="flex items-center gap-4"><Avatar identity={identity} src={avatar} size={72} /><div><p className="text-lg font-bold">{identity?.display_name}</p>{since ? <p className="text-sm text-on-photo-muted">{t("passport.since", { date: since })}</p> : null}</div></div> : null}
+            {data ? <div className="flex flex-wrap items-center gap-x-6 gap-y-4"><div className="flex items-center gap-4"><Avatar identity={identity} src={avatar} size={72} /><div><p className="text-lg font-bold">{identity?.display_name}</p>{since ? <p className="text-sm text-on-photo-muted">{t("passport.since", { date: since })}</p> : null}</div></div><Button asChild variant="line" className="min-h-12"><Link href={href(lang, "/hesap")}><SettingsIcon aria-hidden />{t("nav.settings")}</Link></Button></div> : null}
             <RichTitle as="h1" text={t(data ? "passport.hero" : "passport.guestTitle")} className="font-heading text-5xl leading-[1.02] tracking-[-0.03em] md:text-7xl" />
             {!data ? <div className="flex flex-wrap gap-3"><Button asChild variant="cream"><Link href={href(lang, "/hesap/giris")}>{t("account.signIn")}</Link></Button><Button asChild variant="line"><Link href={href(lang, "/hesap/kayit")}>{t("account.signUp")}</Link></Button></div> : null}
           </div>

@@ -77,7 +77,7 @@ function PhotoArchive() {
           <li>
             <Link
               href={addHref}
-              className="grid aspect-square place-items-center content-center gap-2 rounded-lg border-2 border-dashed border-link text-link outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring"
+              className="grid aspect-square place-items-center content-center gap-2 rounded-[20px] border-2 border-dashed border-link text-link outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring"
             >
               <Camera aria-hidden className="size-8" />
               <span className="font-semibold">{t("photos.add")}</span>

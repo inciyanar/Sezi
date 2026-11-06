@@ -140,7 +140,7 @@ function NewPhoto() {
               </FieldLabel>
               <label
                 htmlFor="photo-file"
-                className="relative grid min-h-48 cursor-pointer place-items-center overflow-hidden rounded-xl border-2 border-dashed border-border bg-card text-center has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring"
+                className="relative grid min-h-48 cursor-pointer place-items-center overflow-hidden rounded-[24px] border-2 border-dashed border-border bg-card text-center has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring"
               >
                 {preview ? (
                   <PhotoImage src={preview} alt={alt} className="max-h-96 w-full object-contain" />
@@ -176,7 +176,7 @@ function NewPhoto() {
             <Field data-invalid={!!errors.work}>
               <FieldLabel htmlFor="photo-work-search">{t("photos.work")}</FieldLabel>
               {selectedWork ? (
-                <div className="flex min-h-14 items-center gap-3 rounded-xl border bg-card px-3 py-2">
+                <div className="flex min-h-14 items-center gap-3 rounded-[24px] border bg-card px-3 py-2">
                   <Stamp slug={selectedWork.slug} typeSlug={selectedWork.type_slug} className="size-11" />
                   <span className="flex-1 font-semibold">{loc(selectedWork.name, lang)}</span>
                   <Button
@@ -203,7 +203,7 @@ function NewPhoto() {
                     aria-describedby={errors.work ? "photo-work-error" : undefined}
                   />
                   {query.trim() ? (
-                    <div className="flex max-h-72 flex-col overflow-y-auto rounded-xl border bg-card" role="group" aria-label={t("photos.chooseWork")}>
+                    <div className="flex max-h-72 flex-col overflow-y-auto rounded-[24px] border bg-card" role="group" aria-label={t("photos.chooseWork")}>
                       {matches.map((work) => (
                         <Button
                           key={work.slug}

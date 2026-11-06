@@ -1,17 +1,26 @@
 "use client";
 
-import { CatIcon, ContrastIcon, UserRoundIcon } from "lucide-react";
+import { CatIcon, ContrastIcon, LogOutIcon, PencilIcon, SettingsIcon, StampIcon, UserRoundIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { Avatar } from "@/components/account/avatar";
 import { BottomNav } from "@/components/bottom-nav";
 import { BrandMark } from "@/components/brand-mark";
 import { SiteSearch } from "@/components/site-search";
-import { useAccount } from "@/lib/account";
+import { errorKey, signOut, useAccount } from "@/lib/account";
 import { setAppearance, TEXT_SIZES, useAppearance } from "@/lib/appearance";
 import { href, type MessageKey } from "@/lib/i18n";
 import { useT } from "@/lib/i18n-client";
@@ -132,43 +141,95 @@ function LangSwitch({ solid }: { solid: boolean }) {
   );
 }
 
-/** Hesap düğmesi: girişsizken "Giriş yap", girişliyken avatar + ad → pasaport sayfası. */
-function AccountLink({ solid }: { solid: boolean }) {
+/**
+ * Hesap düğmesi. Girişsizken "Giriş yap" (dar ekranda yalnız ikon). Girişliyken avatar (+ geniş ekranda ad)
+ * bir menü açar: pasaport, profili düzenle, hesap ayarları, çıkış.
+ */
+function AccountMenu({ solid }: { solid: boolean }) {
   const { t, lang } = useT();
   const { ready, user } = useAccount();
   const { identity, avatar } = useIdentity();
-  if (!ready) return <span className="inline-block h-11 w-24" aria-hidden />;
+  const [leaving, setLeaving] = useState(false);
+  if (!ready) return <span className="inline-block size-11 min-[1200px]:w-24" aria-hidden />;
   if (!user) {
     return (
       <Link
         href={href(lang, "/hesap/giris")}
+        aria-label={t("nav.signIn")}
         className={cn(
-          "relative inline-flex h-11 items-center gap-2 rounded-full px-4 text-[14px] font-bold transition-colors duration-200 after:absolute after:-inset-y-1 after:inset-x-0",
+          "relative inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-full text-[14px] font-bold transition-colors duration-200 after:absolute after:-inset-1 min-[1200px]:px-4",
           solid
             ? "bg-primary text-primary-foreground hover:opacity-92 contrast:outline-2 contrast:outline-border"
             : "bg-[var(--on-photo)] text-foreground hover:opacity-92 contrast:outline-2 contrast:outline-current",
         )}
       >
         <UserRoundIcon className="size-4" aria-hidden />
-        {t("nav.signIn")}
+        <span className="hidden min-[1200px]:inline">{t("nav.signIn")}</span>
       </Link>
     );
   }
   const name = identity?.display_name || user.email || t("nav.account");
+  const handle = identity?.username ? `@${identity.username}` : identity?.display_name ? user.email : null;
+  const leave = async () => {
+    setLeaving(true);
+    try {
+      await signOut();
+      toast.success(t("account.signedOut"));
+    } catch (e) {
+      toast.error(t(errorKey(e) === "account.err.network" ? "account.signOutOffline" : "account.err.generic"));
+    } finally {
+      setLeaving(false);
+    }
+  };
+  const item = "min-h-12 cursor-pointer gap-3 px-3 text-sm font-semibold";
   return (
-    <Link
-      href={href(lang, "/hesap/pasaport")}
-      aria-label={`${t("nav.account")}: ${name}`}
-      className={cn(
-        "relative inline-flex h-11 items-center gap-2 rounded-full py-0 pr-3.5 pl-1 text-[14px] font-bold transition-colors duration-200 after:absolute after:-inset-y-1 after:inset-x-0",
-        solid
-          ? "bg-secondary text-foreground hover:bg-border/60 contrast:outline-2 contrast:outline-border"
-          : "bg-[var(--on-photo)] text-foreground hover:opacity-92 contrast:outline-2 contrast:outline-current",
-      )}
-    >
-      <Avatar identity={identity} src={avatar} size={36} />
-      <span className="max-w-32 truncate">{name}</span>
-    </Link>
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label={`${t("nav.account")}: ${name}`}
+          className={cn(
+            "relative inline-flex h-11 items-center gap-2 rounded-full p-1 text-[14px] font-bold transition-colors duration-200 outline-none after:absolute after:-inset-1 focus-visible:ring-3 focus-visible:ring-ring/50 min-[1200px]:pr-3.5",
+            solid
+              ? "bg-secondary text-foreground hover:bg-border/60 contrast:outline-2 contrast:outline-border"
+              : "bg-[var(--on-photo)] text-foreground hover:opacity-92 contrast:outline-2 contrast:outline-current",
+          )}
+        >
+          <Avatar identity={identity} src={avatar} size={36} />
+          <span className="hidden max-w-32 truncate min-[1200px]:inline">{name}</span>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" sideOffset={8} className="w-64 p-2">
+        <DropdownMenuLabel className="grid gap-0.5 px-3 py-2">
+          <span className="truncate text-sm font-bold text-foreground">{name}</span>
+          {handle ? <span className="truncate text-xs font-normal text-muted-foreground">{handle}</span> : null}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild className={item}>
+          <Link href={href(lang, "/hesap/pasaport")}>
+            <StampIcon aria-hidden />
+            {t("nav.passport")}
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className={item}>
+          <Link href={href(lang, "/hesap/duzenle")}>
+            <PencilIcon aria-hidden />
+            {t("account.editProfile")}
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className={item}>
+          <Link href={href(lang, "/hesap")}>
+            <SettingsIcon aria-hidden />
+            {t("nav.settings")}
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className={item} disabled={leaving} onSelect={() => void leave()}>
+          <LogOutIcon aria-hidden />
+          {leaving ? t("account.signingOut") : t("account.signOut")}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -278,9 +339,7 @@ export function SiteHeader() {
             <SiteSearch className={cn(ICON_BTN_BASE, solid ? ICON_BTN_SOLID : ICON_BTN_GLASS)} />
             <AppearanceMenu solid={solid} />
             <LangSwitch solid={solid} />
-            <div className="hidden min-[1200px]:block">
-              <AccountLink solid={solid} />
-            </div>
+            <AccountMenu solid={solid} />
           </div>
         </div>
       </header>

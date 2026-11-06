@@ -7,7 +7,7 @@ import { useState } from "react";
 
 import { AccountField, FormError } from "@/components/account/form-error";
 import { PasswordField } from "@/components/account/password-field";
-import { PageContainer } from "@/components/page";
+import { AccountHeader } from "@/components/account/account-layout";
 import { Button } from "@/components/ui/button";
 import { errorCode, errorKey, resendSignupCode, signIn } from "@/lib/account";
 import { href } from "@/lib/i18n";
@@ -59,13 +59,11 @@ export default function SignInPage() {
     : "/hesap/sifremi-unuttum";
 
   return (
-    <PageContainer className="max-w-md">
-      <header className="mb-6">
-        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t("account.signIn")}</h1>
-      </header>
+    <>
+      <AccountHeader lang={lang} eyebrow={t("auth.eyebrow")} title={t("auth.signInTitle")} lead={t("auth.signInLead")} />
       <form
         noValidate
-        className="grid gap-5 rounded-lg border bg-card p-6"
+        className="grid gap-5"
         onSubmit={(ev) => {
           ev.preventDefault();
           void submit();
@@ -84,21 +82,21 @@ export default function SignInPage() {
         <div className="grid gap-1">
           <PasswordField label={t("account.password")} value={password} onChange={setPassword} />
           <div className="flex justify-end">
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="link" size="sm" asChild className="px-0">
               <Link href={href(lang, forgotPath)}>{t("account.forgot")}</Link>
             </Button>
           </div>
         </div>
         <FormError text={errors.form} />
-        <div className="grid gap-2 pt-1">
-          <Button type="submit" disabled={busy}>
+        <div className="grid gap-3 pt-1">
+          <Button type="submit" size="lg" arrow disabled={busy}>
             {busy ? t("account.signingIn") : t("account.signIn")}
           </Button>
-          <Button variant="outline" asChild>
+          <Button variant="line" size="lg" asChild>
             <Link href={href(lang, "/hesap/kayit")}>{t("account.noAccount")}</Link>
           </Button>
         </div>
       </form>
-    </PageContainer>
+    </>
   );
 }

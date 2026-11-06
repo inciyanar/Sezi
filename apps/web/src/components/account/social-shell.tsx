@@ -3,8 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 
+import { AccountHeader, AccountPage } from "@/components/account/account-layout";
 import { FormError } from "@/components/account/form-error";
-import { PageContainer } from "@/components/page";
 import { Skeleton } from "@/components/ui/skeleton";
 import { errorKey, useAccount } from "@/lib/account";
 import { href, type MessageKey } from "@/lib/i18n";
@@ -32,24 +32,20 @@ export function SocialShell({
   error?: unknown;
   loading?: boolean;
 }) {
-  const { t } = useT();
+  const { t, lang } = useT();
   return (
-    <PageContainer className="max-w-3xl">
-      <header className="mb-6">
-        <h1 className="font-heading text-3xl font-normal leading-[1.02] tracking-[-0.03em] sm:text-4xl">
-          {t(title)}
-        </h1>
-      </header>
+    <AccountPage width="medium">
+      <AccountHeader lang={lang} eyebrow={t("account.title")} title={t(title)} />
       <div className="grid gap-6">
         <FormError text={error ? t(errorKey(error)) : null} />
         {loading ? (
           <div role="status" aria-label={t("account.loading")}>
-            <Skeleton className="h-48 w-full rounded-lg" />
+            <Skeleton className="h-48 w-full rounded-[24px]" />
           </div>
         ) : (
           children
         )}
       </div>
-    </PageContainer>
+    </AccountPage>
   );
 }

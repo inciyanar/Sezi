@@ -7,6 +7,9 @@ import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
+/** Hesap formlarının ortak alan biçimi: 56 px yükseklik, yumuşak köşe, kart yüzeyi. */
+export const accountInput = "h-14 rounded-2xl bg-card px-4 text-base md:text-base";
+
 /** Form genel hatası (sunucu, ağ): alanların altında, ikonla; ekran okuyucu hemen duyurur. */
 export function FormError({ text, className }: { text?: string | null; className?: string }) {
   if (!text) return null;
@@ -15,7 +18,7 @@ export function FormError({ text, className }: { text?: string | null; className
       role="alert"
       aria-live="assertive"
       className={cn(
-        "flex items-start gap-3 rounded-lg border-2 border-destructive bg-destructive/5 p-4 text-sm font-medium text-destructive",
+        "flex items-start gap-3 rounded-2xl border-2 border-destructive bg-destructive/5 p-4 text-sm font-medium text-destructive",
         className,
       )}
     >
@@ -31,7 +34,7 @@ export function AccountNote({ text, live, className }: { text: string; live?: bo
     <div
       role={live ? "status" : undefined}
       aria-live={live ? "polite" : undefined}
-      className={cn("flex items-start gap-3 rounded-lg border bg-muted/60 p-4 text-sm text-muted-foreground", className)}
+      className={cn("flex items-start gap-3 rounded-2xl bg-secondary p-4 text-sm text-muted-foreground contrast:border-2 contrast:border-border", className)}
     >
       <InfoIcon className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden />
       <span>{text}</span>
@@ -67,7 +70,7 @@ export function AccountField({
       </FieldLabel>
       <div className="relative flex items-center">
         {prefix ? (
-          <span className="pointer-events-none absolute left-3 select-none text-muted-foreground" aria-hidden>
+          <span className="pointer-events-none absolute left-4 select-none text-muted-foreground" aria-hidden>
             {prefix}
           </span>
         ) : null}
@@ -75,7 +78,7 @@ export function AccountField({
           id={id}
           aria-invalid={!!error}
           aria-describedby={describedBy}
-          className={cn("h-12", prefix && "pl-8")}
+          className={cn(accountInput, prefix && "pl-9")}
           {...inputProps}
         />
       </div>

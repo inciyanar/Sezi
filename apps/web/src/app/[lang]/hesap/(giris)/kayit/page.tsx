@@ -7,7 +7,7 @@ import { useState } from "react";
 
 import { AccountField, AccountNote, FormError } from "@/components/account/form-error";
 import { PasswordField } from "@/components/account/password-field";
-import { PageContainer } from "@/components/page";
+import { AccountHeader } from "@/components/account/account-layout";
 import { Button } from "@/components/ui/button";
 import { errorKey, signUp } from "@/lib/account";
 import { href } from "@/lib/i18n";
@@ -49,14 +49,12 @@ export default function SignUpPage() {
   };
 
   return (
-    <PageContainer className="max-w-md">
-      <header className="mb-6">
-        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t("account.signUp")}</h1>
-      </header>
+    <>
+      <AccountHeader lang={lang} eyebrow={t("auth.eyebrow")} title={t("auth.signUpTitle")} lead={t("auth.signUpLead")} />
       <div className="grid gap-6">
         <form
           noValidate
-          className="grid gap-5 rounded-lg border bg-card p-6"
+          className="grid gap-5"
           onSubmit={(ev) => {
             ev.preventDefault();
             void submit();
@@ -90,17 +88,17 @@ export default function SignUpPage() {
             error={errors.password}
           />
           <FormError text={errors.form} />
-          <div className="grid gap-2 pt-1">
-            <Button type="submit" disabled={busy}>
+          <div className="grid gap-3 pt-1">
+            <Button type="submit" size="lg" arrow disabled={busy}>
               {busy ? t("account.sending") : t("account.signUp")}
             </Button>
-            <Button variant="ghost" asChild>
+            <Button variant="line" size="lg" asChild>
               <Link href={href(lang, "/hesap/giris")}>{t("account.haveAccount")}</Link>
             </Button>
           </div>
         </form>
         <AccountNote text={t("account.privacy")} />
       </div>
-    </PageContainer>
+    </>
   );
 }
