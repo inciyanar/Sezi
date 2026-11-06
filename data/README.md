@@ -171,17 +171,18 @@ Bunlar tahmindir; saha ölçümü gelince güncellenir (ROADMAP #6). Yol verisin
 
 **Yeni pilot alan eklemek:** `AREAS` sözlüğüne bir girdi ekleyin, Overpass çıktısını `data/raw/osm_<alan>.json` olarak indirin ve script'i alan adıyla çalıştırın.
 
-## 4. Sezi maskotu (web)
+## 4. Sezi maskotu (web ve mobil)
 
-Sitedeki Sezi'ye Sor kedisi tasarımcının kare paketinden üretilir (288 x 224 şeffaf PNG kareler ve `manifest.json`). Paket depoya girmez; çıktı girer.
+Sezi'ye Sor kedisi tasarımcının kare paketinden üretilir (288 x 224 şeffaf PNG kareler ve `manifest.json`). Paket depoya girmez; çıktı girer.
 
 ```bash
 data/.venv/Scripts/python -I data/build_mascot.py <paket>/maskot
 ```
 
-- `apps/web/public/maskot/<hareket>.webp`: hareketin kareleri tek satırda. WebP kalite 90, alfa kayıpsız (toplam ~600 KB; PNG atlaslar 2,7 MB).
+- `apps/web/public/maskot/<hareket>.webp`: hareketin kareleri tek satır. WebP kalite 90, alfa kayıpsız (toplam ~600 KB; PNG atlaslar 2,7 MB).
 - `apps/web/public/maskot/poz.webp`: ilk boyamadaki oturan poz.
-- `apps/web/src/components/ask/mascot.json`: kare sıraları ve süreler; oynatıcı (`mascot-player.ts`) bunu okur.
+- `apps/mobile/assets/maskot/<hareket>.webp`: mobil Sezi'ye Sor ekranının hareketleri (oturma, sevilme, kitap, yanit_yok), 6 sütunlu ızgara; tek satır Android doku sınırını aşabiliyor.
+- `packages/shared/src/mascot.json`: kare sıraları ve süreler; web (`mascot-player.ts`) ve mobil (`components/mascot-player.ts`) oynatıcıları `@sezi/shared` üzerinden okur.
 
 Sola bakan kareler sağa bakanların aynası olduğu için heterokromi ters çıkıyor. Kedinin sağ gözü yeşil, sol gözü mavi olmalı; script bu karelerde yeşil ve mavi iris tonlarını değiştirir (`MIRRORED`, `FAR_EYE_ONLY`). Tasarımcı yeni kare verirse önce bunu yeniden kontrol edin.
 

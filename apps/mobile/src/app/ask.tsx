@@ -1,5 +1,4 @@
 import { askFailure, loc, searchAskWorks, type AskCitation, type AskFailure, type AskHistoryMessage, type SweetTheme, type WorkRow } from '@sezi/shared';
-import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AccessibilityInfo, FlatList, KeyboardAvoidingView, Linking, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -7,6 +6,7 @@ import { Text } from '@/components/text';
 import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Mascot, type MascotHandle } from '@/components/mascot';
 import { ScreenHeader } from '@/components/screen-header';
 import { Button, Eyebrow, Note } from '@/components/ui';
 import { ChevronIcon, InfoIcon, PlayIcon, PlusIcon, StopIcon, TurnIcon } from '@/design/icons';
@@ -59,6 +59,7 @@ export default function Ask() {
   const animatedIds = useRef(new Set<number>());
   const [waiting, setWaiting] = useState(false);
   const pending = useRef(false);
+  const mascot = useRef<MascotHandle>(null);
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; silence(); }; }, []);
 
@@ -81,6 +82,9 @@ export default function Ask() {
     setWaiting(true);
     setInput('');
     AccessibilityInfo.announceForAccessibility(tr('ask.waiting'));
+    // Kedi web'dekiyle aynı: cevap aranırken kitabını karıştırır.
+    mascot.current?.setSad(false);
+    mascot.current?.setThinking(true);
     const history: AskHistoryMessage[] = before.slice(-6).map((m) => ({ role: m.role === 'user' ? 'user' : 'assistant', text: m.text }));
     const previousWorkSlugs = [...before].reverse().find((m) => m.role === 'sezi' && m.works?.length)?.works?.map((w) => w.slug) ?? [];
     let answer: Message;
@@ -94,6 +98,10 @@ export default function Ask() {
         citations: result.response.citations,
         mode: result.response.mode,
       };
+      // Kaynak bulunamadıysa kulaklar düşük kalır; iyi cevapta bir süre sevinir.
+      if (result.response.mode === 'insufficient') mascot.current?.setSad(true);
+      mascot.current?.setThinking(false);
+      if (result.response.mode !== 'insufficient') mascot.current?.petFor(2500);
     } catch (error) {
       // Cevap üretilemezse cihazdaki doğrulanmış kayıtlar aranır; en iyi eşleşmenin yayımlanmış özeti varsa o gösterilir.
       const found = searchAskWorks(q, works ?? []).slice(0, 10);
@@ -109,6 +117,8 @@ export default function Ask() {
         mode: 'local',
         failure: askFailure(error),
       };
+      mascot.current?.setSad(true);
+      mascot.current?.setThinking(false);
     }
     if (mounted.current) {
       setMessages((m) => [...m, answer]);
@@ -154,9 +164,6 @@ export default function Ask() {
 
   const header = (
     <View style={s.welcome}>
-      <View style={[s.welcomeMark, outline(t)]}>
-        <Image source={require('../../assets/images/sezi-cat.webp')} style={s.welcomeCat} contentFit="contain" accessible={false} />
-      </View>
       <Text accessibilityRole="header" style={[type.editorial, { color: t.text }]}>{tr('ask.welcome')}</Text>
       <Text style={[type.body, { color: t.textMuted }]}>{tr('ask.welcomeBody')}</Text>
       <View style={s.suggestions}>
@@ -179,7 +186,7 @@ export default function Ask() {
   return (
     <SafeAreaView style={s.screen} edges={['top']}>
       <View style={s.topBar}>
-        <ScreenHeader title={tr('ask.title')} onBack={() => router.back()} action={
+        <ScreenHeader title={tr('ask.title')} onBack={() => router.back()} accessory={<Mascot ref={mascot} width={108} label={tr('ask.petCat')} />} action={
           <View style={{ flexDirection: 'row', gap: space.xs }}>
             {/* Boş ekranda "Nasıl çalışır?" yazı alanının üstünde; sohbet başlayınca yalnız buradan açılır. */}
             {messages.length > 0 ? <IconBubble label={tr('ask.howTitle')} icon={c => <InfoIcon color={c} />} onPress={() => setSheet('privacy')} /> : null}
@@ -246,7 +253,7 @@ export default function Ask() {
       <SweetSheet visible={sheet === 'reset'} onClose={() => setSheet(null)} title={tr('ask.newChatTitle')}>
         <View style={{ gap: space.lg, paddingHorizontal: space.xl }}>
           <Text style={[type.body, { color: t.text }]}>{tr('ask.newChatBody')}</Text>
-          <Button label={tr('ask.newChat')} onPress={() => { if (pending.current) return; silence(); setSpeakingId(null); setMessages([]); setInput(''); animatedIds.current.clear(); followBottom.current = true; setAwayFromBottom(false); setSheet(null); }} />
+          <Button label={tr('ask.newChat')} onPress={() => { if (pending.current) return; silence(); setSpeakingId(null); setMessages([]); setInput(''); animatedIds.current.clear(); followBottom.current = true; setAwayFromBottom(false); mascot.current?.setSad(false); setSheet(null); }} />
           <Button label={tr('ask.keepChat')} variant="ghost" onPress={() => setSheet(null)} />
         </View>
       </SweetSheet>
@@ -371,8 +378,6 @@ const makeStyles = (t: SweetTheme) =>
     screen: { flex: 1, backgroundColor: t.background },
     topBar: { paddingHorizontal: space.xl, paddingBottom: space.sm },
     welcome: { gap: space.md, paddingTop: space.md, paddingBottom: space.lg },
-    welcomeMark: { width: 56, height: 48, borderRadius: radius.md, backgroundColor: t.soft, alignItems: 'center', justifyContent: 'center', marginBottom: space.sm, overflow: 'hidden' },
-    welcomeCat: { width: 62, height: 48 },
     suggestion: { flexDirection: 'row', alignItems: 'center', gap: space.md, backgroundColor: t.surface, borderRadius: radius.xl, padding: space.lg, minHeight: 88 },
     privacyLink: { minHeight: 48, paddingHorizontal: space.xl, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm },
     sourceCard: { padding: space.lg, gap: space.sm, backgroundColor: t.soft, borderRadius: radius.xl },

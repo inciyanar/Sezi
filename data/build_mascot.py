@@ -1,9 +1,11 @@
-"""Sezi maskotunun kare paketinden web şeritlerini üretir.
+"""Sezi maskotunun kare paketinden web şeritlerini ve mobil ızgaralarını üretir.
 
 Girdi: tasarımcının `maskot/` klasörü (manifest.json + kareler/). Çıktı:
 - apps/web/public/maskot/<hareket>.webp : hareketin kareleri yan yana tek satır (288 x 224 hücre)
 - apps/web/public/maskot/poz.webp        : ilk boyamada görünen oturan poz
-- apps/web/src/components/ask/mascot.json: hücre boyu, kare sıraları ve süreler (oynatıcı bunu okur)
+- apps/mobile/assets/maskot/<hareket>.webp: Sezi'ye Sor ekranındaki hareketler, GRID_COLUMNS sütunlu ızgara
+  (tek satır Android'de doku sınırını aşabiliyor)
+- packages/shared/src/mascot.json        : hücre boyu, kare sıraları ve süreler (iki oynatıcı da bunu okur)
 
 Sola bakan kareler sağa bakanların aynası olduğu için heterokromi ters çıkıyor (yeşil göz kedinin sağ gözü,
 mavi sol gözü). Aynalanmış karelerde yeşil ve mavi iris tonları yer değiştirir.
@@ -19,7 +21,11 @@ from PIL import Image, ImageChops
 
 ROOT = Path(__file__).resolve().parent.parent
 PUBLIC = ROOT / "apps/web/public/maskot"
-DATA = ROOT / "apps/web/src/components/ask/mascot.json"
+MOBILE = ROOT / "apps/mobile/assets/maskot"
+DATA = ROOT / "packages/shared/src/mascot.json"
+# Mobil ekranda kullanılan hareketler (dolaşma yok). Sütun sayısı `MASCOT_GRID_COLUMNS` ile aynı olmalı.
+MOBILE_STRIPS = ("oturma", "sevilme", "kitap", "yanit_yok")
+GRID_COLUMNS = 6
 
 # Aynalanmış (sola bakan) kareler: dosya adı -> 1 tabanlı kare aralığı.
 MIRRORED = {"kalk_sol": range(9, 17), "yurume_sol": range(1, 9)}
@@ -58,6 +64,7 @@ def main(src: Path) -> None:
     manifest = json.loads((src / "manifest.json").read_text(encoding="utf-8"))
     cell_w, cell_h = manifest["frameWidth"], manifest["frameHeight"]
     PUBLIC.mkdir(parents=True, exist_ok=True)
+    MOBILE.mkdir(parents=True, exist_ok=True)
 
     strips: dict[str, int] = {}
     for name, action in manifest["actions"].items():
@@ -80,6 +87,12 @@ def main(src: Path) -> None:
         sheet.save(PUBLIC / f"{strip}.webp", "WEBP", quality=QUALITY, alpha_quality=100, method=6)
         strips[strip] = len(frames)
         print(f"{strip}: {len(frames)} kare, {(PUBLIC / f'{strip}.webp').stat().st_size // 1024} KB")
+        if strip in MOBILE_STRIPS:
+            rows = -(-len(frames) // GRID_COLUMNS)
+            grid = Image.new("RGBA", (cell_w * GRID_COLUMNS, cell_h * rows))
+            for i, frame in enumerate(frames):
+                grid.paste(frame, ((i % GRID_COLUMNS) * cell_w, (i // GRID_COLUMNS) * cell_h))
+            grid.save(MOBILE / f"{strip}.webp", "WEBP", quality=QUALITY, alpha_quality=100, method=6)
 
     Image.open(src / manifest["canonical"]).convert("RGBA").save(PUBLIC / "poz.webp", "WEBP", lossless=True, method=6)
 

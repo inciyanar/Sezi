@@ -24,3 +24,5 @@ export const stagger = { step: 50, maxItems: 6 } as const;
 
 /** Tür baloncuğu seçimi: hafif sekme. */
 export const selectSpring = { duration: 350, dampingRatio: 0.7 } as const;
+/** Çekilen listenin bırakılınca hızını koruyarak yeni yerine oturması. */
+export const refreshSpring = { duration: 400, dampingRatio: 0.8 } as const;

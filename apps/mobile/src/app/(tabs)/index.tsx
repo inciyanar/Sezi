@@ -4,14 +4,16 @@ import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { FlatList, ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
+import { ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
+import { GestureDetector, FlatList as GestureFlatList } from 'react-native-gesture-handler';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 import { useTabBarSpace } from '@/components/app-tabs';
 import { CityMap } from '@/components/city-map';
 import { Glass, GlassScope, GlassTarget, type GlassToneName } from '@/components/glass';
-import { PhotoCard, WorkPreviewSheet } from '@/components/photo-card';
+import { PhotoCard, PhotoScrim, WorkPreviewSheet } from '@/components/photo-card';
 import { PhotoSourceTag } from '@/components/photo-source';
 import { RichTitle } from '@/components/rich-title';
 import { useSeziRefresh } from '@/components/sezi-refresh';
@@ -41,6 +43,7 @@ const clip = createClipPlayer();
 /** Fotoğraflı üst kısmın yüksekliği ve buzlu sayfanın ona bindiği pay (maket: 470 / sayfa 326'da başlar). */
 const HERO_H = 470;
 const SHEET_OVERLAP = 144;
+const AnimatedWorkList = Animated.createAnimatedComponent(GestureFlatList<WorkRow>);
 
 function roman(n: number): string {
   const values = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1];
@@ -115,34 +118,36 @@ export default function Explore() {
 
   // Kurulumda seçilen ilgilerin türleri (cami, türbe, han) önce gelir; gerisi eser sayısına göre.
   const interestTypes = useMemo(() => (profile?.interests ?? []).flatMap((k) => INTEREST_TYPES[k] ?? []), [profile?.interests]);
+  // Ana sayfa vitrindir: fotoğrafı olmayan eser burada (yakınlar, türler, ızgara) görünmez; aramada bulunur.
+  const withPhoto = useMemo(() => (works ?? []).filter((w) => coverOf(w)), [works]);
   const types = useMemo(() => {
     const counts = new Map<string, { name: string; n: number }>();
-    for (const w of works ?? []) counts.set(w.type_slug, { name: loc(w.type_name, lang), n: (counts.get(w.type_slug)?.n ?? 0) + 1 });
+    for (const w of withPhoto) counts.set(w.type_slug, { name: loc(w.type_name, lang), n: (counts.get(w.type_slug)?.n ?? 0) + 1 });
     const rank = (slug: string) => {
       const i = interestTypes.indexOf(slug);
       return i < 0 ? interestTypes.length : i;
     };
     return [...counts].sort((a, b) => rank(a[0]) - rank(b[0]) || b[1].n - a[1].n);
-  }, [works, lang, interestTypes]);
+  }, [withPhoto, lang, interestTypes]);
   const audioOf = (w: WorkRow) => (lang === 'en' ? w.audio_en : w.audio_tr);
   // Ses kaydı olan eser yoksa "Dinle" seçeneği çizilmez (boş sonuç veren seçenek gösterilmez).
   const filters = useMemo(
-    () => FILTERS.filter((value) => value !== 'audio' || (works ?? []).some((w) => !!(lang === 'en' ? w.audio_en : w.audio_tr))),
-    [works, lang],
+    () => FILTERS.filter((value) => value !== 'audio' || withPhoto.some((w) => !!(lang === 'en' ? w.audio_en : w.audio_tr))),
+    [withPhoto, lang],
   );
-  // Sıralama tek `Intl.Collator` ile ve kapak bilgisi önceden hesaplanarak: karşılaştırma başına `localeCompare(…, lang)`
-  // Hermes'te her seferinde yeni karşılaştırıcı kurduğundan 340 eserde açılışı ~3 sn kilitliyordu (sürüm derlemesi ölçümü).
+  // Sıralama tek `Intl.Collator` ile: karşılaştırma başına `localeCompare(…, lang)` Hermes'te her seferinde yeni
+  // karşılaştırıcı kurduğundan 340 eserde açılışı ~3 sn kilitliyordu (sürüm derlemesi ölçümü).
   const visible = useMemo(() => {
     const collator = new Intl.Collator(lang);
-    return (works ?? [])
+    return withPhoto
       .filter(
         (w) =>
           (!kind || w.type_slug === kind) && (filter === 'all' || (filter === 'text' ? !!w.summary : !!(lang === 'en' ? w.audio_en : w.audio_tr))),
       )
-      .map((w) => ({ w, cover: coverOf(w) ? 1 : 0, name: loc(w.name, lang) }))
-      .sort((a, b) => b.cover - a.cover || collator.compare(a.name, b.name))
+      .map((w) => ({ w, name: loc(w.name, lang) }))
+      .sort((a, b) => collator.compare(a.name, b.name))
       .map((x) => x.w);
-  }, [works, kind, filter, lang]);
+  }, [withPhoto, kind, filter, lang]);
   const distance = (w: WorkRow) => (here && hasLocation(w) ? distanceM(here, [w.lng, w.lat]) : null);
   const near = useMemo(
     () =>
@@ -176,7 +181,7 @@ export default function Explore() {
   const open = (slug: string) => router.push({ pathname: '/work/[slug]', params: { slug } });
   const submitSearch = () => router.push({ pathname: '/search', params: { q: searchQuery.trim() } });
   const reload = useCallback(() => Promise.all([refetch(), reloadCities()]), [refetch, reloadCities]);
-  const { refreshControl, overlay } = useSeziRefresh(reload);
+  const { pan, panRef, onScroll, listStyle, stretchStyle, backdropStyle, overlay } = useSeziRefresh(reload, { stretchHeight: HERO_H });
   // Saklı liste varken ağ hatası ekranı boşaltmaz; hata yalnız hiç veri yokken gösterilir.
   const failed = (!works && !!error) || (!cities && !!cityError);
   const loading = !works && !failed;
@@ -203,28 +208,34 @@ export default function Explore() {
     });
   };
 
+  // Aynı fotoğraf iki kez çizilir: listenin içinde ve çekerken açılan boşluğu dolduran arka kopyada.
+  const heroPhoto = (
+    <>
+      {heroCover ? (
+        <Image
+          source={{ uri: photoUrl(heroCover) }}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          contentPosition={{ top: '60%' }}
+          priority="high"
+          transition={250}
+          accessible={false}
+        />
+      ) : (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: t.glass.dark.tint }]} />
+      )}
+      <HeroShade dark={darkMode} />
+    </>
+  );
+
   const header = (
     <GlassScope>
       {/* Bulanıklık hedefi tüm üst bölüm: fotoğraf ve altında sayfa zemini. Buzlu sayfa fotoğrafın bittiği yerde dikiş
           vermeden zemine geçer. */}
       <GlassTarget style={StyleSheet.absoluteFill}>
         <View style={[StyleSheet.absoluteFill, { backgroundColor: t.background }]} />
-        <View style={s.heroBg}>
-          {heroCover ? (
-            <Image
-              source={{ uri: photoUrl(heroCover) }}
-              style={StyleSheet.absoluteFill}
-              contentFit="cover"
-              contentPosition={{ top: '60%' }}
-              priority="high"
-              transition={250}
-              accessible={false}
-            />
-          ) : (
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: t.glass.dark.tint }]} />
-          )}
-          <HeroShade dark={darkMode} />
-        </View>
+        {/* Aşağı çekerken alt kenarı yerinde kalarak yukarı uzar. */}
+        <Animated.View style={[s.heroBg, s.stretch, stretchStyle]}>{heroPhoto}</Animated.View>
       </GlassTarget>
       <View style={s.hero}>
         <View style={[s.heroContent, { paddingTop: insets.top + 8 }]}>
@@ -368,30 +379,27 @@ export default function Explore() {
                 accessibilityRole="button"
                 accessibilityLabel={`${loc(todayTour.title, lang)}. ${tr('tours.stops', { n: todayTour.stops.length })}`}
                 accessibilityHint={tr('discover.tourOpen')}
-                style={[s.today, { backgroundColor: t.background }]}>
-                <GlassScope>
-                  <GlassTarget style={StyleSheet.absoluteFill}>
-                    {tourCover ? (
-                      <Image source={{ uri: photoUrl(tourCover, 'thumb') }} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} />
-                    ) : null}
-                    <View style={[StyleSheet.absoluteFill, { backgroundColor: t.glass.dark.tint, opacity: 0.25 }]} />
-                    {/* Süs çizgisi: rotanın kendisi değil, kartın "yol" olduğunu söyler. */}
-                    <Svg style={StyleSheet.absoluteFill} viewBox="0 0 330 118" preserveAspectRatio="none" accessible={false}>
-                      <Path d="M20 50 C 80 10, 130 70, 190 34 S 280 30, 310 14" fill="none" stroke={t.onPhoto.text} strokeWidth={2} strokeDasharray="1 7" strokeLinecap="round" />
-                    </Svg>
-                  </GlassTarget>
-                  <Glass tone={tone} radius={16} style={s.todayInfo}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontFamily: font.serif, fontSize: 17, lineHeight: 21, color: ink.text }} numberOfLines={1}>
-                        {loc(todayTour.title, lang)}
-                      </Text>
-                      <Text style={[type.meta, { fontSize: 12, color: ink.muted }]}>{tr('tours.stops', { n: todayTour.stops.length })}</Text>
-                    </View>
-                    <View style={[s.arrow, { backgroundColor: t.gold.fill }]}>
-                      <ArrowIcon color={t.gold.ink} size={14} />
-                    </View>
-                  </Glass>
-                </GlassScope>
+                style={[s.today, { backgroundColor: t.glass.dark.tint }]}>
+                {tourCover ? (
+                  <Image source={{ uri: photoUrl(tourCover, 'thumb') }} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} />
+                ) : null}
+                {/* Süs çizgisi: rotanın kendisi değil, kartın "yol" olduğunu söyler. Fotoğrafın üst yarısında kalır. */}
+                <Svg style={s.todayPath} viewBox="0 0 330 80" preserveAspectRatio="none" accessible={false}>
+                  <Path d="M20 60 C 80 20, 130 76, 190 40 S 280 34, 310 18" fill="none" stroke={t.onPhoto.text} strokeWidth={2} strokeDasharray="1 7" strokeLinecap="round" />
+                </Svg>
+                {/* Yazı cam blok yerine yalnız alttan koyulaşan örtünün üstünde: fotoğraf görünür kalır. */}
+                <PhotoScrim height="62%" />
+                <View style={[s.todayInfo, t.outlined && { backgroundColor: t.glass.dark.tint }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.todayTitle, { color: t.onPhoto.text }]} numberOfLines={1}>
+                      {loc(todayTour.title, lang)}
+                    </Text>
+                    <Text style={[type.meta, { color: t.onPhoto.muted }]}>{tr('tours.stops', { n: todayTour.stops.length })}</Text>
+                  </View>
+                  <View style={[s.arrow, { backgroundColor: t.gold.fill }]}>
+                    <ArrowIcon color={t.gold.ink} size={16} />
+                  </View>
+                </View>
               </SoftPressable>
               <PhotoSourceTag photo={tourCover} position="top-right" />
             </View>
@@ -440,19 +448,29 @@ export default function Explore() {
   ) : null;
   return (
     <View style={[s.screen, { backgroundColor: t.background }]}>
-      <FlatList
-        importantForAccessibility={sheet ? 'no-hide-descendants' : 'auto'}
-        data={loading || failed ? [] : visible}
-        keyExtractor={(w) => w.id}
-        numColumns={2}
-        columnWrapperStyle={s.gridRow}
-        ListHeaderComponent={header}
-        ListHeaderComponentStyle={{ marginBottom: space.md }}
-        ListEmptyComponent={empty}
-        contentContainerStyle={{ paddingBottom: tabSpace }}
-        refreshControl={refreshControl}
-        renderItem={({ item }) => <PhotoCard work={item} width={tileW} onPress={() => open(item.slug)} onLongPress={() => setPreview(item)} />}
-      />
+      <Animated.View pointerEvents="none" style={[s.heroBg, s.stretch, backdropStyle]}>{heroPhoto}</Animated.View>
+      {/* Çekme jesti listeyi saran katmanda; liste gesture-handler `FlatList`'i olduğu için kaydırmayla birlikte çalışır. */}
+      <GestureDetector gesture={pan}>
+        <Animated.View collapsable={false} style={[s.screen, listStyle]}>
+          <AnimatedWorkList
+            simultaneousHandlers={panRef}
+            importantForAccessibility={sheet ? 'no-hide-descendants' : 'auto'}
+            data={loading || failed ? [] : visible}
+            keyExtractor={(w) => w.id}
+            numColumns={2}
+            columnWrapperStyle={s.gridRow}
+            ListHeaderComponent={header}
+            ListHeaderComponentStyle={{ marginBottom: space.md }}
+            ListEmptyComponent={empty}
+            contentContainerStyle={{ paddingBottom: tabSpace }}
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+            // Android'in esneme efekti tepedeki sürüklemeyi kendine alır; çekme yalnız `useSeziRefresh` lastiğiyle izlenir.
+            overScrollMode="never"
+            renderItem={({ item }) => <PhotoCard work={item} width={tileW} onPress={() => open(item.slug)} onLongPress={() => setPreview(item)} />}
+          />
+        </Animated.View>
+      </GestureDetector>
       {overlay}
       <SweetSheet visible={sheet} onClose={() => setSheet(false)} title={tr('design.chooseCity')}>
         <ScrollView contentContainerStyle={s.sheetBody}>
@@ -644,6 +662,7 @@ const s = StyleSheet.create({
   screen: { flex: 1 },
   hero: { height: HERO_H },
   heroBg: { position: 'absolute', top: 0, left: 0, right: 0, height: HERO_H },
+  stretch: { transformOrigin: 'bottom' },
   heroContent: { flex: 1, paddingHorizontal: 16 },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
   topActions: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
@@ -677,10 +696,12 @@ const s = StyleSheet.create({
   // © işareti oynat düğmesinin (sağdan 12 + 38) solunda.
   nearSourceBeside: { right: 58, bottom: 18 },
   todayWrap: { marginHorizontal: 18 },
-  // Maket 104 dp; © işaretinin 48 dp dokunma alanı bilgi kapsülüne binmesin diye biraz yüksek.
-  today: { height: 112, borderRadius: 24, borderCurve: 'continuous', overflow: 'hidden' },
-  todayInfo: { position: 'absolute', left: 10, right: 10, bottom: 10, paddingVertical: 9, paddingLeft: 14, paddingRight: 10, flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  arrow: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  // Fotoğraf kartın tamamında görünür; yazı alttaki örtünün üstünde, © işareti sağ üstte (48 dp alanı yazıya binmez).
+  today: { height: 168, borderRadius: 24, borderCurve: 'continuous', overflow: 'hidden' },
+  todayPath: { position: 'absolute', top: 14, left: 0, right: 0, height: 72 },
+  todayInfo: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingTop: space.sm, paddingBottom: space.lg, paddingLeft: space.lg, paddingRight: space.md, flexDirection: 'row', alignItems: 'flex-end', gap: space.md },
+  todayTitle: { fontFamily: font.serif, fontSize: 22, lineHeight: 27 },
+  arrow: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   gridRow: { paddingHorizontal: space.xl, gap: space.md, marginBottom: space.md },
   state: { alignItems: 'center', gap: space.lg, padding: space.xl },
   sheetBody: { paddingHorizontal: space.xl, gap: space.sm, paddingBottom: space.sm },

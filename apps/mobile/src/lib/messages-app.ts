@@ -468,6 +468,7 @@ export const trApp = {
 
   'ask.eyebrow': 'Kaynaklı yanıtlar',
   'ask.title': 'Sezi’ye sor',
+  'ask.petCat': 'Sezi’yi sev',
   'ask.intro': 'Eserler hakkında sor. Sezi yalnızca doğrulanmış kayıtlardan yanıt verir ve her yanıtın kaynağını gösterir; bilmediğini uydurmaz.',
   'ask.placeholder': 'Sorunu yaz',
   'ask.send': 'Soruyu gönder',
@@ -1293,6 +1294,7 @@ export const enApp: Record<AppMessageKey, string> = {
 
   'ask.eyebrow': 'Sourced answers',
   'ask.title': 'Ask Sezi',
+  'ask.petCat': 'Pet Sezi',
   'ask.intro': 'Ask about the sites. Sezi answers only from verified records and shows the source of every answer; it never makes things up.',
   'ask.placeholder': 'Type your question',
   'ask.send': 'Send question',

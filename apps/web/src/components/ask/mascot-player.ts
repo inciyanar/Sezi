@@ -1,6 +1,4 @@
-import { z } from "zod";
-
-import raw from "./mascot.json";
+import { MASCOT, MASCOT_PET_FRAME, MASCOT_SAD_HOLD, MASCOT_SAD_IN, MASCOT_SAD_OUT, mascotReversed, type MascotAction, type MascotStep } from "@sezi/shared";
 
 /**
  * Sezi maskotu oynatıcısı: tasarımcı paketindeki `sezi-book.js` + `sezi-roam.js` davranışının tipli karşılığı.
@@ -11,41 +9,11 @@ import raw from "./mascot.json";
  * Hareket azaltmada hiçbiri oynamaz; aynı durumlar sabit pozla gösterilir.
  */
 
-const Step = z.tuple([z.number().int().nonnegative(), z.number().positive()]);
-type Step = z.infer<typeof Step>;
-const Steps = z.array(Step).min(1);
-const Action = z.object({ strip: z.string(), sequence: Steps });
-const Phased = Action.extend({ intro: Steps, loop: Steps, outro: Steps });
-const Walk = Action.extend({ strideLogical: z.number().positive(), cycleMs: z.number().positive() });
-const Mascot = z.object({
-  cell: z.tuple([z.number().int().positive(), z.number().int().positive()]),
-  roaming: z.object({
-    idleDelayMs: z.tuple([z.number(), z.number()]),
-  }),
-  actions: z.object({
-    oturma: Action,
-    sevilme: Phased,
-    kitap: Phased.extend({ safeLoopFrames: z.array(z.number().int()), staticFrame: z.number().int() }),
-    yanit_yok: Action.extend({ staticFrame: z.number().int() }),
-    kalk_sag: Action,
-    otur_sag: Action,
-    yurume_sag: Walk,
-    kalk_sol: Action,
-    otur_sol: Action,
-    yurume_sol: Walk,
-  }),
-});
-
-export const MASCOT = Mascot.parse(raw);
+type Step = MascotStep;
 const A = MASCOT.actions;
 const [CELL_W, CELL_H] = MASCOT.cell;
-/** Hata bekleyişi: yanit_yok kulakların düştüğü kareye kadar oynar, orada bekler, kalkarken kalanını oynar. */
-const SAD_AT = A.yanit_yok.sequence.findIndex(([frame]) => frame === A.yanit_yok.staticFrame);
-const SAD_IN = A.yanit_yok.sequence.slice(0, SAD_AT + 1);
-const SAD_HOLD: Step[] = [[A.yanit_yok.staticFrame, 60_000]];
-const SAD_OUT = A.yanit_yok.sequence.slice(SAD_AT + 1);
 
-type Name = keyof typeof A;
+type Name = MascotAction;
 type Dir = "sag" | "sol";
 type Phase = "loop" | "intro" | "outro" | "return" | "stand" | "walk" | "sit" | "static" | "sadIn" | "sadHold" | "sadOut";
 interface Trip {
@@ -60,7 +28,6 @@ interface Trip {
 const POSTER = "poz";
 const WALK_STRIPS = ["kalk_sag", "yurume_sag", "kalk_sol", "yurume_sol"];
 const moving = (name: Name) => name.startsWith("kalk_") || name.startsWith("yurume_") || name.startsWith("otur_");
-const reversed = (frame: number): Step[] => Array.from({ length: frame + 1 }, (_, i) => [frame - i, 80]);
 
 export interface MascotOptions {
   canvas: HTMLCanvasElement;
@@ -138,11 +105,11 @@ export class MascotPlayer {
       else if (this.name === "sevilme" && this.phase !== "outro") this.begin("sevilme", "outro", A.sevilme.outro);
     } else if (this.name === "kitap") {
       // Kitap açılırken cevap geldiyse açılış geri sarılır; döngüdeyse güvenli karede kapanır (`advance`).
-      if (this.phase === "intro" && this.frame < 5) this.begin("kitap", "return", reversed(this.frame).map(([f]) => [f, 140]));
+      if (this.phase === "intro" && this.frame < 5) this.begin("kitap", "return", mascotReversed(this.frame, 140));
       else if (this.phase === "loop" && A.kitap.safeLoopFrames.includes(this.frame)) this.begin("kitap", "outro", A.kitap.outro);
     } else if (this.sad && !moving(this.name) && this.name !== "yanit_yok") {
       // Kitap şeridi inmediyse kedi oturuyordu; üzgün poza hemen geçer.
-      this.begin("yanit_yok", "sadIn", SAD_IN);
+      this.begin("yanit_yok", "sadIn", MASCOT_SAD_IN);
     }
   }
 
@@ -157,8 +124,8 @@ export class MascotPlayer {
     if (!this.started) return;
     if (this.reduced.matches) return this.staticPose();
     if (this.thinking || this.name === "kitap" || moving(this.name)) return; // kitap kapanınca / oturunca `settle`
-    if (value) this.begin("yanit_yok", "sadIn", SAD_IN);
-    else if (this.name === "yanit_yok" && (this.phase === "sadIn" || this.phase === "sadHold")) this.begin("yanit_yok", "sadOut", SAD_OUT);
+    if (value) this.begin("yanit_yok", "sadIn", MASCOT_SAD_IN);
+    else if (this.name === "yanit_yok" && (this.phase === "sadIn" || this.phase === "sadHold")) this.begin("yanit_yok", "sadOut", MASCOT_SAD_OUT);
   }
 
   /** Fare üstünde ya da klavye odağında sevilir; `owner` aynı anda birden çok kaynağı ayırır. */
@@ -318,12 +285,12 @@ export class MascotPlayer {
     this.phase = "static";
     this.cursor = 0;
     this.elapsed = 0;
-    this.draw(name === "kitap" ? A.kitap.staticFrame : name === "yanit_yok" ? A.yanit_yok.staticFrame : name === "sevilme" ? 6 : 0);
+    this.draw(name === "kitap" ? A.kitap.staticFrame : name === "yanit_yok" ? A.yanit_yok.staticFrame : name === "sevilme" ? MASCOT_PET_FRAME : 0);
   }
 
   private settle() {
     if (this.thinking) return this.begin("kitap", "intro", A.kitap.intro);
-    if (this.sad) return this.begin("yanit_yok", "sadIn", SAD_IN);
+    if (this.sad) return this.begin("yanit_yok", "sadIn", MASCOT_SAD_IN);
     if (this.wanted()) {
       this.pendingMove = null;
       return this.begin("sevilme", "intro", A.sevilme.intro);
@@ -357,14 +324,14 @@ export class MascotPlayer {
   private requestStop() {
     if (!this.trip) return;
     this.trip.stop = true;
-    if (this.name.startsWith("kalk_") && this.phase !== "return") this.begin(this.name, "return", reversed(this.frame));
+    if (this.name.startsWith("kalk_") && this.phase !== "return") this.begin(this.name, "return", mascotReversed(this.frame));
   }
 
   private finish() {
     const name = this.name;
     if (name === "yanit_yok") {
       if (this.phase === "sadIn" || this.phase === "sadHold") {
-        return this.sad ? this.begin("yanit_yok", "sadHold", SAD_HOLD) : this.begin("yanit_yok", "sadOut", SAD_OUT);
+        return this.sad ? this.begin("yanit_yok", "sadHold", MASCOT_SAD_HOLD) : this.begin("yanit_yok", "sadOut", MASCOT_SAD_OUT);
       }
       return this.settle();
     }

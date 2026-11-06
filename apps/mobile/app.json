@@ -18,7 +18,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.lahmacun.sezi"
+      "package": "com.lahmacun.sezi",
+      "versionCode": 9
     },
     "web": {
       "output": "static",

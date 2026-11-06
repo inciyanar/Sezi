@@ -6,6 +6,7 @@ import { Text } from '@/components/text';
 import Animated, {
   FadeIn,
   FadeInDown,
+  FadeOut,
   LinearTransition,
   useAnimatedStyle,
   useSharedValue,
@@ -212,7 +213,14 @@ export function Skeleton({ width, height, corner = radius.xl, color }: { width: 
     opacity.set(reduced ? 0.7 : withRepeat(withTiming(0.45, { duration: 900, easing: ease.inOut }), -1, true));
   }, [reduced, opacity]);
   const animated = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  return <Animated.View accessible={false} style={[{ width, height, borderRadius: corner, borderCurve: 'continuous', backgroundColor: color ?? t.soft }, outline(t), animated]} />;
+  return (
+    <Animated.View
+      accessible={false}
+      entering={FadeIn.duration(duration.fade).easing(ease.out)}
+      exiting={FadeOut.duration(duration.fade).easing(ease.out)}
+      style={[{ width, height, borderRadius: corner, borderCurve: 'continuous', backgroundColor: color ?? t.soft }, outline(t), animated]}
+    />
+  );
 }
 
 /** Alt panel: aşağıdan kayar (ease-drawer), daha hızlı kapanır. Reduce motion: yalnız opacity. */

@@ -1,7 +1,7 @@
 "use client";
 
 import type { AskFailure, AskHistoryMessage, AskResponse } from "@sezi/shared";
-import { askFailure } from "@sezi/shared";
+import { askFailure, MASCOT } from "@sezi/shared";
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { Popover as PopoverPrimitive } from "radix-ui";
@@ -12,7 +12,7 @@ import { useAppearance } from "@/lib/appearance";
 import { askSezi } from "@/lib/ask";
 import { useT } from "@/lib/i18n-client";
 
-import { MASCOT, MascotPlayer } from "./mascot-player";
+import { MascotPlayer } from "./mascot-player";
 
 /** Soru kartı ilk açılışta yüklenir; kediyle birlikte her sayfaya gelmez. */
 const AskPanel = dynamic(() => import("./ask-panel").then((m) => m.AskPanel), { ssr: false });
