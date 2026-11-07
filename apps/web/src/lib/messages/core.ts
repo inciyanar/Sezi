@@ -9,7 +9,7 @@ export const tr = {
   "nav.home": "Ana sayfa",
   "nav.explore": "Keşfet",
   "nav.works": "Eserler",
-  "nav.passport": "Pasaport",
+  "nav.passport": "Seyahatnâme",
   "nav.accessibility": "Erişilebilirlik",
   "nav.route": "Rota",
   "nav.tours": "Turlar",
