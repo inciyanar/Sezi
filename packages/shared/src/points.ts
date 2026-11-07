@@ -128,6 +128,17 @@ export const startPointsOf = (points: readonly NavPoint[]) =>
 export const arrivalFor = (points: readonly NavPoint[], workSlug: string) =>
   points.find((p) => p.roles.includes("arrival") && p.workSlug === workSlug);
 
+/**
+ * Büyük yer işareti (Lynch landmark): rolü yer işareti ve belirginliği en yüksek (3) olan nokta. Uzaktan görünen
+ * çok büyük yapılar içindir; haritada belirgin simgeyle çizilir. Az ve seçici kalsın diye il başına en çok
+ * `MAJOR_LANDMARK_LIMIT` (veritabanında tetikleyici de korur). Belirginliği 1–2 olan yer işaretleri yerel kalır:
+ * talimatta anılır, ses verir ama haritada öne çıkmaz.
+ */
+export const MAJOR_LANDMARK_SALIENCE = 3;
+export const MAJOR_LANDMARK_LIMIT = 8;
+export const isMajorLandmark = (p: Pick<NavPoint, "roles" | "salience">) =>
+  p.roles.includes("landmark") && p.salience === MAJOR_LANDMARK_SALIENCE;
+
 // ---------- Eser metninden anlatım ----------
 
 /** Esere bağlı sanal anlatım noktasının kimlik öneki (`work:<slug>`). */

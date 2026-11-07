@@ -27,7 +27,7 @@ const nodes = new Map(raw.nodes.map((n) => [n.id, n]));
 const locations = new Map(raw.nodes.map((n) => [n.id, n.location]));
 const segments = raw.segments.map((s) => NavSegment.parse(s));
 const segMap = new Map(segments.map((s) => [s.id, s]));
-const landmark = (prefix: string) => raw.nodes.find((n) => n.lynchType === "landmark" && n.name?.tr.startsWith(prefix))!;
+const landmark = (prefix: string) => raw.nodes.find((n) => "workSlug" in n && n.name?.tr.startsWith(prefix))!;
 
 const walker: UserProfile = { vision: "full", mobility: "none", hearing: "full", senses: { audio: true, haptic: true, visual: true }, lang: "tr" };
 const from = landmark("Ulucami");

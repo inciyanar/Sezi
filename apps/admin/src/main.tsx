@@ -11,6 +11,7 @@ import { Cities } from './pages/Cities';
 import { CommunityPhotos } from './pages/CommunityPhotos';
 import { Dashboard } from './pages/Dashboard';
 import { Inbox } from './pages/Inbox';
+import { Landmarks } from './pages/Landmarks';
 import { Matching } from './pages/Matching';
 import { NewWork } from './pages/NewWork';
 import { Reports } from './pages/Reports';
@@ -50,6 +51,7 @@ const router = createBrowserRouter([
       { path: 'topluluk-fotograflari', element: <CommunityPhotos /> },
       { path: 'kullanicilar', element: <Users /> },
       { path: 'noktalar', element: <Points /> },
+      { path: 'yer-isaretleri', element: <Landmarks /> },
       { path: 'turlar', element: <Tours /> },
       { path: 'rota-testi', element: <RouteTest /> },
       { path: 'iller', element: <Cities /> },

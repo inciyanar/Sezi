@@ -44,12 +44,13 @@ export default function Tours() {
     [tours, profile, navVersion],
   );
   const bySlug = useMemo(() => new Map((works ?? []).map((w) => [w.slug, w])), [works]);
-  // Her tur kapak olarak, önceki turlarda kullanılmamış ilk fotoğrafı alır (aynı kare tekrarlanmasın).
+  // Her tur kapak olarak, önceki turlarda kullanılmamış ilk fotoğrafı alır (aynı kare tekrarlanmasın). Duraklarının
+  // bütün fotoğrafları kullanılmışsa boş kapak yerine ilk fotoğraf tekrar edilir.
   const covers = useMemo(() => {
     const used = new Set<string>();
     return items.map(({ plan }) => {
       const photos = plan.stops.map((st) => bySlug.get(st.slug)).flatMap((w) => (w ? w.photos : []));
-      const pick = photos.find((p) => !used.has(p.id));
+      const pick = photos.find((p) => !used.has(p.id)) ?? photos[0];
       if (pick) used.add(pick.id);
       return pick;
     });

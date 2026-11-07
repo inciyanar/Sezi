@@ -7,7 +7,8 @@ Girdi:
   apps/mobile/assets/pilot/<alan>-nav.json   uygulamaya gömülü, internetsiz çalışır
 
 Başlangıç noktaları, yer işaretleri ve anlatım noktaları burada değil: admin panelinden (nav_points) girilir,
-uygulama onları çalışırken en yakın düğüme bağlar ve yer işareti görünürlüğünü hesaplar.
+uygulama onları çalışırken en yakın düğüme bağlar ve yer işareti görünürlüğünü hesaplar. Eserler varış düğümüdür
+(`workSlug`), kendiliğinden yer işareti (Lynch landmark) değildir: büyük yer işaretlerini admin seçer.
 
 Yeni pilot alan eklemek: AREAS sözlüğüne merkez/yarıçap/şehir girip Overpass çıktısını data/raw'a koymak yeter.
 
@@ -198,7 +199,7 @@ def build(area_slug):
         node = {"id": n, "lynchType": "node", "location": [round(coords[int(n)][0], 7), round(coords[int(n)][1], 7)]}
         lm = snapped.get(int(n))
         if lm:
-            node.update({"lynchType": "landmark", "name": lm["name"], "workSlug": lm["slug"], "workType": lm["type_slug"]})
+            node.update({"name": lm["name"], "workSlug": lm["slug"], "workType": lm["type_slug"]})
         nodes.append(node)
 
     out = {
@@ -211,7 +212,7 @@ def build(area_slug):
     }
     out_file.parent.mkdir(parents=True, exist_ok=True)
     out_file.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-    n_lm = sum(1 for n in nodes if n["lynchType"] == "landmark")
+    n_lm = sum(1 for n in nodes if "workSlug" in n)
     print(f"{len(nodes)} düğüm, {len(segments)} segment, {n_lm} eser -> {out_file.relative_to(ROOT)}", file=sys.stderr)
 
 

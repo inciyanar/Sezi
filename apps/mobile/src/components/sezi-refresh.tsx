@@ -11,7 +11,9 @@ import { duration, ease, refreshSpring } from '@/design/sweet/motion';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useT } from '@/lib/i18n';
 
-const LOADER = 64;
+const LOADER = 48;
+/** Çekilen her piksel için dönüş: eşiğe gelene kadar yaklaşık bir tam tur, çekmeye devam ettikçe dönmeyi sürdürür. */
+const SPIN_PER_PX = 3.6;
 /** Yenilenirken sayfanın durduğu yer: durum çubuğunun altında göstergeye yer açar. */
 const LOADER_ROOM = LOADER + 24;
 /** Sınıra çarpmak yerine direnci artan lastik bant: çekme bu değere asimptotik yaklaşır. */
@@ -113,14 +115,14 @@ export function useSeziRefresh(refetch: () => void | Promise<unknown>, { stretch
       transform: [{ translateY: p }, { scale: (stretchHeight + p) / stretchHeight }],
     };
   });
-  // Gösterge, açılan boşluğun ortasında sayfa kenarıyla birlikte iner; çekme ilerledikçe belirir ve döner.
+  // Gösterge, açılan boşluğun ortasında sayfa kenarıyla birlikte iner; çekildikçe belirir ve parmakla birlikte döner.
   const overlayStyle = useAnimatedStyle(() => {
     const p = pull.get();
     const progress = Math.max(0, Math.min(1, p / threshold));
     const y = reduced ? insets.top + (LOADER_ROOM - LOADER) / 2 : insets.top + (p - insets.top - LOADER) / 2;
     return {
       opacity: interpolate(progress, [0.25, 1], [0, 1], 'clamp'),
-      transform: [{ translateY: y }, { rotate: `${reduced ? 0 : progress * 270}deg` }, { scale: reduced ? 1 : 0.85 + progress * 0.15 }],
+      transform: [{ translateY: y }, { rotate: `${reduced ? 0 : p * SPIN_PER_PX}deg` }, { scale: reduced ? 1 : 0.85 + progress * 0.15 }],
     };
   });
 

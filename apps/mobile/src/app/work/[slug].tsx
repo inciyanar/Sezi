@@ -10,7 +10,7 @@ import { Text } from '@/components/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FloatingHeader, useFloatingHeaderScroll } from '@/components/floating-header';
-import { Glass, GlassScope, GlassTarget } from '@/components/glass';
+import { Glass, GlassScope, GlassTarget, GlassVeil, useGlassInk } from '@/components/glass';
 import { RichTitle } from '@/components/rich-title';
 import { SeziLoader } from '@/components/sezi-loader';
 import { SeziMap, WorkPin } from '@/components/map';
@@ -24,7 +24,7 @@ import { WorkVisit } from '@/components/work-visit';
 import { ExternalIcon, PlayIcon, ShareIcon, StopIcon } from '@/design/icons';
 import { FadeInItem, IconBubble, outline, PopIn, SoftPressable, sweetShadow } from '@/design/sweet/components';
 import { duration, ease } from '@/design/sweet/motion';
-import { radius, space, type } from '@/design/type';
+import { font, radius, space, type } from '@/design/type';
 import { WorkGlyphInline } from '@/design/work-glyph';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useSweetTheme } from '@/hooks/use-sweet-theme';
@@ -44,6 +44,8 @@ import { photoUrl, useWork } from '@/lib/works';
 
 /** Eser ses kaydı oynatıcısı (admin panelinden yüklenen kayıt). */
 const workClip = createClipPlayer();
+/** İçerik sayfasının fotoğrafa bindiği yuvarlak kenar (ana sayfadaki buzlu sayfayla aynı 34 dp). */
+const HERO_CURVE = 34;
 
 export default function WorkDetail() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -387,13 +389,24 @@ function Detail({ work, t, s }: { work: WorkRow; t: SweetTheme; s: ReturnType<ty
                 </View>
               )}
             </GlassTarget>
-            <Glass tone="light" style={[s.heroPanel, { paddingTop: insets.top + 72 }]}>
-              <Eyebrow text={kind} />
-              <RichTitle text={name} style={type.screenTitle} />
-              {place ? <HeroFact label={tr('work.location')} value={place} t={t} /> : null}
-              {period ? <HeroFact label={tr('work.fact.period')} value={period} t={t} /> : null}
-              {distanceText ? <HeroFact label={tr('work.distance')} value={distanceText} t={t} /> : null}
-              {work.built_year ? <Text style={[type.title, { color: t.glass.light.text, marginTop: 'auto' }]}>{work.built_year}</Text> : null}
+            <Glass tone="light" thin style={[s.heroPanel, { paddingTop: insets.top + 72 }]}>
+              {/* Örnek tasarım: ad ve künye camın ortasında, yıl sağ altta büyük. Yazılar solan pusun üstünde okunur. */}
+              <GlassVeil bleed={space.lg} style={s.heroGroup}>
+                <Eyebrow text={kind} />
+                <RichTitle text={name} style={type.screenTitle} />
+              </GlassVeil>
+              {place || period || distanceText ? (
+                <GlassVeil bleed={space.lg} style={s.heroGroup}>
+                  {place ? <HeroFact label={tr('work.location')} value={place} t={t} /> : null}
+                  {period ? <HeroFact label={tr('work.fact.period')} value={period} t={t} /> : null}
+                  {distanceText ? <HeroFact label={tr('work.distance')} value={distanceText} t={t} /> : null}
+                </GlassVeil>
+              ) : <View />}
+              {work.built_year ? (
+                <GlassVeil bleed={space.lg}>
+                  <Text style={[s.heroYear, { color: t.glass.light.text }]}>{work.built_year}</Text>
+                </GlassVeil>
+              ) : <View />}
             </Glass>
             {coverCredit ? <Glass tone="dark" radius={radius.pill} style={s.photoCredit}><Text style={[type.bubble, { color: t.glass.dark.text }]} numberOfLines={1}>{coverCredit}</Text></Glass> : null}
             <Glass tone="dark" radius={24} style={[s.share, { top: insets.top + space.sm }]}>
@@ -401,6 +414,8 @@ function Detail({ work, t, s }: { work: WorkRow; t: SweetTheme; s: ReturnType<ty
                 <ShareIcon color={t.glass.dark.text} />
               </SoftPressable>
             </Glass>
+            {/* Ana sayfadaki gibi: içerik sayfası fotoğrafın altına düz değil, yuvarlak köşelerle biner. */}
+            <View pointerEvents="none" style={[s.heroCurve, { backgroundColor: t.background }]} />
           </View>
         </GlassScope>
 
@@ -498,9 +513,10 @@ function Section({
 }
 
 function HeroFact({ label, value, t }: { label: string; value: string; t: SweetTheme }) {
+  const ink = useGlassInk();
   return <View style={{ gap: 2 }} accessible accessibilityLabel={`${label}: ${value}`}>
-    <Text style={[type.meta, { color: t.glass.light.muted }]}>{label}</Text>
-    <Text style={[type.body, { color: t.glass.light.text }]}>{value}</Text>
+    <Text style={[type.meta, { color: ink?.muted ?? t.glass.light.muted, fontFamily: font.bodyBold }]}>{label}</Text>
+    <Text style={[type.body, { color: ink?.text ?? t.glass.light.text }]}>{value}</Text>
   </View>;
 }
 
@@ -520,12 +536,15 @@ const makeStyles = (t: SweetTheme) =>
     screen: { flex: 1, backgroundColor: t.background },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl, backgroundColor: t.background },
     heroImg: { width: '100%' },
-    heroPanel: { position: 'absolute', left: 0, top: 0, bottom: 0, width: '54%', paddingHorizontal: space.lg, paddingBottom: space.xl, gap: space.lg },
-    photoCredit: { position: 'absolute', right: space.sm, bottom: space.md, maxWidth: '44%', paddingHorizontal: space.sm, paddingVertical: space.xs },
+    heroPanel: { position: 'absolute', left: 0, top: 0, bottom: 0, width: '54%', paddingHorizontal: space.lg, paddingBottom: space.xl + HERO_CURVE, justifyContent: 'space-between' },
+    heroGroup: { gap: space.md },
+    heroYear: { fontFamily: font.serif, fontSize: 40, lineHeight: 44, alignSelf: 'flex-end' },
+    photoCredit: { position: 'absolute', right: space.sm, bottom: space.sm + HERO_CURVE, maxWidth: '44%', paddingHorizontal: space.sm, paddingVertical: space.xs },
     share: { position: 'absolute', right: space.lg },
     circle: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
     plainHero: { alignItems: 'center', justifyContent: 'center' },
-    sheet: { paddingHorizontal: space.lg, paddingTop: space.lg, gap: space.xl },
+    sheet: { paddingHorizontal: space.lg, paddingTop: space.sm, gap: space.xl },
+    heroCurve: { position: 'absolute', left: 0, right: 0, bottom: -1, height: HERO_CURVE + 1, borderTopLeftRadius: HERO_CURVE, borderTopRightRadius: HERO_CURVE, borderCurve: 'continuous' },
     playerCard: { padding: space.lg, gap: space.md },
     player: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 48 },
     accessTag: { borderRadius: radius.pill, paddingHorizontal: space.md, paddingVertical: space.sm },

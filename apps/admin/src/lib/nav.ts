@@ -70,6 +70,7 @@ export const NAV: NavGroup[] = [
         badge: (d) => d.candidates.worksPending,
       },
       { to: '/noktalar', title: 'Noktalar', hint: 'Başlangıç, yer işareti, anlatım ve varış noktaları.', icon: Signpost },
+      { to: '/yer-isaretleri', title: 'Yer işaretleri', hint: 'Haritada öne çıkan çok büyük yapılar (Lynch): en çok 8, bina tabanına göre seç.', icon: Landmark },
       { to: '/turlar', title: 'Turlar', hint: 'Pilot alandaki hazır turlar: duraklar, sıra ve yayın.', icon: Footprints },
       { to: '/rota-testi', title: 'Rota testi', hint: 'Mobil uygulamanın rota motorunu telefonsuz dene.', icon: Route },
     ],

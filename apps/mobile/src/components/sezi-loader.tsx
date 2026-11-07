@@ -46,7 +46,8 @@ export function SeziLoader({ size = 72, label, active = true }: { size?: number;
       opacity.set(withRepeat(withTiming(0.55, { duration: 900, easing: Easing.inOut(Easing.quad) }), -1, true));
       return;
     }
-    rotation.set(withRepeat(withTiming(360, { duration: 1600, easing: Easing.linear }), -1, false));
+    // Bir tur 1 sn: kısa yenilemede de (en az 0,9 sn görünür) dönüş açıkça fark edilir.
+    rotation.set(withRepeat(withTiming(rotation.get() + 360, { duration: 1000, easing: Easing.linear }), -1, false));
   }, [active, reduced, rotation, opacity, scale]);
 
   const animated = useAnimatedStyle(() => ({

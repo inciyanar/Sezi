@@ -264,7 +264,7 @@ export function RoutePlanner({ overlay, initial }: { overlay: NavOverlay; initia
   const profileName = (k: ProfileChoice) => t(k === "benim" ? "route.profile.mine" : `route.profile.${k}`);
 
   return (
-    <div data-route-map className="relative h-[100dvh] min-h-[600px]">
+    <div data-route-map className="relative h-[100dvh]">
       {/* Harita panelin arkasında tam alanı kaplar. */}
       <div className="absolute inset-0">
         <SeziMap

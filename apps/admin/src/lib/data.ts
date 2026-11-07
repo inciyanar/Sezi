@@ -256,6 +256,18 @@ export const CITY_CENTER: Record<string, [number, number]> = {
 /** Boş metin veritabanında null olur; yalnızca İngilizcesi olan metin kabul edilmez (TR zorunlu). */
 export const localized = (v: { tr: string; en: string }): LocalizedText | null => (v.tr.trim() ? { tr: v.tr.trim(), ...(v.en.trim() ? { en: v.en.trim() } : {}) } : null);
 
+/** Fotoğrafın görsel tarifi (alt metin) kısa tutulur: ekran okuyucu her fotoğrafta baştan sona okur. */
+export const ALT_MAX = 250;
+
+/**
+ * Tarif yazılmamış sayılır: alt metin boşsa ya da içe aktarmada konan yer tutucuysa (eserin adı). Görmeyen
+ * kullanıcı o zaman yalnız adı duyar; fotoğrafta ne göründüğünü öğrenemez.
+ */
+export function needsAlt(row: Pick<MediaRow, 'alt_text'>, workName: string): boolean {
+  const text = tr(row.alt_text).trim();
+  return !text || text.localeCompare(workName.trim(), 'tr', { sensitivity: 'base' }) === 0;
+}
+
 // ---------- Noktalar (rotaların uğradığı ve kullandığı yerler) ----------
 
 export type PointRole = 'start' | 'landmark' | 'story' | 'arrival';

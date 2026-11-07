@@ -142,7 +142,7 @@ python -I data/build_nav_graph.py bursa-hanlar   # → apps/mobile/assets/pilot/
 
 **Başlangıç noktaları, yer işaretleri, anlatım ve eser varış noktaları** grafikte değil, admin panelinde (**Noktalar**, `nav_points`) girilir. Uygulama onları çalışırken en yakın yaya düğümüne bağlar; grafiği yeniden üretmek gerekmez. Rotalar her zaman motorca hesaplanır; elle yazılmış rota yoktur.
 
-**3. Doğrulayın:** `pnpm test` (`pilot-graph.test.ts`) her landmark çifti arasında rota olduğunu ve tekerlekli sandalye rotasının basamaksız olduğunu kontrol eder.
+**3. Doğrulayın:** `pnpm test` (`pilot-graph.test.ts`) her eser çifti arasında rota olduğunu ve tekerlekli sandalye rotasının basamaksız olduğunu kontrol eder. Eserler grafikte varış düğümüdür (`lynchType: node`, `workSlug`); hangilerinin yer işareti olduğunu admin **Yer işaretleri** sayfası belirler.
 
 **4. Harita binaları (3B yer işaretleri ve bölge).** Alanın OSM bina tabanlarını (Overpass, önbellek `data/raw/osm_<alan>_buildings.json`) kesin konumlu eserlerle eşler, yüksekliği Mapbox Streets'ten alır (`EXPO_PUBLIC_MAPBOX_TOKEN`):
 
@@ -165,7 +165,7 @@ Tekrar uygulanabilir: kaynak notunda aynı OSM kimliği varsa satır ikinci kez 
 **Değerlerin kaynağı**
 - Basamak, zemin ve genişlik OSM etiketlerinden gelir. Zemin etiketi yoksa `unknown` yazılır (varsayılan parke sayılmaz); 23 Ekim'de 1221 segmentin 198'i.
 - Gürültü yol sınıfından tahmin edilir.
-- Landmark görünürlüğü: landmark'a 40 m'den yakın segmentler.
+- Landmark görünürlüğü: admin yer işaretlerine 40 m'den yakın segmentler (çalışırken, belirginliğe göre).
 
 Bunlar tahmindir; saha ölçümü gelince güncellenir (ROADMAP #6). Yol verisinin lisansı © OpenStreetMap katkıcıları (ODbL).
 

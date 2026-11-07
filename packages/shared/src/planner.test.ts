@@ -20,7 +20,7 @@ const raw: PilotGraphData = {
   nodes: [
     { id: "A", lynchType: "node", location: pt(0, 0) },
     { id: "M", lynchType: "node", location: pt(100, 0) },
-    { id: "B", lynchType: "landmark", location: pt(200, 0), workSlug: "eser-b", workType: "han", name: { tr: "B Hanı" } },
+    { id: "B", lynchType: "node", location: pt(200, 0), workSlug: "eser-b", workType: "han", name: { tr: "B Hanı" } },
     { id: "C", lynchType: "node", location: pt(100, 100) },
   ],
   segments: [
@@ -187,6 +187,23 @@ describe("duyu ipucu atfı", () => {
     const both = [landmark("firin", pt(100, 100), { cue: "bakery" }), landmark("tabela", pt(100, 100), {})];
     expect(cueAt(both, "C")).toBeUndefined();
     expect(cueAt([...both].reverse(), "C")).toBe("bakery");
+  });
+});
+
+describe("büyük yer işaretleri", () => {
+  const lm = (id: string, at: LngLat, extra: Partial<NavPoint>) => point(id, at, { roles: ["landmark"], body: undefined, ...extra });
+
+  it("esere bağlı yer işareti konumu uzakta girilse de o eserin düğümüne bağlanır, eser adıyla anılır", () => {
+    const p = createPlanner(raw);
+    // C düğümüne çok yakın ama B eserine bağlı.
+    p.setNavPoints([lm("han", pt(100, 98), { workSlug: "eser-b", salience: 3 })]);
+    expect(p.landmarkNodes().map((n) => [n.id, n.name?.tr])).toEqual([["B", "B Hanı"]]);
+  });
+
+  it("haritada yalnız belirginliği 3 olanlar büyük yer işaretidir; esere bağlıysa eserin adı ve türüyle", () => {
+    const p = createPlanner(raw);
+    p.setNavPoints([lm("han", pt(200, 0), { workSlug: "eser-b", salience: 3, title: { tr: "Başka ad" } }), lm("firin", pt(100, 100), { salience: 2 }), lm("kule", pt(0, 0), { salience: 3, title: { tr: "Kule" } })]);
+    expect(p.majorLandmarks().map((m) => [m.id, m.name.tr, m.workType])).toEqual([["han", "B Hanı", "han"], ["kule", "Kule", undefined]]);
   });
 });
 

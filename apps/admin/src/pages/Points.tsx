@@ -635,10 +635,11 @@ export function Points() {
                           <SelectGroup>
                             <SelectItem value="1">1 · Az görünür</SelectItem>
                             <SelectItem value="2">2 · Görünür</SelectItem>
-                            <SelectItem value="3">3 · Uzaktan görünür</SelectItem>
+                            <SelectItem value="3">3 · Büyük yer işareti (haritada öne çıkar, en çok 8)</SelectItem>
                           </SelectGroup>
                         </SelectContent>
                       </Select>
+                      <FieldDescription>3, uzaktan görülen çok büyük yapılar içindir; listesi Yer işaretleri sayfasındadır.</FieldDescription>
                     </Field>
                     <Field>
                       <FieldLabel>Ortam sesi</FieldLabel>

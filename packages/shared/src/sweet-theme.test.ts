@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { colorSafeThemes, resolveSweetTheme, sweetThemes, type SweetTheme } from "./sweet-theme";
+import { colorSafeThemes, GLASS_THIN_ALPHA, GLASS_VEIL_ALPHA, resolveSweetTheme, sweetThemes, type SweetTheme } from "./sweet-theme";
 import { contrastRatio } from "./theme";
 
 const allThemes: [string, SweetTheme][] = [...Object.entries(sweetThemes), ...Object.entries(colorSafeThemes).map(([name, t]): [string, SweetTheme] => [`colorSafe.${name}`, t])];
@@ -61,6 +61,10 @@ describe("Sezi kâğıt kontrastı (WCAG AA ≥ 4.5)", () => {
       expect(contrastRatio(t.glass.light.muted, lightGlass), "glass.light.muted").toBeGreaterThanOrEqual(4.5);
       expect(contrastRatio(t.glass.dark.text, darkGlass), "glass.dark.text").toBeGreaterThanOrEqual(4.5);
       expect(contrastRatio(t.glass.dark.muted, darkGlass), "glass.dark.muted").toBeGreaterThanOrEqual(4.5);
+      // Puslu camda yazı, camın üstüne ek olarak serilen pusun üstündedir; en kötü zeminde yine AA (ikincil yazı = ana yazı).
+      const underText = 1 - (1 - Math.min(t.glass.light.alpha, GLASS_THIN_ALPHA)) * (1 - GLASS_VEIL_ALPHA);
+      const thinGlass = blend(t.glass.light.tint, underText, "#000000");
+      expect(contrastRatio(t.glass.light.text, thinGlass), "thin glass.light.text").toBeGreaterThanOrEqual(4.5);
     });
   }
 

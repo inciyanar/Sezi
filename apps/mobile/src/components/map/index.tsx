@@ -3,10 +3,12 @@ import { GLYPH_TYPES, glyphType, LANDMARK_FULL_ZOOM, LANDMARK_MIN_ZOOM, LANDMARK
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState, type ComponentRef, type ReactNode } from 'react';
 import { InteractionManager, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
+import { StarIcon } from '@/design/icons';
 import { WorkGlyphInline } from '@/design/work-glyph';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useIsDark, useSweetTheme } from '@/hooks/use-sweet-theme';
-import { boundsOf } from '@/lib/nav';
+import { useT } from '@/lib/i18n';
+import { boundsOf, useMajorLandmarks } from '@/lib/nav';
 import { useProfile } from '@/lib/profile';
 
 import pilotBuildings from '../../../assets/pilot/bursa-hanlar-buildings.json';
@@ -19,10 +21,11 @@ void Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? null);
 
 /** Harita yazı tipi (Mapbox glif servisi). */
 const FONT = ['DIN Pro Medium', 'Arial Unicode MS Regular'];
+const FONT_BOLD = ['DIN Pro Bold', 'Arial Unicode MS Bold'];
 
 /**
  * Mapbox Standard: dükkân etiketleri kapalı; zemin renkleri Standard temasına bırakılır.
- * 3B binalar açık (Standard'ın kendi verisi); pilot alanın yer işaretleri ayrıca vurgulanır (`PilotLandmarks`).
+ * 3B binalar açık (Standard'ın kendi verisi); pilot alanın büyük yer işaretleri ayrıca vurgulanır (`PilotLandmarks`, `MajorLandmarks`).
  * Koyu temada gece ışığı; az gören profilinde ve yüksek kontrastta tek renkli, düz harita (3B yok:
  * gölgeli cepheler kontrastı düşürür).
  */
@@ -155,7 +158,9 @@ export const SeziMap = forwardRef<SeziMapHandle, SeziMapProps>(function SeziMap(
           <TypeIcons />
           <PilotDistrict />
           <PilotLandmarks />
+          <MajorLandmarkBadges />
           {children}
+          <MajorLandmarkLabels />
         </MapView>
       ) : null}
     </View>
@@ -165,6 +170,11 @@ export const SeziMap = forwardRef<SeziMapHandle, SeziMapProps>(function SeziMap(
 /** Harita resim adı: tema değişince yeni ad, eski resim önbellekte kalmaz. Simgesi olmayan tür `diger`. */
 const iconName = (slug: string, theme: string) => `type-${theme}-${glyphType(slug)}`;
 const ICON_SIZE = 36;
+/** Büyük yer işareti rozeti: eser simgesinden belirgin büyük; üstüne eser simgesi binerse altın halka olarak görünür. */
+const LANDMARK_SIZE = 56;
+const landmarkName = (glyph: string, theme: string) => `landmark-${theme}-${glyph}`;
+/** Esere bağlı olmayan büyük yer işareti (kule, meydan yapısı): yıldız. */
+const LANDMARK_STAR = 'star';
 const ROUTE_WIDTH = 6;
 const ARROW_SIZE = 16;
 const arrowName = (theme: string) => `route-arrow-${theme}`;
@@ -178,6 +188,8 @@ const OVERLAY_EMISSIVE = 1;
 function TypeIcons() {
   const t = useSweetTheme();
   const theme = useThemeKey();
+  const majors = useMajorLandmarks();
+  const landmarkGlyphs = [...new Set(majors.map((m) => (m.workType ? glyphType(m.workType) : LANDMARK_STAR)))];
   return (
     <Images>
       <MapImage name={arrowName(theme)}>
@@ -199,6 +211,14 @@ function TypeIcons() {
           </MapImage>
         );
       })}
+      {landmarkGlyphs.map((glyph) => (
+        <MapImage key={`landmark-${glyph}`} name={landmarkName(glyph, theme)}>
+          {/* Altın dolgu, kalın mürekkep kasa: harita zemininde ve 3B binaların önünde uzaktan seçilir. */}
+          <View collapsable={false} style={{ width: LANDMARK_SIZE, height: LANDMARK_SIZE, borderRadius: LANDMARK_SIZE / 2, backgroundColor: t.gold.fill, borderWidth: 3, borderColor: t.text, alignItems: 'center', justifyContent: 'center' }}>
+            {glyph === LANDMARK_STAR ? <StarIcon color={t.gold.ink} size={28} /> : <WorkGlyphInline slug={glyph} color={t.gold.ink} size={28} />}
+          </View>
+        </MapImage>
+      ))}
       {DOT_KEYS.map((key) => (
         <MapImage key={`dot-${key}`} name={dotName(key, theme)}>
           <View collapsable={false} style={{ width: DOT_SIZE, height: DOT_SIZE, borderRadius: DOT_SIZE / 2, backgroundColor: t.text, padding: 2 }}>
@@ -254,6 +274,8 @@ const ANCHOR_ID = 'sezi-landmark-anchor';
 function PilotLandmarks() {
   const t = useSweetTheme();
   const { profile } = useProfile();
+  const majors = useMajorLandmarks();
+  const slugs = useMemo(() => majors.flatMap((m) => (m.workSlug ? [m.workSlug] : [])), [majors]);
   const flat = profile?.vision === 'low' || t.outlined;
   const byType = (pick: (tone: { fill: string; ink: string }) => string) =>
     [
@@ -262,18 +284,21 @@ function PilotLandmarks() {
       ...GLYPH_TYPES.flatMap((slug) => [slug, pick(t.tones[toneForType(slug)])]),
       pick(t.tones[toneForType('diger')]),
     ] as const;
+  // Yalnız büyük yer işareti olan eserlerin binası vurgulanır (Lynch: az ve seçici).
+  const only = ['in', ['get', 'w'], ['literal', slugs]] as const;
   return (
     <ShapeSource id="landmarks-src" shape={PILOT.landmarks}>
       <LineLayer id={ANCHOR_ID} slot="middle" filter={['==', ['get', 'w'], '']} style={{ lineOpacity: 0 }} />
       {flat ? (
         <>
-          <FillLayer id="landmarks-fill" slot="middle" style={{ fillColor: t.outlined ? t.surface : byType((tone) => tone.fill) }} />
-          <LineLayer id="landmarks-edge" slot="middle" style={{ lineColor: t.outlined ? t.text : byType((tone) => tone.ink), lineWidth: 2.5 }} />
+          <FillLayer id="landmarks-fill" slot="middle" filter={only} style={{ fillColor: t.outlined ? t.surface : byType((tone) => tone.fill) }} />
+          <LineLayer id="landmarks-edge" slot="middle" filter={only} style={{ lineColor: t.outlined ? t.text : byType((tone) => tone.ink), lineWidth: 2.5 }} />
         </>
       ) : (
         <FillExtrusionLayer
           id="landmarks-3d"
           aboveLayerID={ANCHOR_ID}
+          filter={only}
           minZoomLevel={LANDMARK_MIN_ZOOM}
           maxZoomLevel={24}
           style={{
@@ -286,6 +311,79 @@ function PilotLandmarks() {
           }}
         />
       )}
+    </ShapeSource>
+  );
+}
+
+/**
+ * Büyük yer işaretleri (Lynch landmark): her haritada altın rozet ve kalın adla. Rozet ekranın kendi noktalarının
+ * altına çizilir (aynı yerdeki eser simgesi rozetin ortasına biner, altın halka kalır); ad ise en üste:
+ * yazılar yerleştirilirken üstteki katman önce yer alır, böylece büyük yer işaretinin adı küçük eser adlarına yer
+ * kaybetmez. Uzaklaştıkça küçülür ama kaybolmaz: yön bulmanın dayanağıdır.
+ */
+function useMajorShape() {
+  const theme = useThemeKey();
+  const { lang } = useT();
+  const majors = useMajorLandmarks();
+  return useMemo<GeoJSON.FeatureCollection>(
+    () => ({
+      type: 'FeatureCollection',
+      features: majors.map((m) => ({
+        type: 'Feature',
+        properties: { icon: landmarkName(m.workType ? glyphType(m.workType) : LANDMARK_STAR, theme), label: m.name[lang] ?? m.name.tr },
+        geometry: { type: 'Point', coordinates: m.location },
+      })),
+    }),
+    [majors, theme, lang],
+  );
+}
+
+function MajorLandmarkBadges() {
+  const shape = useMajorShape();
+  if (!shape.features.length) return null;
+  return (
+    <ShapeSource id="major-landmarks-src" shape={shape}>
+      <SymbolLayer
+        id="major-landmarks-icon"
+        slot="top"
+        style={{
+          iconImage: ['get', 'icon'],
+          iconSize: ['interpolate', ['linear'], ['zoom'], 13, 0.6, 16, 1],
+          iconAllowOverlap: true,
+          iconIgnorePlacement: true,
+          iconOcclusionOpacity: 1,
+          iconEmissiveStrength: OVERLAY_EMISSIVE,
+        }}
+      />
+    </ShapeSource>
+  );
+}
+
+function MajorLandmarkLabels() {
+  const t = useSweetTheme();
+  const shape = useMajorShape();
+  if (!shape.features.length) return null;
+  return (
+    <ShapeSource id="major-landmark-names-src" shape={shape}>
+      <SymbolLayer
+        id="major-landmarks-label"
+        slot="top"
+        minZoomLevel={13.5}
+        style={{
+          textField: ['get', 'label'],
+          textFont: FONT_BOLD,
+          textSize: 14,
+          textAnchor: 'bottom',
+          textOffset: [0, -2.2],
+          textMaxWidth: 10,
+          textOptional: true,
+          textColor: t.text,
+          textHaloColor: t.surface,
+          textHaloWidth: 2,
+          textOcclusionOpacity: 1,
+          textEmissiveStrength: OVERLAY_EMISSIVE,
+        }}
+      />
     </ShapeSource>
   );
 }
@@ -443,6 +541,10 @@ export function PointsLayer({ id = 'points', points, onPress }: { id?: string; p
   const t = useSweetTheme();
   const theme = useThemeKey();
   const dotOf: Record<MapPointKind, DotKey> = { story: 'accent', arrival: 'accent', landmark: 'text', start: 'primary', work: 'primary' };
+  // Büyük yer işareti olan eser rozetin üstüne çizilir (altın halka kalır, iki ayrı işaret olmaz); adı rozetin
+  // üstünde zaten yazılı olduğundan altta ikinci kez yazılmaz.
+  const majors = useMajorLandmarks();
+  const badgeAt = new Map(majors.flatMap((m) => (m.workSlug ? [[m.workSlug, m.location] as const] : [])));
   const shape: GeoJSON.FeatureCollection = {
     type: 'FeatureCollection',
     features: points.map((p) => ({
@@ -453,13 +555,14 @@ export function PointsLayer({ id = 'points', points, onPress }: { id?: string; p
         // Yarıçap 12'ye göre ölçek: numaralı 12, diğerleri en az 8; seçili +3.
         dotScale: ((p.order ? 12 : 8) + (p.selected ? 3 : 0)) / 12,
         order: p.order ? String(p.order) : '',
-        label: p.label ?? '',
+        label: badgeAt.has(p.id) ? '' : (p.label ?? ''),
         icon: p.typeSlug && !p.order ? iconName(p.typeSlug, theme) : '',
         scale: p.selected ? ICON_SCALE_SELECTED : ICON_SCALE,
         done: p.done ? 1 : 0,
         selected: p.selected ? 1 : 0,
       },
-      geometry: { type: 'Point', coordinates: p.location },
+      // Numaralı durak çizgi üstünde kalır; diğerleri rozetin yerine.
+      geometry: { type: 'Point', coordinates: (!p.order && badgeAt.get(p.id)) || p.location },
     })),
   };
   return (

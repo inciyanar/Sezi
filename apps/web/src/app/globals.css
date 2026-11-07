@@ -262,6 +262,12 @@ html[data-text="xl"] {
 body:not(:has([data-band])) #icerik,
 body:has([data-band="solid"]) #icerik { padding-top: 6rem; }
 body:has([data-route-map]) #icerik { padding-top: 0; }
+/* Rota sayfası tam ekran haritadır: alt bilgi yok, sayfa hiç kaymaz (yalnız panel kendi içinde kayar,
+   harita kendi jestleriyle kaydırılır). Telefondaki sekme çubuğu boşluğu da kalkar; çubuk haritanın üstünde yüzer. */
+html:has([data-route-map]),
+body:has([data-route-map]) { height: 100dvh; overflow: hidden; overscroll-behavior: none; }
+body:has([data-route-map]) { min-height: 0; padding-bottom: 0; }
+body:has([data-route-map]) footer:not([data-route-map] footer) { display: none; }
 
 html { scroll-padding-top: 104px; }
 

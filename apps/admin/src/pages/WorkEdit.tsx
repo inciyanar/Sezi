@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { AudioField } from '@/components/AudioField';
 import { LocationMap } from '@/components/LocationMap';
 import { PageHeader } from '@/components/page-header';
+import { PhotoAltEditor } from '@/components/photo-alt-editor';
 import { StatusBadge } from '@/components/status-badge';
 import { VisitFields } from '@/components/visit-fields';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -52,6 +53,7 @@ import {
   CONDITION_LABEL,
   localized,
   mediaUrl,
+  needsAlt,
   toVisitForm,
   visitError,
   visitPatch,
@@ -663,9 +665,13 @@ function Editor({ slug, data }: { slug: string; data: WorkDetail }) {
                 <Badge variant="secondary" className="num">
                   {data.media.length}
                 </Badge>
+                {data.media.some((m) => needsAlt(m, form.name.tr)) ? (
+                  <Badge variant="warning">{data.media.filter((m) => needsAlt(m, form.name.tr)).length} tarif eksik</Badge>
+                ) : null}
               </CardTitle>
               <CardDescription>
-                Taslak fotoğraflar uygulamada görünmez. Eşleşmeyi kitaptaki sayfayla karşılaştırıp onaylayın.
+                Taslak fotoğraflar uygulamada görünmez. Eşleşmeyi kitaptaki sayfayla karşılaştırıp onaylayın. Her fotoğrafa görmeyen
+                kullanıcının ekran okuyucuda duyacağı kısa bir görsel tarifi yazın.
               </CardDescription>
               <CardAction>
                 <Button variant="outline" className="min-h-12" asChild><Link to={`/fotograflar?tab=upload&work=${slug}`}>Fotoğraf yükle</Link></Button>
@@ -743,6 +749,12 @@ function Editor({ slug, data }: { slug: string; data: WorkDetail }) {
                           {m.source_page ? `Kitap: C${m.source_volume ?? '?'} s. ${m.source_page}` : 'Kitapta bulunamadı'}
                         </span>
                       )}
+                      <PhotoAltEditor
+                        row={m}
+                        workName={form.name.tr}
+                        busy={media.isPending}
+                        onSave={(alt) => media.mutateAsync({ row: m, patch: { alt_text: alt } })}
+                      />
                       <div className="mt-auto flex flex-wrap items-center gap-1 pt-1">
                         {m.status !== 'verified' ? (
                           <Button

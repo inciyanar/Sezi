@@ -94,6 +94,14 @@ const glass: SweetTheme["glass"] = {
   light: { tint: "#F4EFE7", alpha: 0.66, text: "#17140F", muted: "#3A332A" },
   dark: { tint: "#17140F", alpha: 0.72, text: "#FBF8F2", muted: "#D9D1C4" },
 };
+/**
+ * Puslu (ince) açık cam: eser kapağının üstündeki yarım. Cam neredeyse saydamdır (`GLASS_THIN_ALPHA`), hafif bulanık ve
+ * kumludur; fotoğraf arkasından açıkça görünür. Yazının okunurluğu camın tamamına değil, yalnız yazı bloklarının arkasına
+ * serilen ve kenarları solan pusa (`GLASS_VEIL_ALPHA`) bağlıdır: en kötü (siyah) zeminde ana yazı AA'yı geçer, ikincil
+ * yazı da ana yazı rengiyle çizilir (testle korunur).
+ */
+export const GLASS_THIN_ALPHA = 0.18;
+export const GLASS_VEIL_ALPHA = 0.56;
 
 export const sweetThemes: Record<"light" | "dark" | "highContrast", SweetTheme> = {
   light: {

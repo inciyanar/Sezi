@@ -16,12 +16,16 @@ const walker: UserProfile = { vision: "full", mobility: "none", hearing: "full",
 const wheelchair: UserProfile = { ...walker, mobility: "wheelchair" };
 
 describe("Bursa Ulu Cami ve Hanlar pilot grafiği", () => {
-  it("bölgenin eserleri landmark olarak bağlı", () => {
-    expect(raw.nodes.filter((n) => n.lynchType === "landmark").length).toBeGreaterThanOrEqual(5);
+  // Eserler varış düğümüdür; yer işareti (landmark) olmaları admin noktasıyla belirlenir, grafikte değil.
+  const works = raw.nodes.filter((n) => "workSlug" in n);
+
+  it("bölgenin eserleri varış düğümü olarak bağlı, hiçbiri kendiliğinden yer işareti değil", () => {
+    expect(works.length).toBeGreaterThanOrEqual(5);
+    expect(raw.nodes.some((n) => n.lynchType === "landmark")).toBe(false);
   });
 
-  it("her landmark çifti arasında yürüyüş rotası var", () => {
-    const lms = raw.nodes.filter((n) => n.lynchType === "landmark");
+  it("her eser çifti arasında yürüyüş rotası var", () => {
+    const lms = works;
     for (const a of lms) {
       for (const b of lms) {
         if (a.id !== b.id) expect(findRoute(segments, walker, a.id, b.id), `${a.name?.tr} → ${b.name?.tr}`).not.toBeNull();
@@ -30,7 +34,7 @@ describe("Bursa Ulu Cami ve Hanlar pilot grafiği", () => {
   });
 
   it("tekerlekli sandalye rotası hiçbir basamaklı segmentten geçmez", () => {
-    const lms = raw.nodes.filter((n) => n.lynchType === "landmark");
+    const lms = works;
     for (const a of lms) {
       for (const b of lms) {
         const r = a.id !== b.id ? findRoute(segments, wheelchair, a.id, b.id) : null;
@@ -40,7 +44,7 @@ describe("Bursa Ulu Cami ve Hanlar pilot grafiği", () => {
   });
 
   it("rota geometrisi ve yönlendirme adımları tutarlı", () => {
-    const lms = raw.nodes.filter((n) => n.lynchType === "landmark");
+    const lms = works;
     const from = lms.find((n) => n.name?.tr.startsWith("Ulu Cami")) ?? lms[0]!;
     const to = lms.find((n) => n.name?.tr.startsWith("Koza Han")) ?? lms.at(-1)!;
     const route = findRoute(segments, walker, from.id, to.id)!;

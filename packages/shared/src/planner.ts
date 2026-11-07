@@ -1,6 +1,6 @@
 import { distanceM } from "./geo";
 import { buildGuidance, type GuidanceStep } from "./guidance";
-import { arrivalFor, opensOnApproach, startPointsOf, type Ambient, type NavPoint } from "./points";
+import { arrivalFor, isMajorLandmark, opensOnApproach, startPointsOf, type Ambient, type NavPoint } from "./points";
 import { findRoute, routeGeometry, type Route, type RouteGeometry, type RouteObjective } from "./routing";
 import { buildDetour, segmentAhead, withLeadIn } from "./scenarios";
 import { NavSegment, type LngLat, type LocalizedText, type NavNode, type UserProfile } from "./schemas";
@@ -35,6 +35,15 @@ export interface StartPoint {
   nodeId: string;
   name: LocalizedText;
   location: LngLat;
+}
+
+/** Haritada belirgin çizilen büyük yer işareti (Lynch landmark); esere bağlıysa eserin türüyle. */
+export interface MajorLandmark {
+  id: string;
+  name: LocalizedText;
+  location: LngLat;
+  workSlug?: string;
+  workType?: string;
 }
 
 export type OverrideType = "stairs" | "ramp_blocked" | "narrow_path" | "surface_damage" | "construction" | "other";
@@ -147,6 +156,7 @@ export function createPlanner(raw: PilotGraphData) {
   let effective: NavSegment[] = baseSegments;
   let effMap = baseSegMap;
   let starts: StartPoint[] = [];
+  let majors: MajorLandmark[] = [];
   /** Anlatım/varış noktası → bağlandığı düğüm (rotaya uğramak için). */
   let viaNode = new Map<string, string>();
   let version = 0;
@@ -155,14 +165,17 @@ export function createPlanner(raw: PilotGraphData) {
   const midOf = (s: NavSegment): LngLat => (s.geometry && s.geometry.length ? s.geometry[Math.floor(s.geometry.length / 2)]! : baseNodes.get(s.from)!.location);
 
   function rebuild() {
-    // 1. Yer işareti noktaları en yakın düğüme bağlanır: talimatta anılır, ses manzarasına katılır.
+    // 1. Yer işareti noktaları düğüme bağlanır: talimatta anılır, ses manzarasına katılır. Eserler kendiliğinden
+    // yer işareti değildir (Lynch: yalnız uzaktan seçilen yapılar); admin'in esere bağladığı yer işareti noktası
+    // o eserin düğümüne, diğerleri en yakın düğüme bağlanır.
     const next = new Map(baseNodes);
-    /** Görünürlük kaynakları: konum ve ağırlık (eser 0.5; yer işareti belirginliğe göre 0.25–0.75). */
-    const visible: { at: LngLat; weight: number }[] = pilotWorks.map((n) => ({ at: n.location, weight: 0.5 }));
+    /** Görünürlük kaynakları: yer işaretinin konumu ve belirginliğe göre ağırlığı (0.25–0.75). */
+    const visible: { at: LngLat; weight: number }[] = [];
     for (const p of navPoints) {
       if (!p.roles.includes("landmark")) continue;
-      const n = nearestIn(baseNodes, p.location);
-      if (distanceM(n.location, p.location) > LANDMARK_SNAP_M) continue;
+      const work = p.workSlug ? pilotWorks.find((n) => n.workSlug === p.workSlug) : undefined;
+      const n = work ?? nearestIn(baseNodes, p.location);
+      if (!work && distanceM(n.location, p.location) > LANDMARK_SNAP_M) continue;
       const cur = next.get(n.id)!;
       // Eser düğümü eser adını korur; yer işareti yalnızca ortam sesini ekler. Duyu ipucu adıyla birlikte gider:
       // eser düğümünde ancak nokta o esere bağlıysa geçer ("Geyve Hanı yakınında… su sesi" gibi yanlış atıf olmasın),
@@ -174,6 +187,12 @@ export function createPlanner(raw: PilotGraphData) {
       visible.push({ at: p.location, weight: 0.25 * (p.salience ?? 2) });
     }
     nodes = next;
+    majors = navPoints
+      .filter(isMajorLandmark)
+      .map((p) => {
+        const work = p.workSlug ? pilotWorks.find((n) => n.workSlug === p.workSlug) : undefined;
+        return { id: p.id, name: work?.name ?? p.title, location: p.location, workSlug: work?.workSlug, workType: work?.workType };
+      });
 
     // 2. Segment görünürlüğü ve onaylı bildirimler.
     effective = baseSegments.map((s) => {
@@ -311,8 +330,10 @@ export function createPlanner(raw: PilotGraphData) {
     hasRouteTo: (slug: string) => landmarkNodeForWork(slug) !== undefined,
     /** Konum pilot grafiğin kapsadığı alanda mı (rota yalnızca burada çizilir). */
     inPilotArea: (p: LngLat) => distanceM(p, nearestNode(p).location) <= PILOT_REACH_M,
-    /** Talimatta anılan ve ses veren yer işaretleri: eserler ve admin yer işaretleri. */
+    /** Talimatta anılan ve ses veren yer işaretleri (admin noktaları; esere bağlı olanlar eser adıyla). */
     landmarkNodes: () => [...nodes.values()].filter((n) => n.lynchType === "landmark"),
+    /** Haritada belirgin çizilen büyük yer işaretleri (belirginlik 3). */
+    majorLandmarks: () => majors,
 
     planRoute,
 
