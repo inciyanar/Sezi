@@ -36,11 +36,11 @@ export const en: Record<keyof typeof tr, string> = {
 /** Tanıtım sayfasının editoryal metinleri. */
 export const homeCopy = {
   tr: {
-    hero: "Kayıp değilsin, _henüz sezmedin._", curve: "kayıp değilsin… henüz sezmedin · görerek, duyarak, dokunarak ·",
+    hero: "Kayıp değilsin, _henüz sezmedin._", curve: "kayıp değilsin… henüz sezmedin · görerek, duyarak, hissederek ·",
     intro: "Vakıf eserlerini kendi duyularınla, kendi ritminde keşfet.", search: "Ne sezmek istersin?", searchButton: "Ara",
-    works: "eser", cities: "il", senses: "algı yolu", sensesDetail: "gör, duy, dokun",
-    trust: "Sezi'ne güven", manifesto: "Her kubbenin altında bir _hikâye_, her taşın ardında bir iyilik var.",
-    manifestoBody: "Sezi, vakıf eserlerinin hikâyelerini herkes için erişilebilir kılar. Görerek, duyarak ve dokunarak kendi yolunu bul.",
+    works: "eser", cities: "il", senses: "algı yolu", sensesDetail: "gör, duy, hisset",
+    sensoryEyebrow: "Kendi yolunla keşfet", sensoryTitle: "Bir eseri keşfetmenin _birden fazla yolu var._", sensoryIntro: "Aynı yapı; ayrıntısıyla, sesiyle ve sende bıraktığı hisle başka bir hikâye anlatabilir.",
+    sensorySee: "Gör", sensorySeeBody: "Mimari ayrıntılara yaklaş.", sensoryListen: "Dinle", sensoryListenBody: "Mekânın sesine kendi ritminde kulak ver.", sensoryMotionLabel: "Yumuşakça hareket eden ses akışı", sensoryFeel: "Sez", sensoryFeelBody: "Gördüğünün sende bıraktığı izi fark et.", sensoryQuote: "Bir yer, bazen görüntüsünden çok bıraktığı hisle hatırlanır.",
     provinces: "İlleri keşfet", tours: "tur", weekly: "Haftanın eseri", location: "Konum", type: "Tür", access: "Erişim", stepFree: "Basamaksız giriş", ramp: "Rampa var", steps: "basamak",
     personal: "Kişisel rota", routeTitle: "Yol senin. _Ritim de._", routeBody: "Sezi profilini tanır; basamakları, eğimi ve kalabalık caddeleri hesaba katarak sana uygun yolu çizer.", routeButton: "Rotamı oluştur",
     accessibility: "Herkes için keşif", accessibilityTitle: "Görmek _tek yol_ değil.", accessibilityBody: "Hikâyelerle kendi ihtiyaçlarına uygun biçimde buluş.",
@@ -48,11 +48,11 @@ export const homeCopy = {
     listTitle: "Keşfe _buradan_ başla", mobile: "Sezi mobil", mobileTitle: "Sezi'ne _güven._", mobileBody: "Vakıf eserlerinin hikâyeleri yol boyunca yanında.", download: "Android uygulamasını indir",
   },
   en: {
-    hero: "You are not lost, _you have yet to sense._", curve: "you are not lost… you have yet to sense · see, hear, touch ·",
+    hero: "You are not lost, _you have yet to sense._", curve: "you are not lost… you have yet to sense · see, hear, feel ·",
     intro: "Discover foundation heritage through your own senses, at your own pace.", search: "What would you like to discover?", searchButton: "Search",
-    works: "works", cities: "provinces", senses: "ways to sense", sensesDetail: "see, hear, touch",
-    trust: "Trust your senses", manifesto: "Under every dome is a _story_, behind every stone an act of kindness.",
-    manifestoBody: "Sezi makes the stories of foundation heritage accessible to everyone. Find your own way by seeing, hearing and touching.",
+    works: "works", cities: "provinces", senses: "ways to sense", sensesDetail: "see, hear, feel",
+    sensoryEyebrow: "Discover in your own way", sensoryTitle: "There is _more than one way_ to discover a work.", sensoryIntro: "The same place can tell a different story through its details, sound and the feeling it leaves with you.",
+    sensorySee: "See", sensorySeeBody: "Look closer at the architectural details.", sensoryListen: "Listen", sensoryListenBody: "Hear the place at your own pace.", sensoryMotionLabel: "A gently moving flow of sound", sensoryFeel: "Sense", sensoryFeelBody: "Notice the impression it leaves with you.", sensoryQuote: "Sometimes a place is remembered less by how it looked than by how it felt.",
     provinces: "Explore provinces", tours: "tours", weekly: "Work of the week", location: "Location", type: "Type", access: "Access", stepFree: "Step-free entrance", ramp: "Ramp available", steps: "steps",
     personal: "Your route", routeTitle: "Your path. _Your pace._", routeBody: "Sezi considers your profile, steps, slopes and busy streets to find a route that suits you.", routeButton: "Plan my route",
     accessibility: "Discovery for everyone", accessibilityTitle: "Seeing is _not the only way._", accessibilityBody: "Explore stories in a way that suits your needs.",
