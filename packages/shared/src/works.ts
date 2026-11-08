@@ -140,6 +140,11 @@ export function inventorySource(w: Pick<WorkRow, "sources">): WorkSource | undef
 
 export const coverOf = (w: Pick<WorkRow, "photos">): WorkPhoto | undefined => w.photos[0];
 
+/** Ana sayfa vitrini için kapak ve yayımlanmış Türkçe metin gerekir. */
+export function isShowcaseWork(w: Pick<WorkRow, "photos" | "summary" | "history" | "architecture">): boolean {
+  return !!coverOf(w) && [w.summary, w.history, w.architecture].some((text) => !!text?.tr.trim());
+}
+
 /** Fotoğrafın herkese açık adresi; küçük boy istenirse ve varsa önizleme dosyası. */
 export function mediaUrl(base: string, p: WorkPhoto, size: "thumb" | "full" = "full"): string {
   const prefix = base.endsWith("/") ? base : `${base}/`;

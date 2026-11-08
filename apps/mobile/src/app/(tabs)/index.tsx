@@ -1,4 +1,4 @@
-import { coverOf, distanceM, hasLocation, INTEREST_TYPES, loc, sweetThemes, toneForType, type LngLat, type WorkRow } from '@sezi/shared';
+import { coverOf, distanceM, hasLocation, INTEREST_TYPES, isShowcaseWork, loc, sweetThemes, toneForType, type LngLat, type WorkRow } from '@sezi/shared';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
@@ -118,36 +118,36 @@ export default function Explore() {
 
   // Kurulumda seçilen ilgilerin türleri (cami, türbe, han) önce gelir; gerisi eser sayısına göre.
   const interestTypes = useMemo(() => (profile?.interests ?? []).flatMap((k) => INTEREST_TYPES[k] ?? []), [profile?.interests]);
-  // Ana sayfa vitrindir: fotoğrafı olmayan eser burada (yakınlar, türler, ızgara) görünmez; aramada bulunur.
-  const withPhoto = useMemo(() => (works ?? []).filter((w) => coverOf(w)), [works]);
+  // Vitrinde yalnız kapaklı ve Türkçe metni olan eserler görünür; diğerleri aramada bulunur.
+  const showcaseWorks = useMemo(() => (works ?? []).filter(isShowcaseWork), [works]);
   const types = useMemo(() => {
     const counts = new Map<string, { name: string; n: number }>();
-    for (const w of withPhoto) counts.set(w.type_slug, { name: loc(w.type_name, lang), n: (counts.get(w.type_slug)?.n ?? 0) + 1 });
+    for (const w of showcaseWorks) counts.set(w.type_slug, { name: loc(w.type_name, lang), n: (counts.get(w.type_slug)?.n ?? 0) + 1 });
     const rank = (slug: string) => {
       const i = interestTypes.indexOf(slug);
       return i < 0 ? interestTypes.length : i;
     };
     return [...counts].sort((a, b) => rank(a[0]) - rank(b[0]) || b[1].n - a[1].n);
-  }, [withPhoto, lang, interestTypes]);
+  }, [showcaseWorks, lang, interestTypes]);
   const audioOf = (w: WorkRow) => (lang === 'en' ? w.audio_en : w.audio_tr);
   // Ses kaydı olan eser yoksa "Dinle" seçeneği çizilmez (boş sonuç veren seçenek gösterilmez).
   const filters = useMemo(
-    () => FILTERS.filter((value) => value !== 'audio' || withPhoto.some((w) => !!(lang === 'en' ? w.audio_en : w.audio_tr))),
-    [withPhoto, lang],
+    () => FILTERS.filter((value) => value !== 'audio' || showcaseWorks.some((w) => !!(lang === 'en' ? w.audio_en : w.audio_tr))),
+    [showcaseWorks, lang],
   );
   // Sıralama tek `Intl.Collator` ile: karşılaştırma başına `localeCompare(…, lang)` Hermes'te her seferinde yeni
   // karşılaştırıcı kurduğundan 340 eserde açılışı ~3 sn kilitliyordu (sürüm derlemesi ölçümü).
   const visible = useMemo(() => {
     const collator = new Intl.Collator(lang);
-    return withPhoto
+    return showcaseWorks
       .filter(
         (w) =>
-          (!kind || w.type_slug === kind) && (filter === 'all' || (filter === 'text' ? !!w.summary : !!(lang === 'en' ? w.audio_en : w.audio_tr))),
+          (!kind || w.type_slug === kind) && (filter === 'all' || (filter === 'text' ? !!(w.summary || w.history || w.architecture) : !!(lang === 'en' ? w.audio_en : w.audio_tr))),
       )
       .map((w) => ({ w, name: loc(w.name, lang) }))
       .sort((a, b) => collator.compare(a.name, b.name))
       .map((x) => x.w);
-  }, [withPhoto, kind, filter, lang]);
+  }, [showcaseWorks, kind, filter, lang]);
   const distance = (w: WorkRow) => (here && hasLocation(w) ? distanceM(here, [w.lng, w.lat]) : null);
   const near = useMemo(
     () =>

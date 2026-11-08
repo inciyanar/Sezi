@@ -1,4 +1,4 @@
-import { coverOf, isAttributed, loc, PROFILE_KEYS } from "@sezi/shared";
+import { coverOf, isAttributed, isShowcaseWork, loc, PROFILE_KEYS } from "@sezi/shared";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -16,7 +16,7 @@ import { Reveal } from "@/components/ui/reveal";
 import { RichTitle } from "@/components/ui/rich-title";
 import { ListenButton } from "@/components/works/listen-button";
 import { PhotoSource } from "@/components/works/photo-source";
-import { getCities, getNavOverlay, getTours, getWork, getWorkIndex } from "@/lib/data";
+import { getCities, getNavOverlay, getShowcaseWorks, getTours, getWork, getWorkIndex } from "@/lib/data";
 import { pickHero } from "@/lib/home";
 import { href, isLang, t } from "@/lib/i18n";
 import { AUDIO_BASE, photoUrl } from "@/lib/media";
@@ -36,13 +36,15 @@ const preferredHeroPath = "bursa/8df4d47f43b3.webp";
 export default async function HomePage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params;
   if (!isLang(lang)) notFound();
-  const [works, cities, tours, overlay, weekly] = await Promise.all([getWorkIndex(), getCities(), getTours(), getNavOverlay(), getWork("bursa-ulucami")]);
+  const [works, cities, tours, overlay, weeklyWork] = await Promise.all([getWorkIndex(), getCities(), getTours(), getNavOverlay(), getWork("bursa-ulucami")]);
+  const showcaseWorks = await getShowcaseWorks(works);
+  const weekly = weeklyWork && isShowcaseWork(weeklyWork) ? weeklyWork : null;
   const populatedCities = cities
     .filter((city) => works.some((work) => work.city_slug === city.slug))
     .sort((a, b) => works.filter((work) => work.city_slug === b.slug).length - works.filter((work) => work.city_slug === a.slug).length);
   const copy = homeCopy[lang];
   const now = new Date();
-  const hero = works.find((work) => work.photos?.some((photo) => photo.path === preferredHeroPath)) ?? pickHero(works, now);
+  const hero = showcaseWorks.find((work) => work.photos?.some((photo) => photo.path === preferredHeroPath)) ?? pickHero(showcaseWorks, now);
   const heroPhoto = hero?.photos?.find((photo) => photo.path === preferredHeroPath) ?? (hero && coverOf(hero));
   const weeklyPhoto = weekly ? coverOf(weekly) : undefined;
   const weeklyPhotoSource = weeklyPhoto && {
@@ -291,7 +293,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
       <Reveal className="mx-auto max-w-[1100px] px-6 py-24 md:py-36">
         <Eyebrow text={`${works.length} ${copy.works}`} lang={lang} />
         <RichTitle as="h2" text={copy.listTitle} className="mt-5 mb-10 font-heading text-[clamp(2.5rem,5vw,4.5rem)] leading-tight" />
-        <HomeList works={works} lang={lang} />
+        <HomeList works={showcaseWorks} lang={lang} />
       </Reveal>
       <Reveal className="mx-3 mb-3 overflow-hidden rounded-[28px] bg-[var(--tone-teal-ink)] px-6 py-16 text-[var(--on-photo)] md:px-16 md:py-20">
         <div data-surface="photo" className="mx-auto grid max-w-[1150px] items-center gap-12 md:min-h-[440px] md:grid-cols-[1.1fr_1fr]">

@@ -6,6 +6,7 @@ import {
   NAV_POINT_COLUMNS,
   TOUR_COLUMNS,
   toTours,
+  isShowcaseWork,
   toWorkPoints,
   WORK_TEXT_COLUMNS,
   workTextRows,
@@ -63,6 +64,18 @@ export const getWorkIndex = cache(async (): Promise<WorkListItem[]> => {
   if (error) throw error;
   return z.array(WorkListItemSchema).parse(data);
 });
+
+/** Vitrin ölçütü için uzun metinleri yalnız sunucuda okur, listeye taşımaz. */
+export async function getShowcaseWorks(works: WorkListItem[]): Promise<WorkListItem[]> {
+  const { data, error } = await supabase.from("works_view").select("slug, history, architecture").eq("status", "verified");
+  if (error) throw error;
+  const texts = z.array(WorkRowSchema.pick({ slug: true, history: true, architecture: true })).parse(data);
+  const bySlug = new Map(texts.map((text) => [text.slug, text]));
+  return works.filter((work) => {
+    const text = bySlug.get(work.slug);
+    return !!text && isShowcaseWork({ ...work, history: text.history, architecture: text.architecture });
+  });
+}
 
 export const getWork = cache(async (slug: string): Promise<WorkRow | null> => {
   const { data, error } = await supabase.from("works_view").select("*").eq("status", "verified").eq("slug", slug).maybeSingle();
