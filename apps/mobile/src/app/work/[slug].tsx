@@ -38,6 +38,7 @@ import { usePassport } from '@/lib/passport';
 import { usePhotoUrls, useWorkCommunityPhotos } from '@/lib/photos';
 import { AUDIO_BASE } from '@/lib/supabase';
 import { createClipPlayer } from '@/lib/voice/clip-player';
+import { prefetchChirp } from '@/lib/voice/chirp';
 import { useReadAlong } from '@/lib/voice/read-along';
 import { NARRATION_WAIT_MS, say, silence } from '@/lib/voice/speech';
 import { photoUrl, useWork } from '@/lib/works';
@@ -46,6 +47,24 @@ import { photoUrl, useWork } from '@/lib/works';
 const workClip = createClipPlayer();
 /** İçerik sayfasının fotoğrafa bindiği yuvarlak kenar (ana sayfadaki buzlu sayfayla aynı 34 dp). */
 const HERO_CURVE = 34;
+/**
+ * Genel anlatım parça boyu (karakter). Tarihçenin tamamı tek parça okutulamaz: Chirp 4500 baytı, Android'in
+ * cihaz sesi ~4000 karakteri reddeder ve hata "bitti" sayıldığından kart hiç ses çıkarmadan geri döner.
+ */
+const NARRATION_CHUNK = 1200;
+/** Anlatımı cümle sınırında parça boyunu aşmayan bölümlere ayırır. */
+function narrationChunks(text: string): string[] {
+  const out: string[] = [];
+  let cur = '';
+  for (const sentence of splitReadAlong(text).flat()) {
+    if (cur && cur.length + 1 + sentence.length > NARRATION_CHUNK) {
+      out.push(cur);
+      cur = sentence;
+    } else cur = cur ? `${cur} ${sentence}` : sentence;
+  }
+  if (cur) out.push(cur);
+  return out;
+}
 
 export default function WorkDetail() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -190,7 +209,10 @@ function Detail({ work, t, s }: { work: WorkRow; t: SweetTheme; s: ReturnType<ty
   const narration = [name, kind, place, period, history || (ref ? tr('work.historyRef', { ref }) : tr('work.historyInBook'))].filter(Boolean).join('. ');
   // İngilizcede TR kayda düşülmez: metin cihaz sesiyle okunur.
   const audioPath = lang === 'en' ? work.audio_en : work.audio_tr;
+  // Durdurulan anlatımın geç gelen geri çağrısı yeni anlatımı ilerletmez (nesil sayacı).
+  const narrationGen = useRef(0);
   const stopMain = () => {
+    narrationGen.current++;
     workClip.stop();
     silence();
     setSpeaking(false);
@@ -200,7 +222,17 @@ function Detail({ work, t, s }: { work: WorkRow; t: SweetTheme; s: ReturnType<ty
     reader.stop();
     setSpeaking(true);
     const end = () => setSpeaking(false);
-    const tts = () => say(narration, { lang, rate: settings.speechRate, interrupt: true, waitMs: NARRATION_WAIT_MS, onDone: end });
+    const tts = () => {
+      const gen = ++narrationGen.current;
+      const parts = narrationChunks(narration);
+      if (lang === 'tr') void prefetchChirp(parts.slice(1));
+      const next = (i: number) => {
+        if (gen !== narrationGen.current) return;
+        if (i >= parts.length) return end();
+        say(parts[i]!, { lang, rate: settings.speechRate, interrupt: true, waitMs: NARRATION_WAIT_MS, onDone: () => next(i + 1) });
+      };
+      next(0);
+    };
     if (!audioPath) return tts();
     silence();
     // İnsan kaydı hızlandırılmaz.
@@ -210,6 +242,7 @@ function Detail({ work, t, s }: { work: WorkRow; t: SweetTheme; s: ReturnType<ty
   const follow = useRef(true);
   const toggleRead = (key: ReadKey) => {
     if (reader.active === key) return reader.stop();
+    narrationGen.current++;
     workClip.stop();
     setSpeaking(false);
     follow.current = true;
