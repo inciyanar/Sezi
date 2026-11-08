@@ -1,9 +1,9 @@
 import Mapbox, { Camera, CircleLayer, FillExtrusionLayer, FillLayer, Image as MapImage, Images, LineLayer, MapView, ShapeSource, StyleImport, SymbolLayer } from '@rnmapbox/maps';
 import { GLYPH_TYPES, glyphType, LANDMARK_FULL_ZOOM, LANDMARK_MIN_ZOOM, LANDMARK_OPACITY, laneOffsetPx, MAP_PITCH, PilotBuildingsSchema, polylineLength, ROUTE_ARROW_SPACING_PX, ROUTE_FLOW_DASHES, ROUTE_FLOW_STEP_MS, routeLineParts, sliceLine, stopConnector, toneForType, type LinePart, type LngLat, type RoutePiece } from '@sezi/shared';
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState, type ComponentRef, type ReactNode } from 'react';
-import { InteractionManager, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Image, InteractionManager, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { StarIcon } from '@/design/icons';
+import { CATEGORY_ART_SOURCES } from '@/design/category-art';
 import { WorkGlyphInline } from '@/design/work-glyph';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useIsDark, useSweetTheme } from '@/hooks/use-sweet-theme';
@@ -167,29 +167,29 @@ export const SeziMap = forwardRef<SeziMapHandle, SeziMapProps>(function SeziMap(
   );
 });
 
-/** Harita resim adı: tema değişince yeni ad, eski resim önbellekte kalmaz. Simgesi olmayan tür `diger`. */
-const iconName = (slug: string, theme: string) => `type-${theme}-${glyphType(slug)}`;
+/** Aynı kategori çizimine işaret eden kısa ve uzun slug'lar tek Mapbox resmini paylaşır. */
+const categoryNames = new Map<number, string>();
+for (const [slug, source] of Object.entries(CATEGORY_ART_SOURCES)) {
+  if (!categoryNames.has(source)) categoryNames.set(source, slug);
+}
+const typeKey = (slug: string) => categoryNames.get(CATEGORY_ART_SOURCES[slug]) ?? glyphType(slug);
+const typeKeys = [...new Set([...GLYPH_TYPES, ...Object.keys(CATEGORY_ART_SOURCES)].map(typeKey))];
+const iconName = (slug: string, theme: string) => `type-${theme}-${typeKey(slug)}`;
 const ICON_SIZE = 36;
-/** Büyük yer işareti rozeti: eser simgesinden belirgin büyük; üstüne eser simgesi binerse altın halka olarak görünür. */
+/** Büyük yer işareti rozeti eser işaretinden belirgin büyüktür. */
 const LANDMARK_SIZE = 56;
-const landmarkName = (glyph: string, theme: string) => `landmark-${theme}-${glyph}`;
-/** Esere bağlı olmayan büyük yer işareti (kule, meydan yapısı): yıldız. */
-const LANDMARK_STAR = 'star';
+const landmarkName = (theme: string) => `landmark-${theme}`;
 const ROUTE_WIDTH = 6;
 const ARROW_SIZE = 16;
 const arrowName = (theme: string) => `route-arrow-${theme}`;
 // Standard'ın gece ışığı navigasyon işaretlerini karartmasın.
 const OVERLAY_EMISSIVE = 1;
 
-/**
- * Eser türü simgeleri: karşıt renkli dış kasa, yüzey dolgusu ve tür mürekkebinde glif.
- * Siluet türü anlatır; renk tek başına anlam taşımaz. Native taraf her görünümü bir kez resme çevirir.
- */
+/** Her tür ve büyük yer işareti simgesi native tarafta yalnız bir kez resme çevrilir. */
 function TypeIcons() {
   const t = useSweetTheme();
   const theme = useThemeKey();
-  const majors = useMajorLandmarks();
-  const landmarkGlyphs = [...new Set(majors.map((m) => (m.workType ? glyphType(m.workType) : LANDMARK_STAR)))];
+  const iconRefs = useRef<Record<string, ComponentRef<typeof MapImage> | null>>({});
   return (
     <Images>
       <MapImage name={arrowName(theme)}>
@@ -198,27 +198,24 @@ function TypeIcons() {
           <View style={{ width: 7, height: 7, borderTopWidth: 2.5, borderRightWidth: 2.5, borderColor: t.surface, transform: [{ rotate: '45deg' }] }} />
         </View>
       </MapImage>
-      {GLYPH_TYPES.map((slug) => {
+      {typeKeys.map((slug) => {
         const ink = t.tones[toneForType(slug)].ink;
+        const source = CATEGORY_ART_SOURCES[slug];
         return (
-          <MapImage key={slug} name={iconName(slug, theme)}>
-            {/* collapsable={false}: düzleştirilirse SVG ikinci çocuk olur, native taraf yalnız tek görünümü resme çevirir. */}
+          <MapImage key={slug} ref={(image) => { iconRefs.current[slug] = image; }} name={iconName(slug, theme)}>
             <View collapsable={false} style={{ width: ICON_SIZE, height: ICON_SIZE, borderRadius: ICON_SIZE / 2, backgroundColor: t.surface, borderWidth: 2.5, borderColor: t.text, alignItems: 'center', justifyContent: 'center' }}>
               <View style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: ink, alignItems: 'center', justifyContent: 'center' }}>
-                <WorkGlyphInline slug={slug} color={ink} size={19} />
+                {source ? <Image source={source} onLoad={() => iconRefs.current[slug]?.refresh()} resizeMode="contain" style={{ width: 24, height: 24 }} /> : <WorkGlyphInline slug={slug} color={ink} size={19} />}
               </View>
             </View>
           </MapImage>
         );
       })}
-      {landmarkGlyphs.map((glyph) => (
-        <MapImage key={`landmark-${glyph}`} name={landmarkName(glyph, theme)}>
-          {/* Altın dolgu, kalın mürekkep kasa: harita zemininde ve 3B binaların önünde uzaktan seçilir. */}
-          <View collapsable={false} style={{ width: LANDMARK_SIZE, height: LANDMARK_SIZE, borderRadius: LANDMARK_SIZE / 2, backgroundColor: t.gold.fill, borderWidth: 3, borderColor: t.text, alignItems: 'center', justifyContent: 'center' }}>
-            {glyph === LANDMARK_STAR ? <StarIcon color={t.gold.ink} size={28} /> : <WorkGlyphInline slug={glyph} color={t.gold.ink} size={28} />}
-          </View>
-        </MapImage>
-      ))}
+      <MapImage ref={(image) => { iconRefs.current.landmark = image; }} name={landmarkName(theme)}>
+        <View collapsable={false} style={{ width: LANDMARK_SIZE, height: LANDMARK_SIZE, borderRadius: LANDMARK_SIZE / 2, backgroundColor: t.gold.fill, borderWidth: 3, borderColor: t.text, alignItems: 'center', justifyContent: 'center' }}>
+          <Image source={require('../../../assets/images/landmark.png')} onLoad={() => iconRefs.current.landmark?.refresh()} resizeMode="contain" style={{ width: 34, height: 34, tintColor: t.gold.ink }} />
+        </View>
+      </MapImage>
       {DOT_KEYS.map((key) => (
         <MapImage key={`dot-${key}`} name={dotName(key, theme)}>
           <View collapsable={false} style={{ width: DOT_SIZE, height: DOT_SIZE, borderRadius: DOT_SIZE / 2, backgroundColor: t.text, padding: 2 }}>
@@ -316,10 +313,8 @@ function PilotLandmarks() {
 }
 
 /**
- * Büyük yer işaretleri (Lynch landmark): her haritada altın rozet ve kalın adla. Rozet ekranın kendi noktalarının
- * altına çizilir (aynı yerdeki eser simgesi rozetin ortasına biner, altın halka kalır); ad ise en üste:
- * yazılar yerleştirilirken üstteki katman önce yer alır, böylece büyük yer işaretinin adı küçük eser adlarına yer
- * kaybetmez. Uzaklaştıkça küçülür ama kaybolmaz: yön bulmanın dayanağıdır.
+ * Büyük yer işaretleri (Lynch landmark): her haritada altın rozet ve kalın adla. Aynı yerdeki eser de aynı
+ * rozeti kullanır; ad en üstte kalır ve küçük eser adlarına yer kaybetmez. Uzaklaştıkça küçülür ama kaybolmaz.
  */
 function useMajorShape() {
   const theme = useThemeKey();
@@ -330,7 +325,7 @@ function useMajorShape() {
       type: 'FeatureCollection',
       features: majors.map((m) => ({
         type: 'Feature',
-        properties: { icon: landmarkName(m.workType ? glyphType(m.workType) : LANDMARK_STAR, theme), label: m.name[lang] ?? m.name.tr },
+        properties: { icon: landmarkName(theme), label: m.name[lang] ?? m.name.tr },
         geometry: { type: 'Point', coordinates: m.location },
       })),
     }),
@@ -541,8 +536,7 @@ export function PointsLayer({ id = 'points', points, onPress }: { id?: string; p
   const t = useSweetTheme();
   const theme = useThemeKey();
   const dotOf: Record<MapPointKind, DotKey> = { story: 'accent', arrival: 'accent', landmark: 'text', start: 'primary', work: 'primary' };
-  // Büyük yer işareti olan eser rozetin üstüne çizilir (altın halka kalır, iki ayrı işaret olmaz); adı rozetin
-  // üstünde zaten yazılı olduğundan altta ikinci kez yazılmaz.
+  // Büyük yer işareti olan eserde aynı rozet kullanılır; adı ikinci kez yazılmaz.
   const majors = useMajorLandmarks();
   const badgeAt = new Map(majors.flatMap((m) => (m.workSlug ? [[m.workSlug, m.location] as const] : [])));
   const shape: GeoJSON.FeatureCollection = {
@@ -556,8 +550,8 @@ export function PointsLayer({ id = 'points', points, onPress }: { id?: string; p
         dotScale: ((p.order ? 12 : 8) + (p.selected ? 3 : 0)) / 12,
         order: p.order ? String(p.order) : '',
         label: badgeAt.has(p.id) ? '' : (p.label ?? ''),
-        icon: p.typeSlug && !p.order ? iconName(p.typeSlug, theme) : '',
-        scale: p.selected ? ICON_SCALE_SELECTED : ICON_SCALE,
+        icon: !p.order && badgeAt.has(p.id) ? landmarkName(theme) : p.typeSlug && !p.order ? iconName(p.typeSlug, theme) : '',
+        scale: !p.order && badgeAt.has(p.id) ? (p.selected ? ICON_SCALE_SELECTED : 1) : p.selected ? ICON_SCALE_SELECTED : ICON_SCALE,
         done: p.done ? 1 : 0,
         selected: p.selected ? 1 : 0,
       },

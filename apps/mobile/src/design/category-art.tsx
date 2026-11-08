@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { WorkGlyphInline } from '@/design/work-glyph';
 
 /** Statik require: Metro dinamik yolu çözemez. Envanterin kısa slug'ları ve görsel adları birlikte eşlenir. */
-const SOURCES: Record<string, number> = {
+export const CATEGORY_ART_SOURCES: Record<string, number> = {
   cami: require('../../assets/categories/cami.webp'),
   medrese: require('../../assets/categories/medrese.webp'),
   turbe: require('../../assets/categories/turbe.webp'),
@@ -26,11 +26,11 @@ const SOURCES: Record<string, number> = {
   'tekke-ve-zaviye': require('../../assets/categories/tekke-ve-zaviye.webp'),
 };
 
-export const hasCategoryArt = (slug: string) => slug in SOURCES;
+export const hasCategoryArt = (slug: string) => slug in CATEGORY_ART_SOURCES;
 
 /** Renkli tür çizimi; görseli olmayan türde mevcut tek renk glif kullanılır. */
 export function CategoryArt({ slug, color, size = 64 }: { slug: string; color: string; size?: number }) {
-  const source = SOURCES[slug];
+  const source = CATEGORY_ART_SOURCES[slug];
   if (!source) return <WorkGlyphInline slug={slug} color={color} size={Math.round(size * 0.44)} />;
   return <Image accessible={false} source={source} style={{ width: size, height: size }} contentFit="contain" />;
 }
