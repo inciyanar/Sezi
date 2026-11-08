@@ -15,7 +15,6 @@ import { notFound } from "next/navigation";
 import { LazySeziMap } from "@/components/map";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/eyebrow";
-import { Glass } from "@/components/ui/glass";
 import { Tag } from "@/components/ui/tag";
 import { CommunityPhotos } from "@/components/works/community-photos";
 import { ListenButton } from "@/components/works/listen-button";
@@ -292,35 +291,35 @@ export default async function WorkDetailPage({
   return (
     <main data-band="solid" className="work-detail-page">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
-      <header className={`relative m-3 overflow-hidden rounded-[28px] ${cover ? "min-[900px]:min-h-[min(86vh,760px)]" : toneClass(work.type_slug)}`}>
+      <header className={`relative m-3 overflow-hidden rounded-b-[34px] rounded-t-[28px] ${cover ? "" : toneClass(work.type_slug)}`}>
         {cover ? (
-          <div className="h-[45vh] min-h-80 min-[900px]:absolute min-[900px]:inset-0 min-[900px]:h-full">
+          <div className="absolute inset-0">
             <PhotoGallery photos={work.photos} workName={name} typeSlug={work.type_slug} />
           </div>
         ) : (
           <LandmarkIcon aria-hidden className="pointer-events-none absolute right-6 top-1/2 z-10 hidden size-[200px] -translate-y-1/2 opacity-35 sm:right-[10%] sm:block" strokeWidth={1.2} />
         )}
-        <Glass tone="light" grain={Boolean(cover)} className={`flex flex-col justify-between gap-8 px-7 pb-10 pt-28 sm:px-12 ${cover ? "min-h-[520px] min-[900px]:min-h-[min(86vh,760px)] min-[900px]:w-[44%]" : "min-h-[420px] w-full !bg-transparent backdrop-filter-none"}`}>
-          <div className="grid gap-6">
+        <div className={`relative flex min-h-[620px] w-[60%] flex-col justify-between gap-10 px-5 pb-20 pt-20 sm:w-[54%] sm:px-10 min-[900px]:min-h-[min(86vh,760px)] min-[900px]:px-12 ${cover ? "work-hero-glass" : "!w-full"}`}>
+          <div className={`grid gap-6 ${cover ? "work-hero-veil" : ""}`}>
             <p className="flex flex-wrap items-center gap-x-2 text-[13px] font-bold tracking-[0.16em]">
               <Link className="inline-flex min-h-12 items-center underline-offset-4 hover:underline" href={href(lang, `/eserler?tur=${encodeURIComponent(work.type_slug)}`)}>{typeName.toLocaleUpperCase(lang === "tr" ? "tr-TR" : "en-GB")}</Link>
               <span aria-hidden>·</span>
               <Link className="inline-flex min-h-12 items-center underline-offset-4 hover:underline" href={href(lang, `/il/${work.city_slug}`)}>{[work.district, cityName].filter(Boolean).join(", ").toLocaleUpperCase(lang === "tr" ? "tr-TR" : "en-GB")}</Link>
             </p>
-            <h1 className="font-heading text-[clamp(3rem,5vw,4.75rem)] font-normal leading-[1.02] tracking-[-0.03em]">{name}</h1>
+            <h1 className="break-words font-heading text-[clamp(2rem,5vw,4.75rem)] font-normal leading-[1.02] tracking-[-0.03em]">{name}</h1>
             <div className="flex flex-wrap gap-2">
               <PrecisionBadge precision={work.location_precision} lang={lang} />
               {work.unesco ? <Tag tone="neutral">{t(lang, "works.unesco")}</Tag> : null}
             </div>
-            {heroRows.length ? <dl className="grid gap-4">{heroRows.map((row) => (
-              <div key={row.label}><dt className="text-sm text-muted-foreground">{row.label}</dt><dd className="text-lg">{row.value}</dd></div>
-            ))}</dl> : null}
           </div>
+          {heroRows.length ? <dl className={`grid gap-4 ${cover ? "work-hero-veil" : ""}`}>{heroRows.map((row) => (
+            <div key={row.label}><dt className={`text-sm ${cover ? "font-bold" : "text-muted-foreground"}`}>{row.label}</dt><dd className="text-lg">{row.value}</dd></div>
+          ))}</dl> : <div />}
           <div className="flex flex-wrap items-end justify-between gap-4">
-            {audioSrc ? <ListenButton src={audioSrc} workName={name} /> : <span />}
-            {work.built_year !== null || period ? <span className="font-heading text-4xl">{work.built_year ?? period}</span> : null}
+            <div className={cover ? "work-hero-veil" : ""}>{audioSrc ? <ListenButton src={audioSrc} workName={name} /> : null}</div>
+            {work.built_year !== null || period ? <span className={`ml-auto break-words text-right font-heading text-4xl ${cover ? "work-hero-veil" : ""}`}>{work.built_year ?? period}</span> : null}
           </div>
-        </Glass>
+        </div>
       </header>
 
       <div className="mx-auto grid w-full max-w-7xl gap-16 px-5 py-16 sm:px-8 lg:gap-24">
