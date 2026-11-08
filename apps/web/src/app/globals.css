@@ -134,6 +134,32 @@
   }
 }
 
+/* Ana sayfadaki ses akışı: keskin bir dalga yerine yumuşak, kesintisiz bir hareket. */
+.home-sound-flow {
+  animation: home-sound-flow 7s linear infinite;
+  transform-box: fill-box;
+}
+.home-sound-flow-reverse {
+  animation-duration: 9s;
+  animation-direction: reverse;
+}
+.home-sound-flow-slow {
+  animation-duration: 11s;
+}
+@keyframes home-sound-flow {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-120px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-sound-flow {
+    animation: none;
+  }
+}
+
 /* Yazı büyütme (görünüm menüsü): rem tabanlı her ölçü birlikte büyür. */
 html[data-text="lg"] {
   font-size: 112.5%;

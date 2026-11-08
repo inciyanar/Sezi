@@ -6,6 +6,7 @@ import { AccessibilityIcon, ArrowUpRightIcon, AudioLinesIcon, ContrastIcon, EarO
 
 import ulucamiPhoto from "@/assets/bursa-ulucami.jpg";
 import { HomeList } from "@/components/home/home-list";
+import { SensoryDiscovery } from "@/components/home/sensory-discovery";
 import { TourPreview } from "@/components/home/tour-preview";
 import { Band } from "@/components/ui/band";
 import { Button } from "@/components/ui/button";
@@ -129,45 +130,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
         </div>
       </Band>
 
-      <Reveal className="mx-auto max-w-6xl px-6 py-24 text-center md:py-36">
-        <Eyebrow text={copy.trust} lang={lang} />
-        <h2 className="mx-auto mt-6 max-w-[1100px] font-heading text-[clamp(2.25rem,5.2vw,4.75rem)] font-light leading-[1.12] tracking-[-0.03em]">
-          {lang === "tr" ? (
-            <>
-              Her{" "}
-              {weeklyPhoto && (
-                <span className="relative inline-block h-[.8em] w-[1.7em] overflow-hidden rounded-full align-middle">
-                  <Image src={photoUrl(weeklyPhoto, "thumb")} alt="" fill sizes="150px" className="object-cover" />
-                </span>
-              )}{" "}
-              kubbenin altında bir <em className="text-[var(--title-accent)]">hikâye</em>, her{" "}
-              {heroPhoto && (
-                <span className="relative inline-block h-[.8em] w-[1.7em] overflow-hidden rounded-full align-middle">
-                  <Image src={photoUrl(heroPhoto, "thumb")} alt="" fill sizes="150px" className="object-cover" />
-                </span>
-              )}{" "}
-              taşın ardında bir <em className="text-[var(--title-accent)]">iyilik</em> var.
-            </>
-          ) : (
-            <>
-              Under every{" "}
-              {weeklyPhoto && (
-                <span className="relative inline-block h-[.8em] w-[1.7em] overflow-hidden rounded-full align-middle">
-                  <Image src={photoUrl(weeklyPhoto, "thumb")} alt="" fill sizes="150px" className="object-cover" />
-                </span>
-              )}{" "}
-              dome is a <em className="text-[var(--title-accent)]">story</em>, behind every{" "}
-              {heroPhoto && (
-                <span className="relative inline-block h-[.8em] w-[1.7em] overflow-hidden rounded-full align-middle">
-                  <Image src={photoUrl(heroPhoto, "thumb")} alt="" fill sizes="150px" className="object-cover" />
-                </span>
-              )}{" "}
-              stone an act of <em className="text-[var(--title-accent)]">kindness</em>.
-            </>
-          )}
-        </h2>
-        <p className="mx-auto mt-8 max-w-xl text-lg text-muted-foreground">{copy.manifestoBody}</p>
-      </Reveal>
+      <SensoryDiscovery lang={lang} copy={copy} />
 
       <Reveal className="mx-auto max-w-[1280px] px-6 pb-24">
         <h2 className="mb-8 font-heading text-[clamp(2.25rem,4.4vw,3.875rem)] font-light">{copy.provinces}</h2>
