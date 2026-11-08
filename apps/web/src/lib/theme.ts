@@ -1,4 +1,4 @@
-import { GLASS_THIN_ALPHA, GLASS_VEIL_ALPHA, sweetThemes, type SweetTheme, type SweetToneName } from "@sezi/shared";
+import { sweetThemes, type SweetTheme, type SweetToneName } from "@sezi/shared";
 
 /**
  * Web teması mobil "Sezi kâğıt" token'larından üretilir (packages/shared/src/sweet-theme.ts); sabit renk kodu yazılmaz.
@@ -53,9 +53,6 @@ function vars(t: SweetTheme, action: { fill: string; ink: string }): string {
     ["on-photo-muted", t.onPhoto.muted],
     ["on-photo-accent", t.onPhoto.accent],
     ["glass-light", rgba(t.glass.light.tint, t.glass.light.alpha)],
-    ["glass-light-solid", t.glass.light.tint],
-    ["glass-light-thin", rgba(t.glass.light.tint, GLASS_THIN_ALPHA)],
-    ["glass-light-veil", rgba(t.glass.light.tint, GLASS_VEIL_ALPHA)],
     ["glass-light-fg", t.glass.light.text],
     ["glass-light-muted", t.glass.light.muted],
     ["glass-dark", rgba(t.glass.dark.tint, t.glass.dark.alpha)],
