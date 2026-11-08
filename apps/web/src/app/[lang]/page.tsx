@@ -174,7 +174,8 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
         <div className="grid gap-4 min-[900px]:grid-cols-[1.25fr_1fr_1fr]">
           {populatedCities.map((city) => {
             const cityWorks = works.filter((w) => w.city_slug === city.slug);
-            const cityPhoto = city.slug === "bursa" ? (hero?.city_slug === city.slug ? heroPhoto : cityWorks.map(coverOf).find(Boolean)) : null;
+            // Şehrin fotoğraflı ilk eseri (Bursa'da hero ile aynı kare); yayında fotoğrafı yoksa desenli zemin kalır.
+            const cityPhoto = hero?.city_slug === city.slug ? heroPhoto : cityWorks.map(coverOf).find(Boolean);
             const count = tours.filter((tour) => tour.citySlug === city.slug).length;
             return (
               <div key={city.slug} className="relative">
