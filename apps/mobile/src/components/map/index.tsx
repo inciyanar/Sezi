@@ -1,9 +1,9 @@
 import Mapbox, { Camera, CircleLayer, FillExtrusionLayer, FillLayer, Image as MapImage, Images, LineLayer, MapView, ShapeSource, StyleImport, SymbolLayer } from '@rnmapbox/maps';
-import { GLYPH_TYPES, glyphType, LANDMARK_FULL_ZOOM, LANDMARK_MIN_ZOOM, LANDMARK_OPACITY, laneOffsetPx, MAP_PITCH, PilotBuildingsSchema, polylineLength, ROUTE_ARROW_SPACING_PX, ROUTE_FLOW_DASHES, ROUTE_FLOW_STEP_MS, routeLineParts, sliceLine, stopConnector, toneForType, type LinePart, type LngLat, type RoutePiece } from '@sezi/shared';
+import { CATEGORY_ART_FILES, categoryArtFile, GLYPH_TYPES, glyphType, LANDMARK_FULL_ZOOM, LANDMARK_MIN_ZOOM, LANDMARK_OPACITY, laneOffsetPx, MAP_PITCH, PilotBuildingsSchema, polylineLength, ROUTE_ARROW_SPACING_PX, ROUTE_FLOW_DASHES, ROUTE_FLOW_STEP_MS, routeLineParts, sliceLine, stopConnector, toneForType, type LinePart, type LngLat, type RoutePiece } from '@sezi/shared';
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState, type ComponentRef, type ReactNode } from 'react';
 import { Image, InteractionManager, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { CATEGORY_ART_SOURCES } from '@/design/category-art';
+import { categoryArtSource } from '@/design/category-art';
 import { WorkGlyphInline } from '@/design/work-glyph';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useIsDark, useSweetTheme } from '@/hooks/use-sweet-theme';
@@ -167,13 +167,9 @@ export const SeziMap = forwardRef<SeziMapHandle, SeziMapProps>(function SeziMap(
   );
 });
 
-/** Aynı kategori çizimine işaret eden kısa ve uzun slug'lar tek Mapbox resmini paylaşır. */
-const categoryNames = new Map<number, string>();
-for (const [slug, source] of Object.entries(CATEGORY_ART_SOURCES)) {
-  if (!categoryNames.has(source)) categoryNames.set(source, slug);
-}
-const typeKey = (slug: string) => categoryNames.get(CATEGORY_ART_SOURCES[slug]) ?? glyphType(slug);
-const typeKeys = [...new Set([...GLYPH_TYPES, ...Object.keys(CATEGORY_ART_SOURCES)].map(typeKey))];
+/** Simge anahtarı: çizimi olan tür çizim dosyasının adıyla (kısa ve uzun slug tek resmi paylaşır), yoksa glif türüyle. */
+const typeKey = (slug: string) => categoryArtFile(slug) ?? glyphType(slug);
+const typeKeys = [...new Set([...GLYPH_TYPES.map(typeKey), ...CATEGORY_ART_FILES])];
 const iconName = (slug: string, theme: string) => `type-${theme}-${typeKey(slug)}`;
 const ICON_SIZE = 36;
 /** Büyük yer işareti rozeti eser işaretinden belirgin büyüktür. */
@@ -200,7 +196,7 @@ function TypeIcons() {
       </MapImage>
       {typeKeys.map((slug) => {
         const ink = t.tones[toneForType(slug)].ink;
-        const source = CATEGORY_ART_SOURCES[slug];
+        const source = categoryArtSource(slug);
         return (
           <MapImage key={slug} ref={(image) => { iconRefs.current[slug] = image; }} name={iconName(slug, theme)}>
             <View collapsable={false} style={{ width: ICON_SIZE, height: ICON_SIZE, borderRadius: ICON_SIZE / 2, backgroundColor: t.surface, borderWidth: 2.5, borderColor: t.text, alignItems: 'center', justifyContent: 'center' }}>

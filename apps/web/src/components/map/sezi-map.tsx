@@ -4,12 +4,11 @@ import "mapbox-gl/dist/mapbox-gl.css";
 
 import {
   GLYPH_TYPES,
-  glyphSvgBody,
-  glyphType,
   LANDMARK_FULL_ZOOM,
   LANDMARK_MIN_ZOOM,
   LANDMARK_OPACITY,
   PilotBuildingsSchema,
+  loc,
   sweetThemes,
   toneForType,
   routeLineParts,
@@ -18,6 +17,7 @@ import {
   ROUTE_ARROW_SPACING_PX,
   ROUTE_FLOW_DASHES,
   ROUTE_FLOW_STEP_MS,
+  type MajorLandmark,
   type RoutePiece,
   type LngLat,
   type SweetTheme,
@@ -32,7 +32,8 @@ import { useT } from "@/lib/i18n-client";
 import { useProfile } from "@/lib/profile";
 
 import pilotBuildings from "../../../../mobile/assets/pilot/bursa-hanlar-buildings.json";
-import { createMap, MAP_FONT, MAPBOX_TOKEN, mapPitch, type MapLook } from "./mapbox";
+import { addMapIcons, iconName, LANDMARK_ICON } from "./map-icons";
+import { createMap, MAP_FONT, MAP_FONT_BOLD, MAPBOX_TOKEN, mapPitch, type MapLook } from "./mapbox";
 
 /** Haritadaki işaret. Haritadaki her bilgi sayfadaki listede de yazılıdır; harita destekleyicidir. */
 export interface MapMarker {
@@ -41,6 +42,8 @@ export interface MapMarker {
   label?: string;
   /** Eser türü (work_types.slug): verilirse işaret türün simgesiyle çizilir (siluet türü anlatır, renk tek başına değil). */
   typeSlug?: string;
+  /** Eserin slug'ı: büyük yer işaretiyse işaret rozetin yerine oturur ve aynı simgeyle çizilir (iki işaret olmaz). */
+  workSlug?: string;
   /** Konumu kesin değil: yarı saydam çizilir. */
   approximate?: boolean;
   /** Numaralı durak (tur, uğranan nokta). */
@@ -81,6 +84,8 @@ export interface SeziMapProps {
   route?: MapRoute | null;
   /** Vurgulanan yol parçası (bildirim). */
   highlight?: LngLat[] | null;
+  /** Büyük yer işaretleri (Lynch landmark; planlayıcının `majorLandmarks()` listesi): altın rozet ve kalın adla. */
+  landmarks?: MajorLandmark[];
   onMarkerClick?: (id: string) => void;
   onMapClick?: (p: LngLat) => void;
   className?: string;
@@ -102,11 +107,8 @@ function setData(m: MapboxMap, id: string, data: FeatureCollection) {
 /** Veri hattının ürettiği pilot alan binaları (`data/build_buildings.py`; mobil uygulamayla aynı dosya). */
 const PILOT = PilotBuildingsSchema.parse(pilotBuildings);
 
-const ICON_SIZE = 30;
-const ICON_RATIO = 2;
 const ICON_SCALE = 0.95;
 const ICON_SCALE_SELECTED = 1.2;
-const iconName = (slug: string) => `type-${glyphType(slug)}`;
 const ROUTE_WIDTH = 7;
 /**
  * Akan çizgi boya aralığı. Tasarım adımı 60 ms ve her boya tüm haritayı yeniden çizer;
@@ -135,28 +137,6 @@ function addRouteLayers(m: MapboxMap, th: SweetTheme) {
   // Akan çizgi okların altında ve soluk: yönü oklar söyler, akış yalnız hareket hissi verir.
   m.addLayer({ id: "route-flow", type: "line", slot: "top", source: "route-runs", layout, paint: { "line-color": th.gold.fill, "line-width": 2.5, "line-offset": offset, "line-opacity": th.outlined ? 0 : 1, "line-dasharray": [...ROUTE_FLOW_DASHES[0]!] } });
   m.addLayer({ id: "route-arrows", type: "symbol", slot: "top", source: "route-runs", layout: { "symbol-placement": "line", "symbol-spacing": ROUTE_ARROW_SPACING_PX, "icon-image": "route-arrow", "icon-size": 1, "icon-rotation-alignment": "map", "icon-keep-upright": false, "icon-offset": ["array", "number", 2, ["get", "arrowOffset"]], "icon-allow-overlap": true, "icon-ignore-placement": true }, paint: { "icon-opacity": opacity, "icon-occlusion-opacity": 1 } });
-}
-
-/**
- * Eser türü simgeleri (mobil haritayla aynı): yüzey renginde yuvarlak, kenarı ve glifi tür mürekkebinde.
- * SVG tarayıcıda resme çevrilip haritaya eklenir.
- */
-async function addTypeIcons(m: MapboxMap, th: SweetTheme) {
-  const px = ICON_SIZE * ICON_RATIO;
-  await Promise.all(
-    GLYPH_TYPES.map(async (slug) => {
-      const ink = th.tones[toneForType(slug)].ink;
-      const g = ICON_SIZE * 0.62;
-      const svg =
-        `<svg xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}" viewBox="0 0 ${ICON_SIZE} ${ICON_SIZE}">` +
-        `<circle cx="15" cy="15" r="13.75" fill="${th.surface}" stroke="${ink}" stroke-width="2.5"/>` +
-        `<svg x="${(ICON_SIZE - g) / 2}" y="${(ICON_SIZE - g) / 2}" width="${g}" height="${g}" viewBox="0 0 24 24">${glyphSvgBody(slug, ink)}</svg></svg>`;
-      const img = new Image(px, px);
-      img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-      await img.decode();
-      if (!m.hasImage(iconName(slug))) m.addImage(iconName(slug), img, { pixelRatio: ICON_RATIO });
-    }),
-  );
 }
 
 /**
@@ -215,7 +195,7 @@ const useReducedMotion = () =>
   useSyncExternalStore(subscribeReducedMotion, () => window.matchMedia(REDUCE_QUERY).matches, () => false);
 
 export default function SeziMap(props: SeziMapProps) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const { contrast } = useAppearance();
   const profile = useProfile();
   const [show3d, setShow3d] = useState(true);
@@ -253,7 +233,9 @@ export default function SeziMap(props: SeziMapProps) {
       p.bounds ?? null,
       p.fitPadding ?? null,
       p.markers ?? [],
+      p.landmarks ?? [],
       p.onMapClick ? 1 : 0,
+      lang,
     ]);
     if (stamp === dataKey.current) return;
     dataKey.current = stamp;
@@ -282,25 +264,37 @@ export default function SeziMap(props: SeziMapProps) {
     m.setFilter("route-flow", p.route?.activeLeg == null ? null : ["==", ["get", "leg"], p.route.activeLeg]);
     setData(m, "highlight", fc(p.highlight ? [lineFeature(p.highlight)] : []));
     m.getCanvas().style.cursor = p.onMapClick ? "crosshair" : "";
+    const landmarks = p.landmarks ?? [];
+    const badgeAt = new Map(landmarks.flatMap((l) => (l.workSlug ? [[l.workSlug, l.location] as const] : [])));
+    setData(
+      m,
+      "major-landmarks",
+      fc(landmarks.map((l) => ({ type: "Feature", properties: { label: loc(l.name, lang) }, geometry: { type: "Point", coordinates: l.location } }))),
+    );
     setData(
       m,
       "markers",
       fc(
-        [...(p.markers ?? []), ...(p.route?.stops ?? []).map((s, i): MapMarker => ({ id: s.id, number: s.number, location: s.onLine, label: s.label, selected: p.route?.activeLeg === i }))].map((k) => ({
-          type: "Feature",
-          properties: {
-            id: k.id,
-            label: k.label ?? "",
-            number: k.number !== undefined ? String(k.number) : "",
-            // Türü olan eser işareti simgeyle çizilir; numaralı durak ve başlangıç daire kalır.
-            icon: k.typeSlug && k.number === undefined && k.emphasis !== "start" ? iconName(k.typeSlug) : "",
-            scale: k.selected || k.emphasis ? ICON_SCALE_SELECTED : ICON_SCALE,
-            color: k.number !== undefined ? (k.selected ? th.gold.fill : th.text) : k.emphasis === "dest" || k.emphasis === "picked" ? th.gold.fill : th.text,
-            radius: k.number !== undefined ? (k.selected && !reducedMotion ? 13 : 11) : k.emphasis ? 11 : k.selected ? 9 : 6,
-            opacity: k.approximate ? 0.45 : 1,
-          },
-          geometry: { type: "Point", coordinates: k.location },
-        })),
+        [...(p.markers ?? []), ...(p.route?.stops ?? []).map((s, i): MapMarker => ({ id: s.id, number: s.number, location: s.onLine, label: s.label, selected: p.route?.activeLeg === i }))].map((k) => {
+          // Büyük yer işareti olan eser rozetin yerine oturur ve rozet simgesiyle çizilir; adı rozetin üstünde
+          // zaten yazılı olduğundan altta ikinci kez yazılmaz. Numaralı durak çizgi üstünde kalır.
+          const badge = k.number === undefined && k.emphasis !== "start" && k.workSlug ? badgeAt.get(k.workSlug) : undefined;
+          return {
+            type: "Feature",
+            properties: {
+              id: k.id,
+              label: badge ? "" : (k.label ?? ""),
+              number: k.number !== undefined ? String(k.number) : "",
+              // Türü olan eser işareti simgeyle çizilir; numaralı durak ve başlangıç daire kalır.
+              icon: badge ? LANDMARK_ICON : k.typeSlug && k.number === undefined && k.emphasis !== "start" ? iconName(k.typeSlug) : "",
+              scale: k.selected || k.emphasis ? ICON_SCALE_SELECTED : ICON_SCALE,
+              color: k.number !== undefined ? (k.selected ? th.gold.fill : th.text) : k.emphasis === "dest" || k.emphasis === "picked" ? th.gold.fill : th.text,
+              radius: k.number !== undefined ? (k.selected && !reducedMotion ? 13 : 11) : k.emphasis ? 11 : k.selected ? 9 : 6,
+              opacity: k.approximate ? 0.45 : 1,
+            },
+            geometry: { type: "Point", coordinates: badge ?? k.location },
+          };
+        }),
       ),
     );
     const key = p.bounds ? p.bounds.join(",") : null;
@@ -330,7 +324,7 @@ export default function SeziMap(props: SeziMapProps) {
     let flowWatch: IntersectionObserver | undefined;
     map.current = m;
     m.on("load", async () => {
-      await Promise.all([addTypeIcons(m, th), addRouteArrow(m, th)]);
+      await Promise.all([addMapIcons(m, th), addRouteArrow(m, th)]);
       if (map.current !== m) return; // simgeler yüklenirken harita kaldırıldı
       addPilotLayers(m, th, look);
       for (let i = 0; i < MAX_LINES; i++) {
@@ -379,6 +373,17 @@ export default function SeziMap(props: SeziMapProps) {
       }
       m.addSource("highlight", { type: "geojson", data: fc([]) });
       m.addLayer({ id: "highlight", type: "line", slot: "top", source: "highlight", paint: { "line-color": th.accentText, "line-width": 8 }, layout: { "line-cap": "round" } });
+      // Büyük yer işareti rozeti ekranın kendi işaretlerinin altında (aynı yerdeki eser işareti rozetin üstüne
+      // biner); uzaklaştıkça küçülür ama kaybolmaz: yön bulmanın dayanağıdır.
+      m.addSource("major-landmarks", { type: "geojson", data: fc([]) });
+      m.addLayer({
+        id: "major-landmarks-badge",
+        type: "symbol",
+        slot: "top",
+        source: "major-landmarks",
+        layout: { "icon-image": LANDMARK_ICON, "icon-size": ["interpolate", ["linear"], ["zoom"], 13, 0.6, 16, 1], "icon-allow-overlap": true, "icon-ignore-placement": true },
+        paint: { "icon-occlusion-opacity": 1 },
+      });
       m.addSource("markers", { type: "geojson", data: fc([]) });
       m.addLayer({
         id: "markers",
@@ -423,6 +428,17 @@ export default function SeziMap(props: SeziMapProps) {
         minzoom: 15.5,
         layout: { "text-field": ["get", "label"], "text-font": MAP_FONT, "text-size": 12, "text-offset": [0, 1.3], "text-anchor": "top", "text-optional": true },
         paint: { "text-color": th.text, "text-halo-color": th.surface, "text-halo-width": 1.5 },
+      });
+      // Büyük yer işaretinin adı en üstte: yazılar yerleştirilirken üstteki katman önce yer alır, küçük eser
+      // adlarına yer kaybetmez.
+      m.addLayer({
+        id: "major-landmarks-label",
+        type: "symbol",
+        slot: "top",
+        source: "major-landmarks",
+        minzoom: 13.5,
+        layout: { "text-field": ["get", "label"], "text-font": MAP_FONT_BOLD, "text-size": 14, "text-anchor": "bottom", "text-offset": [0, -2.2], "text-max-width": 10, "text-optional": true },
+        paint: { "text-color": th.text, "text-halo-color": th.surface, "text-halo-width": 2, "text-occlusion-opacity": 1 },
       });
       const clickable = ["markers", "markers-icon"];
       for (const layer of clickable) {

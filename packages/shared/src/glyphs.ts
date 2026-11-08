@@ -73,6 +73,20 @@ export const glyphFor = (slug: string): GlyphPart[] => GLYPHS[slug] ?? FALLBACK;
 export const GLYPH_TYPES = [...Object.keys(GLYPHS), "diger"];
 export const glyphType = (slug: string) => (slug in GLYPHS ? slug : "diger");
 
+/**
+ * Tasarımcının renkli tür çizimleri (mobil `assets/categories/<dosya>.webp`; web aynı dosyaları içe aktarır).
+ * Envanterin kısa slug'ları (`carsi`, `konak`, `hazire`, `tekke`) uzun adlı çizimi kullanır.
+ */
+export const CATEGORY_ART_FILES = [
+  "cami", "medrese", "turbe", "cesme", "hamam", "han", "imaret", "kervansaray", "kilise", "kopru", "mektep", "darussifa",
+  "carsi-ve-bedesten", "konak-ve-ev", "hazire-ve-mezarlik", "tekke-ve-zaviye",
+] as const;
+export type CategoryArtFile = (typeof CATEGORY_ART_FILES)[number];
+const CATEGORY_ART_ALIAS: Record<string, CategoryArtFile> = { carsi: "carsi-ve-bedesten", konak: "konak-ve-ev", hazire: "hazire-ve-mezarlik", tekke: "tekke-ve-zaviye" };
+const isCategoryArtFile = (slug: string): slug is CategoryArtFile => (CATEGORY_ART_FILES as readonly string[]).includes(slug);
+/** Türün çizim dosyası; çizimi olmayan türde `undefined` (glif kullanılır). */
+export const categoryArtFile = (slug: string): CategoryArtFile | undefined => (isCategoryArtFile(slug) ? slug : CATEGORY_ART_ALIAS[slug]);
+
 /** Glifin SVG gövdesi (`<svg viewBox="0 0 24 24">` içine). */
 export function glyphSvgBody(slug: string, color: string): string {
   return glyphFor(slug)

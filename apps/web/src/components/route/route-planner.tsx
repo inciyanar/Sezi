@@ -248,12 +248,15 @@ export function RoutePlanner({ overlay, initial }: { overlay: NavOverlay; initia
   const markers: MapMarker[] = useMemo(() => {
     const list: MapMarker[] = works
       .filter((w) => w.workSlug !== destSlug)
-      .map((w) => ({ id: `work:${w.workSlug}`, location: w.location, label: loc(w.name, lang), typeSlug: w.workType ?? "" }));
+      .map((w) => ({ id: `work:${w.workSlug}`, location: w.location, label: loc(w.name, lang), typeSlug: w.workType ?? "", workSlug: w.workSlug }));
     list.push({ id: "start", location: usePicked && picked ? picked : (current?.plan.start.location ?? from), label: t("route.markerStart"), emphasis: usePicked ? "picked" : "start" });
     const dest = current?.plan.end ?? (destSlug ? planner.landmarkNodeForWork(destSlug) : undefined);
     if (dest && (destSlug || current)) list.push({ id: "dest", location: dest.location, label: loc(dest.name, lang) || t("route.markerDest"), emphasis: "dest" });
     return list;
   }, [works, destSlug, usePicked, picked, current, from, lang, t]);
+  // Admin'in seçtiği büyük yer işaretleri (en çok 8): haritada altın rozetle; noktalar değişince yenilenir.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const landmarks = useMemo(() => planner.majorLandmarks(), [version]);
 
   const bounds = useMemo(() => {
     const all = rows ? rows.flatMap((r) => r.summary?.plan.geometry.line ?? []) : (current?.plan.geometry.line ?? []);
@@ -274,6 +277,7 @@ export function RoutePlanner({ overlay, initial }: { overlay: NavOverlay; initia
           zoom={15.5}
           bounds={bounds}
           markers={markers}
+          landmarks={landmarks}
           lines={lines}
           route={mapRoute}
           onMarkerClick={(id) => {

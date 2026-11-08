@@ -12,6 +12,8 @@ mapboxgl.accessToken = MAPBOX_TOKEN;
 
 /** Harita yazı tipi (Mapbox glif servisi). */
 export const MAP_FONT = ["DIN Pro Medium", "Arial Unicode MS Regular"];
+/** Büyük yer işareti adı (Mapbox glif servisinde kalın kesim). */
+export const MAP_FONT_BOLD = ["DIN Pro Bold", "Arial Unicode MS Bold"];
 
 // Mapbox Standard açık tema için doğal arazi sabitleri (yol, park, su; mobil haritayla aynı); arayüz token'ı değildir.
 const MAP_ROADS = "#E8DFD3";
