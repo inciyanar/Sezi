@@ -1,0 +1,73 @@
+# Web sitesi ve admin paneli main'e gelen her değişiklikte Vercel'e (edizkeskin hesabı) yayınlanır.
+# Vercel'in kendi Git bağlantısı Hobby planında organizasyona ait özel depoyu kabul etmediği için
+# derleme burada yapılır ve hazır çıktı yüklenir (vercel build + deploy --prebuilt). Elle de başlatılabilir.
+#
+# Ortam değişkenleri (Supabase, Mapbox) ve proje ayarları (kök klasör, admin'in tek sayfa yönlendirmesi)
+# Vercel projesinde durur; `vercel pull` onları alır, burada tekrarlanmaz.
+#
+# Gerekli secret'lar (Settings → Secrets and variables → Actions):
+#   VERCEL_TOKEN            → vercel.com/account/tokens (kapsam: edizkeskin's projects)
+#   VERCEL_ORG_ID           → Vercel ekip kimliği (team_…)
+#   VERCEL_PROJECT_ID_WEB   → sezi-web proje kimliği (prj_…)
+#   VERCEL_PROJECT_ID_ADMIN → sezi-admin proje kimliği (prj_…)
+name: vercel-deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/web/**"
+      - "apps/admin/**"
+      - "packages/shared/**"
+      - "apps/mobile/assets/pilot/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/vercel-deploy.yml"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: web
+            project: VERCEL_PROJECT_ID_WEB
+          - app: admin
+            project: VERCEL_PROJECT_ID_ADMIN
+    # Art arda push'larda her uygulama için yalnız son commit yayınlanır.
+    concurrency:
+      group: vercel-deploy-${{ matrix.app }}
+      cancel-in-progress: true
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets[matrix.project] }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Secret kontrolü
+        run: |
+          for name in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            if [ -z "${!name}" ]; then echo "::error::$name tanımlı değil (${{ matrix.app }})"; exit 1; fi
+          done
+
+      - name: Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Proje ayarları ve ortam değişkenleri
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Derleme
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+
+      - name: Yayın
+        run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
