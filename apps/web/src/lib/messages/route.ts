@@ -44,7 +44,7 @@ export const tr = {
 
   "tours.title": "Turlar",
   "tours.heading": "Turlar, _adım adım._",
-  "tours.intro": "Her tur profiline göre yeniden çizilir. Bitirdiğin tur pasaportuna damga basar.",
+  "tours.intro": "Her tur profiline göre yeniden çizilir. Bitirdiğin tur seyahatnâmene damga basar.",
   "tours.all": "Hepsi",
   "tours.short": "1 saatten kısa",
   "tours.distance": "{distance} mesafe",
