@@ -69,5 +69,11 @@ jobs:
       - name: Derleme
         run: vercel build --prod --token="$VERCEL_TOKEN"
 
+      # Hobby planı, özel depodan gelen yayında commit yazarı hesap sahibi değilse yayını "Blocked" bırakır
+      # (ör. ekipten birinin merge'ü). Derleme bitti; commit bilgisi gönderilmesin diye .git yayın süresince
+      # dışarı taşınır, sonra checkout'un temizlik adımı için geri konur.
       - name: Yayın
-        run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+        run: |
+          mv .git "$RUNNER_TEMP/git"
+          trap 'mv "$RUNNER_TEMP/git" .git' EXIT
+          vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
